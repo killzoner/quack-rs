@@ -309,6 +309,13 @@ append_metadata target/release/libmy_extension.so \
 | [`scaffold`] | Project generator | `generate_scaffold`, `ScaffoldConfig` |
 | [`testing`] | Pure-Rust aggregate test harness | `AggregateTestHarness<S>` |
 | [`prelude`] | Common re-exports | `use quack_rs::prelude::*` |
+| [`catalog`]¹ | Catalog entry lookup | `CatalogEntry`, `Catalog`, `CatalogEntryType` |
+| [`client_context`]¹ | Client context access (catalog, config, connection ID) | `ClientContext` |
+| [`config_option`]¹ | Extension-defined configuration options | `ConfigOptionBuilder`, `ConfigOptionScope` |
+| [`copy_function`]¹ | Custom `COPY TO` handlers | `CopyFunctionBuilder` |
+| [`table_description`]¹ | Table metadata (column count, names, types) | `TableDescription` |
+
+> ¹ Requires the `duckdb-1-5` feature flag (DuckDB 1.5.0+).
 
 [`entry_point`]: https://docs.rs/quack-rs/latest/quack_rs/entry_point/index.html
 [`connection`]: https://docs.rs/quack-rs/latest/quack_rs/connection/index.html
@@ -338,6 +345,11 @@ append_metadata target/release/libmy_extension.so \
 [`scaffold`]: https://docs.rs/quack-rs/latest/quack_rs/scaffold/index.html
 [`testing`]: https://docs.rs/quack-rs/latest/quack_rs/testing/index.html
 [`prelude`]: https://docs.rs/quack-rs/latest/quack_rs/prelude/index.html
+[`catalog`]: https://docs.rs/quack-rs/latest/quack_rs/catalog/index.html
+[`client_context`]: https://docs.rs/quack-rs/latest/quack_rs/client_context/index.html
+[`config_option`]: https://docs.rs/quack-rs/latest/quack_rs/config_option/index.html
+[`copy_function`]: https://docs.rs/quack-rs/latest/quack_rs/copy_function/index.html
+[`table_description`]: https://docs.rs/quack-rs/latest/quack_rs/table_description/index.html
 
 ---
 
@@ -562,6 +574,8 @@ flowchart TB
         TBL["**table**<br/>TableFunctionBuilder<br/>BindInfo · FfiBindData · FfiInitData"]
         RSC["**replacement_scan**<br/>ReplacementScanBuilder"]
         SM["**sql_macro**<br/>SqlMacro · MacroBody"]
+        CST["**cast**<br/>CastFunctionBuilder"]
+        CPY["**copy_function**¹<br/>CopyFunctionBuilder"]
     end
 
     subgraph DATA ["Data layer"]
@@ -570,6 +584,10 @@ flowchart TB
         CMP["**vector::complex**<br/>StructVector · ListVector · MapVector"]
         TYP["**types**<br/>TypeId · LogicalType"]
         INT["**interval**<br/>DuckInterval · interval_to_micros"]
+        CFG["**config_option**¹<br/>ConfigOptionBuilder"]
+        CAT["**catalog**¹<br/>CatalogEntry · Catalog"]
+        CTX["**client_context**¹<br/>ClientContext"]
+        TDS["**table_description**¹<br/>TableDescription"]
     end
 
     SYS["**libduckdb-sys** >=1.4.4, &lt;2<br/>DuckDB C Extension API<br/>headers only · no linked library"]:::ffi
@@ -727,28 +745,30 @@ assert_eq!(target.finalize().total, 100);
 
 ## Known Limitations
 
-### Window functions and COPY functions are not available
+### Window functions are not available
 
-DuckDB's **window functions** (`OVER (...)` clauses) and **COPY format handlers** (custom
-file-format readers/writers) are implemented entirely in the C++ API layer and have
-**no counterpart in DuckDB's public C extension API**. This is not a gap in `quack-rs` or
-in `libduckdb-sys` — the symbols (`duckdb_create_window_function`,
-`duckdb_create_copy_function`, etc.) do not exist in the C API at all.
+DuckDB's **window functions** (`OVER (...)` clauses) are implemented entirely in the C++
+API layer and have **no counterpart in DuckDB's public C extension API**. This is not a
+gap in `quack-rs` or in `libduckdb-sys` — the symbol `duckdb_create_window_function`
+does not exist in the C API.
 
-This has been verified against:
-- The [DuckDB stable C API reference](https://duckdb.org/docs/stable/clients/c/api)
-  (no window or COPY function registration symbols listed)
-- The `libduckdb-sys` 1.4.4 bindings (`bindgen_bundled_version.rs` and
-  `bindgen_bundled_version_loadable.rs`) — neither file contains these symbols
+> **COPY format handlers** were previously in this category, but DuckDB 1.5.0 added
+> `duckdb_create_copy_function` and related symbols. quack-rs wraps them in the
+> [`copy_function`] module (requires the `duckdb-1-5` feature flag).
 
-If DuckDB exposes these APIs in a future C API version, `quack-rs` will add wrappers
-in the relevant release.
+If DuckDB exposes the window function API in a future C API version, `quack-rs` will
+add wrappers in the relevant release.
 
 ---
 
 ## Changelog
 
 See [`CHANGELOG.md`](./CHANGELOG.md) for the full version history.
+
+**v0.6.0+** (unreleased) — Upgraded to DuckDB 1.5.0 (`libduckdb-sys` 1.10500.0). Populated the
+`duckdb-1-5` feature flag with five new modules: `catalog`, `client_context`, `config_option`,
+`copy_function`, `table_description`. Added `TypeId::TimeNs` and `ScalarFunctionBuilder` methods
+`varargs()`, `volatile()`, `bind()`, `init()`. COPY format handlers are now supported.
 
 **v0.5.0** (2026-03-10) — Added `param_logical(LogicalType)` and `returns_logical(LogicalType)` on
 all function builders (scalar, aggregate, and their set variants), enabling complex

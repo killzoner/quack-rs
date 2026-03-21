@@ -52,7 +52,7 @@ duckdb_disconnect(&mut con)
 ```
 
 **Critical**: The version string passed to `duckdb_rs_extension_api_init` is the
-*C API version* (`"v1.2.0"` for DuckDB 1.4.x), not the DuckDB release version
+*C API version* (`"v1.2.0"` for DuckDB 1.4.x / 1.5.x), not the DuckDB release version
 (`"v1.4.4"`). See [Pitfall P2](../LESSONS.md).
 
 ---
@@ -338,6 +338,7 @@ handle the `None` case.
 | `Varchar` | `DUCKDB_TYPE_DUCKDB_TYPE_VARCHAR` |
 | `Timestamp` | `DUCKDB_TYPE_DUCKDB_TYPE_TIMESTAMP` |
 | `Interval` | `DUCKDB_TYPE_DUCKDB_TYPE_INTERVAL` |
+| `TimeNs` | `DUCKDB_TYPE_DUCKDB_TYPE_TIME_NS` (requires `duckdb-1-5`) |
 
 `DUCKDB_TYPE` is a `u32` type alias, not an enum. Using `TypeId` avoids
 dealing with these constants directly.
@@ -358,3 +359,57 @@ dealing with these constants directly.
 | P8 | Extension fails API init | Using DuckDB release version in `api_init` | Use C API version (`"v1.2.0"`) |
 
 See [LESSONS.md](../LESSONS.md) for all 15 pitfalls with full analysis.
+
+---
+
+## DuckDB 1.5.0 C API Additions (`duckdb-1-5`)
+
+The following C API functions were added in DuckDB 1.5.0 and are wrapped by five
+new modules behind the `duckdb-1-5` feature gate.
+
+### Config option registration
+
+Register custom configuration options for extensions.
+
+- `duckdb_create_config_option` / `duckdb_destroy_config_option`
+- `duckdb_config_option_set_name`, `duckdb_config_option_set_type`, `duckdb_config_option_set_description`, `duckdb_config_option_set_default_value`, `duckdb_config_option_set_default_scope`
+- `duckdb_register_config_option`
+
+### Copy function registration
+
+Register custom COPY format handlers.
+
+- `duckdb_create_copy_function` / `duckdb_destroy_copy_function`
+- `duckdb_copy_function_set_name`, `duckdb_copy_function_set_bind`, `duckdb_copy_function_set_global_init`, `duckdb_copy_function_set_sink`, `duckdb_copy_function_set_finalize`
+- `duckdb_register_copy_function`
+
+### Catalog entry lookup
+
+Retrieve catalog and catalog entry metadata.
+
+- `duckdb_catalog_get_entry`
+- `duckdb_catalog_entry_get_name`, `duckdb_catalog_entry_get_type`
+- `duckdb_destroy_catalog`, `duckdb_destroy_catalog_entry`
+
+### Client context
+
+Access connection-level context information.
+
+- `duckdb_connection_get_client_context` / `duckdb_destroy_client_context`
+- `duckdb_client_context_get_catalog`, `duckdb_client_context_get_config_option`, `duckdb_client_context_get_connection_id`
+
+### Table description
+
+Introspect table column metadata.
+
+- `duckdb_table_description_create` / `duckdb_table_description_destroy`
+- `duckdb_table_description_get_column_count`, `duckdb_table_description_get_column_name`, `duckdb_table_description_get_column_type`
+
+### Scalar function additions
+
+New setters for scalar function configuration.
+
+- `duckdb_scalar_function_set_varargs` — accept variable-length arguments
+- `duckdb_scalar_function_set_volatile` — mark function as volatile (non-deterministic)
+- `duckdb_scalar_function_set_bind` — set a custom bind callback
+- `duckdb_scalar_function_set_init` — set a custom init callback

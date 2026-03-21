@@ -46,9 +46,10 @@ DuckDB's own documentation acknowledges the gap:
 | SQL macros (scalar) | ✅ `SqlMacro::scalar` |
 | SQL macros (table) | ✅ `SqlMacro::table` |
 
-> **Note:** Window functions and COPY format handlers have no counterpart in DuckDB's
-> public C Extension API and cannot be implemented from Rust (or any language) via that
-> API. See [Known Limitations](reference/known-limitations.md).
+> **Note:** Window functions have no counterpart in DuckDB's public C Extension API
+> and cannot be implemented from Rust (or any language) via that API.
+> COPY format handlers are now supported via the `copy_function` module
+> (requires `duckdb-1-5`). See [Known Limitations](reference/known-limitations.md).
 
 ---
 

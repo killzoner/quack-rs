@@ -315,7 +315,7 @@ Windows jobs were also broken but were cancelled before reporting.
 
 **The fix**: DuckDB's own C++ codebase contains an internal inline function `CreateAPIv1()`
 (in `duckdb/main/capi/extension_api.hpp`) that constructs the complete `duckdb_ext_api_v1`
-struct, setting every one of the ~459 function-pointer fields to the matching bundled DuckDB
+struct, setting every one of the ~573 function-pointer fields to the matching bundled DuckDB
 C symbol.  This is exactly the same struct that DuckDB would send to an extension's
 `init_c_api` callback.
 
@@ -344,7 +344,8 @@ source tree and can change between releases.  Known mitigations:
 The two header files that define `duckdb_ext_api_v1` are `duckdb_extension.h` (public,
 used by extension authors and by `libduckdb-sys` bindgen) and `extension_api.hpp` (internal,
 used by DuckDB's C++ extension-loader).  Both are maintained in the same DuckDB repository
-release and always have identical field counts (verified at 459 fields for DuckDB 1.4.x).
+release and always have identical field counts (verified at 459 fields for DuckDB 1.4.x,
+573 fields for DuckDB 1.5.x).
 
 **This is a genuine DuckDB ecosystem discovery**: the combination of `loadable-extension`
 dispatch and bundled DuckDB is not documented anywhere in the `duckdb-rs` or `libduckdb-sys`
@@ -498,6 +499,10 @@ exactly this: lazy-initialized function pointers populated by DuckDB at load tim
 `duckdb_aggregate_function_set_varargs` does not exist for aggregate functions. For variadic
 signatures (e.g., `retention(c1, c2, ..., c32)`), you must register N overloads using a
 `duckdb_aggregate_function_set`. `AggregateFunctionSetBuilder` handles this.
+
+> **Note (DuckDB 1.5.0)**: Scalar functions now support varargs directly via
+> `ScalarFunctionBuilder::varargs()` (requires the `duckdb-1-5` feature). This limitation
+> still applies to aggregate functions, which must use function sets for variadic signatures.
 
 ### ADR-6: Custom C entry point instead of `duckdb-loadable-macros`
 

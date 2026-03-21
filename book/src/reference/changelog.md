@@ -10,6 +10,56 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`duckdb-1-5` feature modules** — the `duckdb-1-5` feature flag is no longer a
+  placeholder. When enabled, it gates five new modules wrapping DuckDB 1.5.0
+  C Extension API additions:
+  - **`catalog`** — catalog entry lookup (`CatalogEntry`, `Catalog`,
+    `CatalogEntryType`)
+  - **`client_context`** — client context access (`ClientContext`) for
+    retrieving catalogs, config options, and connection IDs from within
+    registered function callbacks
+  - **`config_option`** — extension-defined configuration options
+    (`ConfigOptionBuilder`, `ConfigOptionScope`) registered via
+    `SET`/`RESET`/`current_setting()`
+  - **`copy_function`** — custom `COPY TO` handlers (`CopyFunctionBuilder`)
+    with bind → global init → sink → finalize lifecycle
+  - **`table_description`** — table metadata queries (`TableDescription`)
+    for column count, names, and logical types
+
+- **`TypeId::TimeNs`** — new `TIME_NS` column type variant for nanosecond-
+  precision time of day (DuckDB 1.5.0+, requires `duckdb-1-5` feature)
+
+- **`ScalarFunctionBuilder::varargs()`** / **`varargs_logical()`** — mark a
+  scalar function as accepting variadic arguments (requires `duckdb-1-5`)
+
+- **`ScalarFunctionBuilder::volatile()`** — mark a scalar function as volatile
+  (re-evaluated for every row even with constant arguments, requires
+  `duckdb-1-5`)
+
+- **`ScalarFunctionBuilder::bind()`** — set a bind callback invoked once during
+  query planning for per-query state allocation (requires `duckdb-1-5`)
+
+- **`ScalarFunctionBuilder::init()`** — set an init callback invoked once per
+  thread for per-thread local state allocation (requires `duckdb-1-5`)
+
+### Changed
+
+- **DuckDB 1.5.0 support** — upgraded default `libduckdb-sys` from 1.4.4 to
+  1.10500.0 (DuckDB 1.5.0) and `duckdb` from 1.4.4 to 1.10500.0. The version
+  range `">=1.4.4, <2"` in `Cargo.toml` is unchanged, preserving backward
+  compatibility with DuckDB 1.4.x.
+
+- **CI action updates** — `Swatinem/rust-cache` v2.8.2→v2.9.1,
+  `actions/download-artifact` v8.0.0→v8.0.1.
+
+### Fixed
+
+- **COPY format handlers** — previously listed as a known limitation (no C API
+  counterpart). DuckDB 1.5.0 adds `duckdb_create_copy_function` and related
+  symbols; the new `copy_function` module wraps them behind `duckdb-1-5`.
+
 ---
 
 ## [0.6.0] — 2026-03-12
@@ -310,7 +360,7 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `aggregate::state` module: `AggregateState` trait, `FfiState<T>` wrapper
 - `aggregate::callbacks` module: type aliases for all 6 aggregate callback signatures
 - `vector` module: `VectorReader`, `VectorWriter`, `ValidityBitmap`, `DuckStringView`
-- `types` module: `TypeId` enum (21 variants), `LogicalType` RAII wrapper
+- `types` module: `TypeId` enum (33 variants), `LogicalType` RAII wrapper
 - `interval` module: `DuckInterval`, `interval_to_micros`, `read_interval_at`
 - `error` module: `ExtensionError`, `ExtResult<T>`
 - `testing` module: `AggregateTestHarness<S>` for pure-Rust aggregate testing

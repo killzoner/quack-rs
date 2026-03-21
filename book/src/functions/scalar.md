@@ -242,3 +242,80 @@ ScalarOverloadBuilder::new()
   ([Pitfall L5](../reference/pitfalls.md#l5-boolean-reading-must-use-u8--0))
 - **`read_str` handles both inline and pointer string formats** automatically
   ([Pitfall P7](../reference/pitfalls.md#p7-duckdb_string_t-format-is-undocumented))
+
+---
+
+## DuckDB 1.5.0 Additions (`duckdb-1-5`)
+
+The following `ScalarFunctionBuilder` methods are available when the `duckdb-1-5`
+feature is enabled:
+
+### `varargs(type_id: TypeId)`
+
+Declares that the function accepts a variable number of trailing arguments, all
+of the given `TypeId`. Maps to `duckdb_scalar_function_set_varargs`.
+
+```rust
+ScalarFunctionBuilder::new("concat_all")
+    .varargs(TypeId::Varchar)
+    .returns(TypeId::Varchar)
+    .function(concat_all_fn)
+    .register(con)?;
+```
+
+### `varargs_logical(logical_type: LogicalType)`
+
+Like `varargs`, but accepts a `LogicalType` for parameterized variadic arguments.
+Maps to `duckdb_scalar_function_set_varargs`.
+
+```rust
+ScalarFunctionBuilder::new("merge_lists")
+    .varargs_logical(LogicalType::list(TypeId::BigInt))
+    .returns_logical(LogicalType::list(TypeId::BigInt))
+    .function(merge_lists_fn)
+    .register(con)?;
+```
+
+### `volatile()`
+
+Marks the function as volatile, meaning DuckDB will not cache or reuse its
+results across calls with the same arguments. Maps to
+`duckdb_scalar_function_set_volatile`.
+
+```rust
+ScalarFunctionBuilder::new("random_int")
+    .returns(TypeId::Integer)
+    .volatile()
+    .function(random_int_fn)
+    .register(con)?;
+```
+
+### `bind(bind_fn)`
+
+Sets a custom bind callback that runs at plan time. Use this to inspect argument
+types and set the return type dynamically. Maps to
+`duckdb_scalar_function_set_bind`.
+
+```rust
+ScalarFunctionBuilder::new("dynamic_return")
+    .varargs(TypeId::Varchar)
+    .returns(TypeId::Varchar)   // default; overridden in bind
+    .bind(my_bind_fn)
+    .function(dynamic_return_fn)
+    .register(con)?;
+```
+
+### `init(init_fn)`
+
+Sets a local-init callback invoked once per thread before execution begins. Use
+this to allocate per-thread state. Maps to
+`duckdb_scalar_function_set_init`.
+
+```rust
+ScalarFunctionBuilder::new("stateful_fn")
+    .param(TypeId::BigInt)
+    .returns(TypeId::BigInt)
+    .init(my_init_fn)
+    .function(stateful_fn)
+    .register(con)?;
+```

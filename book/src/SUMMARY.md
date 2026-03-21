@@ -29,6 +29,7 @@
 - [Cast Functions](functions/cast-functions.md)
 - [NULL Handling](functions/null-handling.md)
 - [SQL Macros](functions/sql-macros.md)
+- [Copy Functions](functions/copy-functions.md)
 
 # Working with Data
 

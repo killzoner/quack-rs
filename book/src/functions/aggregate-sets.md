@@ -122,4 +122,8 @@ DuckDB's C API does not provide `duckdb_aggregate_function_set_varargs`. For tru
 aggregates, you must register N overloads — one for each supported arity. Function sets make
 this tractable.
 
+> **Note**: As of DuckDB 1.5.0, **scalar** functions now support varargs directly via
+> `ScalarFunctionBuilder::varargs()` (requires the `duckdb-1-5` feature). This limitation
+> still applies to aggregate functions, which have no varargs counterpart in the C API.
+
 ADR-002 in the architecture docs explains this design decision in detail.
