@@ -1,13 +1,21 @@
+<!-- SPDX-License-Identifier: MIT -->
+<!-- Copyright 2026 Tom F. <tomf@tomtomtech.net> (https://github.com/tomtom215) -->
+
 # Contributing to quack-rs
+
+Thank you for contributing! Please read this document before opening a PR.
 
 ## Table of Contents
 
 - [Development Prerequisites](#development-prerequisites)
 - [Building](#building)
+- [Coding Standards](#coding-standards)
 - [Quality Gates](#quality-gates)
 - [Test Strategy](#test-strategy)
+- [Mutation Testing](#mutation-testing)
 - [Code Standards](#code-standards)
 - [Repository Structure](#repository-structure)
+- [PR Checklist](#pr-checklist)
 - [Releasing](#releasing)
 
 ---
@@ -52,6 +60,39 @@ cargo build --release --manifest-path examples/hello-ext/Cargo.toml
 
 ---
 
+## Coding Standards
+
+### Every file starts with the SPDX header
+
+```rust
+// SPDX-License-Identifier: MIT
+// Copyright 2026 Tom F. <tomf@tomtomtech.net> (https://github.com/tomtom215)
+```
+
+Markdown / TOML / YAML files use the appropriate comment syntax.
+
+### 500-line maximum per file
+
+Source files (`.rs`) should generally stay under 500 lines. If your implementation
+is growing beyond this limit, consider splitting it into focused sub-modules with
+a thin `mod.rs` that only re-exports. Some files exceed this guideline where
+splitting would harm cohesion.
+
+### Thin `mod.rs` files
+
+`mod.rs` files should primarily contain `mod` declarations and `pub use`
+re-exports. Shared types that are tightly coupled to a module's children
+may live in the parent `mod.rs` when splitting them out would add indirection
+without value.
+
+### No `unwrap()` in library code
+
+Use `?`, `map_err`, `ok_or_else`, or explicit `match`. `expect()` is also
+forbidden unless the message explains an invariant that is *impossible* to
+violate at runtime (documented with `// SAFETY:` style comment).
+
+---
+
 ## Quality Gates
 
 **All of the following must pass before merging any pull request:**
@@ -93,7 +134,13 @@ SELECT TRY_CAST('bad' AS INTEGER);      -- NULL
 "
 ```
 
+```bash
+# 8. Mutation testing — zero surviving mutants in changed files
+cargo mutants --file <changed-files>
+```
+
 These same checks run in CI (`.github/workflows/ci.yml`) on every push and pull request.
+Coverage and mutation testing run in separate workflows.
 
 ---
 
@@ -131,6 +178,38 @@ instance is required** — not left to consumers. This means building the `.so`,
 appending the extension metadata footer with `append_metadata`, and running all 19
 SQL tests via the DuckDB CLI. See the [Quality Gates](#quality-gates) section for
 the exact commands and `examples/hello-ext/README.md` for the full test listing.
+
+### Mutation testing
+
+Mutation testing verifies that your tests actually detect code changes. A mutant
+is a small, deliberate modification to the source (e.g., replacing `+` with `-`,
+flipping a boolean, returning a default value). If a mutant compiles and all
+tests still pass, the test suite has a gap.
+
+```bash
+# Install cargo-mutants
+cargo install cargo-mutants
+
+# Run mutation tests on all library source
+cargo mutants
+
+# Run on a specific file
+cargo mutants --file src/interval.rs
+
+# List mutants without running (dry-run)
+cargo mutants --list
+```
+
+Configuration is in `mutants.toml` at the repository root.
+
+### Test naming convention
+
+Tests follow the pattern: `{component}_{scenario}_{expected_outcome}`
+
+Examples:
+- `interval_to_micros_overflow_saturates`
+- `error_from_string_preserves_message`
+- `aggregate_state_combine_propagates_config`
 
 ---
 
@@ -270,13 +349,35 @@ quack-rs/
 │       └── src/lib.rs
 ├── book/                          # mdBook documentation source
 ├── .github/workflows/
-│   ├── ci.yml                     # CI: check, test, clippy, fmt, doc, msrv, bench-compile
+│   ├── ci.yml                     # CI: check, test, clippy, fmt, doc, msrv, bench-compile, nightly
 │   ├── release.yml                # Release pipeline: CI gate, package, publish
-│   └── docs.yml                   # mdBook build & deploy to GitHub Pages
+│   ├── docs.yml                   # mdBook build & deploy to GitHub Pages
+│   ├── coverage.yml               # Test coverage (cargo-llvm-cov → Codecov)
+│   ├── mutants.yml                # Mutation testing (cargo-mutants)
+│   ├── benchmarks.yml             # Criterion benchmark execution
+│   └── README.md                  # Workflow overview and quality gate summary
 ├── CONTRIBUTING.md                # This file
 ├── LESSONS.md                     # The 16 DuckDB Rust FFI pitfalls, documented in full
 └── README.md                      # Quick start, SDK overview, badge table
 ```
+
+---
+
+## PR Checklist
+
+- [ ] SPDX header on every new file
+- [ ] No file exceeds 500 lines
+- [ ] `cargo fmt` passes
+- [ ] `cargo clippy --all-targets -- -D warnings` passes
+- [ ] `cargo test --all-targets` passes
+- [ ] `cargo doc --no-deps` passes without warnings
+- [ ] New public types/functions have doc comments
+- [ ] New code has tests
+- [ ] All `unsafe` blocks have a `// SAFETY:` comment
+- [ ] `CHANGELOG.md` updated under `[Unreleased]` (for user-facing changes)
+- [ ] Book (`book/src/`) updated if the change affects extension authors
+- [ ] New FFI pitfall discovered → added to `LESSONS.md` and `book/src/reference/pitfalls.md`
+- [ ] `cargo mutants --file <changed-files>` shows zero surviving mutants for changed files
 
 ---
 

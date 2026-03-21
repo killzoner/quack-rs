@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MIT -->
+
 ## Summary
 
 <!-- What does this PR change and why? One paragraph is enough. -->
@@ -19,6 +21,12 @@
 - [ ] `cargo fmt` applied (no diff)
 - [ ] `cargo doc --no-deps` builds without warnings
 - [ ] All `unsafe` blocks have a `// SAFETY:` comment
+- [ ] SPDX header on every new file
+- [ ] No file exceeds 500 lines
+
+### Testing
+- [ ] New code has tests
+- [ ] `cargo mutants --file <changed-files>` shows zero surviving mutants
 
 ### Documentation
 - [ ] Public API changes are documented in rustdoc

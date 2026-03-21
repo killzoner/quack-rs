@@ -1,0 +1,265 @@
+# SPDX-License-Identifier: MIT
+# Copyright 2026 Tom F.
+#
+# Mutation testing — verifies that tests actually detect code changes.
+#
+# Runs cargo-mutants on library source and fails if any mutant survives.
+# On-demand via workflow_dispatch; also runs incrementally on PRs.
+
+name: Mutation Testing
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: ["main"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  # ── Full mutation sweep (on-demand) ──────────────────────────────────────
+  mutants-full:
+    name: "Mutants (full sweep)"
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants
+
+      - name: Run mutation tests
+        id: mutants
+        run: |
+          echo "::group::cargo-mutants execution log"
+
+          set +e
+          cargo mutants \
+            --output mutants.out \
+            --timeout 120 \
+            --jobs 4 2>&1 | tee /tmp/mutants-run.log
+          MUTANTS_EXIT=$?
+          set -e
+
+          echo "::endgroup::"
+          echo "exit_code=${MUTANTS_EXIT}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate report
+        if: always()
+        run: |
+          count() { if [ -f "$1" ]; then grep -c . "$1" 2>/dev/null || echo 0; else echo 0; fi; }
+
+          CAUGHT=$(count mutants.out/caught.txt)
+          MISSED=$(count mutants.out/missed.txt)
+          UNVIABLE=$(count mutants.out/unviable.txt)
+          TIMEOUT=$(count mutants.out/timeout.txt)
+          TOTAL=$((CAUGHT + MISSED))
+
+          if [ "$TOTAL" -gt 0 ]; then
+            SCORE=$(( (CAUGHT * 100) / TOTAL ))
+          else
+            SCORE=100
+          fi
+
+          {
+            echo "# Mutation Testing Report"
+            echo ""
+            echo "## Score: ${SCORE}%"
+            echo ""
+            echo "| Outcome | Count |"
+            echo "|---------|------:|"
+            echo "| Caught | ${CAUGHT} |"
+            echo "| Missed | ${MISSED} |"
+            echo "| Timeout | ${TIMEOUT} |"
+            echo "| Unviable | ${UNVIABLE} |"
+            echo ""
+
+            if [ "$MISSED" -gt 0 ]; then
+              echo "## Surviving Mutants"
+              echo ""
+              echo '```'
+              cat mutants.out/missed.txt
+              echo '```'
+              echo ""
+            fi
+
+            if [ "$TIMEOUT" -gt 0 ]; then
+              echo "## Timed-Out Mutants"
+              echo ""
+              echo '```'
+              cat mutants.out/timeout.txt
+              echo '```'
+              echo ""
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo " MUTATION SCORE: ${SCORE}%"
+          echo " Caught: ${CAUGHT}  Missed: ${MISSED}  Timeout: ${TIMEOUT}  Unviable: ${UNVIABLE}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          if [ "$MISSED" -gt 0 ]; then
+            echo ""
+            echo "::error::${MISSED} mutant(s) survived — add tests to cover these gaps"
+            exit 1
+          fi
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: mutation-report
+          path: |
+            mutants.out/
+            /tmp/mutants-run.log
+          retention-days: 30
+
+  # ── Incremental mutation testing (PRs only) ──────────────────────────────
+  mutants-incremental:
+    name: "Mutation Testing (incremental)"
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants
+
+      - name: Determine changed files
+        id: changed
+        run: |
+          FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'src/**/*.rs')
+          FILE_COUNT=$(echo "$FILES" | grep -c . 2>/dev/null || echo 0)
+
+          if [ -z "$FILES" ] || [ "$FILE_COUNT" -eq 0 ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "No Rust source files changed in src/ — mutation testing will be skipped."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "files=$(echo "$FILES" | tr '\n' ',')" >> "$GITHUB_OUTPUT"
+            echo ""
+            echo "Changed files to mutate (${FILE_COUNT}):"
+            echo "$FILES" | sed 's/^/  /'
+          fi
+
+      - name: Run mutation tests on changed files
+        id: mutants
+        if: steps.changed.outputs.skip == 'false'
+        run: |
+          echo "::group::cargo-mutants execution log"
+
+          IFS=',' read -ra FILE_ARRAY <<< "${{ steps.changed.outputs.files }}"
+          GLOB_ARGS=""
+          for f in "${FILE_ARRAY[@]}"; do
+            if [ -n "$f" ]; then
+              GLOB_ARGS="$GLOB_ARGS --file $f"
+            fi
+          done
+
+          set +e
+          cargo mutants $GLOB_ARGS \
+            --output mutants.out \
+            --timeout 120 \
+            --jobs 4 2>&1 | tee /tmp/mutants-run.log
+          MUTANTS_EXIT=$?
+          set -e
+
+          echo "::endgroup::"
+          echo "exit_code=${MUTANTS_EXIT}" >> "$GITHUB_OUTPUT"
+
+      - name: No source changes to mutate
+        if: steps.changed.outputs.skip == 'true'
+        run: |
+          echo "# Mutation Testing — Skipped" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "No Rust source files changed in \`src/\` — nothing to mutate." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Generate mutation report
+        if: always() && steps.changed.outputs.skip == 'false'
+        run: |
+          count() { if [ -f "$1" ]; then grep -c . "$1" 2>/dev/null || echo 0; else echo 0; fi; }
+
+          CAUGHT=$(count mutants.out/caught.txt)
+          MISSED=$(count mutants.out/missed.txt)
+          UNVIABLE=$(count mutants.out/unviable.txt)
+          TIMEOUT=$(count mutants.out/timeout.txt)
+          TOTAL=$((CAUGHT + MISSED))
+
+          if [ "$TOTAL" -gt 0 ]; then
+            SCORE=$(( (CAUGHT * 100) / TOTAL ))
+          else
+            SCORE=100
+          fi
+
+          {
+            echo "# Mutation Testing Report (incremental)"
+            echo ""
+            echo "Only files changed in this PR were mutated."
+            echo ""
+            echo "## Score: ${SCORE}%"
+            echo ""
+            echo "| Outcome | Count | Meaning |"
+            echo "|---------|------:|---------|"
+            echo "| Caught | ${CAUGHT} | Test suite detected the mutation |"
+            echo "| Missed | ${MISSED} | **Test gap** — a real bug here would go undetected |"
+            echo "| Timeout | ${TIMEOUT} | Mutant caused tests to hang (killed after limit) |"
+            echo "| Unviable | ${UNVIABLE} | Mutation caused a compile error (not a test gap) |"
+            echo ""
+
+            if [ "$MISSED" -gt 0 ]; then
+              echo "## Surviving Mutants"
+              echo ""
+              echo '```'
+              cat mutants.out/missed.txt
+              echo '```'
+              echo ""
+              echo "## How to Reproduce Locally"
+              echo ""
+              echo '```bash'
+              echo "cargo install cargo-mutants"
+              echo "cargo mutants --file <path-to-file>"
+              echo '```'
+              echo ""
+            fi
+
+            if [ "$MISSED" -eq 0 ] && [ "$TIMEOUT" -eq 0 ]; then
+              echo "All mutants in changed files were caught. No test gaps found."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo " MUTATION SCORE: ${SCORE}%"
+          echo " Caught: ${CAUGHT}  Missed: ${MISSED}  Timeout: ${TIMEOUT}  Unviable: ${UNVIABLE}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          if [ "$MISSED" -gt 0 ]; then
+            echo ""
+            echo "::error::${MISSED} mutant(s) survived in changed files"
+            exit 1
+          fi
+
+      - name: Upload mutation report
+        if: always() && steps.changed.outputs.skip == 'false'
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: mutation-report-incremental
+          path: |
+            mutants.out/
+            /tmp/mutants-run.log
+          retention-days: 14
