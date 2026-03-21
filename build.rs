@@ -88,7 +88,7 @@ fn find_duckdb_include() -> PathBuf {
 }
 
 /// Scans the Cargo build directory for `libduckdb-sys-*` subdirectories
-/// that contain the extracted DuckDB include tree.
+/// that contain the extracted `DuckDB` include tree.
 fn scan_for_duckdb_headers(build_dir: &Path) -> Option<PathBuf> {
     for entry in std::fs::read_dir(build_dir).ok()?.flatten() {
         if !entry
