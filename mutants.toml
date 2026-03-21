@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: MIT
+# Copyright 2026 Tom F. <tomf@tomtomtech.net> (https://github.com/tomtom215)
+#
+# Configuration for cargo-mutants — mutation testing for quack-rs.
+#
+# Install:  cargo install cargo-mutants
+# Run:      cargo mutants
+# Docs:     https://mutants.rs/
+
+# ── Timeout ──────────────────────────────────────────────────────────────────
+# Generous timeout multiplier so tests don't flake under mutation.
+# The base timeout is auto-detected from `cargo test`.
+timeout_multiplier = 3.0
+
+# Floor: no mutant gets less than 30s even if the baseline is very fast.
+minimum_test_timeout = 30
+
+# Hard cap: kill any mutant that runs longer than 120s.  Prevents infinite
+# loops and deadlocks from blocking CI.
+cap_timeout = 120
+
+# ── Parallelism ──────────────────────────────────────────────────────────────
+# Run mutants in parallel.  GitHub-hosted ubuntu-latest runners have 4 vCPUs.
+jobs = 4
+
+# ── Files to test ───────────────────────────────────────────────────────────
+# Test all library source files.
+examine_globs = [
+    "src/**/*.rs",
+]
+
+# ── Exclusions ───────────────────────────────────────────────────────────────
+# Thin re-export modules and test-only code produce unproductive mutants.
+exclude_globs = [
+    "src/prelude.rs",           # pure re-exports
+    "src/testing/**",           # test harness infrastructure
+    "src/bin/**",               # binary entry points
+]
+
+# Skip functions whose mutations are unproductive (Display/Debug impls,
+# or semantically unkillable patterns).
+exclude_re = [
+    "^fmt::",                   # Display/Debug impls
+]

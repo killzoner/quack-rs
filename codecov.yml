@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: MIT
+# Codecov configuration — https://docs.codecov.io/docs/codecov-yaml
+
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 2%
+    patch:
+      default:
+        target: 50%
+        threshold: 5%
+
+ignore:
+  # Example extension is not library code.
+  - "examples/**"
+  # Benchmark harness is not library code.
+  - "benches/**"
+  # Book documentation source.
+  - "book/**"
+  # Build script.
+  - "build.rs"

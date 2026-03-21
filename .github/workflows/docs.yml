@@ -1,3 +1,8 @@
+# SPDX-License-Identifier: MIT
+# Copyright 2026 Tom F.
+#
+# Documentation deployment — builds mdBook and deploys to GitHub Pages.
+
 name: Deploy Documentation
 
 on:

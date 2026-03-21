@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT
+# Copyright 2026 Tom F. <tomf@tomtomtech.net> (https://github.com/tomtom215)
+#
+# Clippy configuration — pedantic + nursery lint levels.
+# Lint levels are set in Cargo.toml [lints.clippy]; this file holds per-lint overrides.
+
+# Minimum function line count before suggesting extraction
+too-many-lines-threshold = 60
+
+# Maximum number of function arguments before warning
+too-many-arguments-threshold = 7
+
+# Cognitive complexity threshold
+cognitive-complexity-threshold = 25

@@ -1,0 +1,67 @@
+# SPDX-License-Identifier: MIT
+# Copyright 2026 Tom F.
+#
+# Benchmark suite — runs criterion benchmarks and archives results.
+#
+# Trigger: on-demand (workflow_dispatch) and pushes to main when
+# benchmark or source code changes.
+
+name: Benchmarks
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "benches/**"
+      - "src/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+permissions:
+  contents: read
+
+jobs:
+  bench:
+    name: Run Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+
+      - name: Build benchmarks
+        run: cargo bench --no-run
+
+      - name: Run interval benchmarks
+        run: cargo bench --bench interval_bench
+
+      - name: Write summary
+        run: |
+          {
+            echo "## Benchmark run completed"
+            echo ""
+            echo "Criterion HTML reports are available in the uploaded artifact."
+            echo ""
+            echo "To compare locally:"
+            echo '```bash'
+            echo "cargo bench --bench interval_bench"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload criterion reports
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        if: always()
+        with:
+          name: criterion-reports
+          path: target/criterion/
+          retention-days: 30
