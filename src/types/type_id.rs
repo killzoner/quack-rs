@@ -8,6 +8,8 @@
 //! [`TypeId`] wraps the `DUCKDB_TYPE_*` integer constants from `libduckdb-sys` and
 //! provides a safe, exhaustive enum for use in builder APIs.
 
+#[cfg(feature = "duckdb-1-5")]
+use libduckdb_sys::DUCKDB_TYPE_DUCKDB_TYPE_TIME_NS;
 use libduckdb_sys::{
     DUCKDB_TYPE, DUCKDB_TYPE_DUCKDB_TYPE_ARRAY, DUCKDB_TYPE_DUCKDB_TYPE_BIGINT,
     DUCKDB_TYPE_DUCKDB_TYPE_BIT, DUCKDB_TYPE_DUCKDB_TYPE_BLOB, DUCKDB_TYPE_DUCKDB_TYPE_BOOLEAN,
@@ -109,6 +111,9 @@ pub enum TypeId {
     UHugeInt,
     /// `ARRAY` — fixed-length array
     Array,
+    /// `TIME_NS` — time of day with nanosecond precision (`DuckDB` 1.5.0+)
+    #[cfg(feature = "duckdb-1-5")]
+    TimeNs,
 }
 
 impl TypeId {
@@ -160,6 +165,8 @@ impl TypeId {
             Self::TimeTz => DUCKDB_TYPE_DUCKDB_TYPE_TIME_TZ,
             Self::UHugeInt => DUCKDB_TYPE_DUCKDB_TYPE_UHUGEINT,
             Self::Array => DUCKDB_TYPE_DUCKDB_TYPE_ARRAY,
+            #[cfg(feature = "duckdb-1-5")]
+            Self::TimeNs => DUCKDB_TYPE_DUCKDB_TYPE_TIME_NS,
         }
     }
 
@@ -209,6 +216,8 @@ impl TypeId {
             Self::TimeTz => "TIMETZ",
             Self::UHugeInt => "UHUGEINT",
             Self::Array => "ARRAY",
+            #[cfg(feature = "duckdb-1-5")]
+            Self::TimeNs => "TIME_NS",
         }
     }
 }
@@ -259,6 +268,8 @@ mod tests {
             TypeId::TimeTz,
             TypeId::UHugeInt,
             TypeId::Array,
+            #[cfg(feature = "duckdb-1-5")]
+            TypeId::TimeNs,
         ];
         for t in types {
             // sql_name should not be empty and should match Display

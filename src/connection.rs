@@ -50,6 +50,8 @@ use libduckdb_sys::{duckdb_connection, duckdb_database, duckdb_delete_callback_t
 
 use crate::aggregate::{AggregateFunctionBuilder, AggregateFunctionSetBuilder};
 use crate::cast::CastFunctionBuilder;
+#[cfg(feature = "duckdb-1-5")]
+use crate::copy_function::CopyFunctionBuilder;
 use crate::error::ExtensionError;
 use crate::replacement_scan::{ReplacementScanBuilder, ReplacementScanFn};
 use crate::scalar::{ScalarFunctionBuilder, ScalarFunctionSetBuilder};
@@ -139,6 +141,17 @@ pub trait Registrar {
     ///
     /// The underlying connection must be valid for the duration of this call.
     unsafe fn register_cast(&self, builder: CastFunctionBuilder) -> Result<(), ExtensionError>;
+
+    /// Register a custom `COPY TO` function (`DuckDB` 1.5.0+).
+    ///
+    /// # Safety
+    ///
+    /// The underlying connection must be valid for the duration of this call.
+    #[cfg(feature = "duckdb-1-5")]
+    unsafe fn register_copy_function(
+        &self,
+        builder: CopyFunctionBuilder,
+    ) -> Result<(), ExtensionError>;
 }
 
 /// Wraps the `duckdb_connection` and `duckdb_database` provided to your
@@ -283,6 +296,15 @@ impl Registrar for Connection {
     }
 
     unsafe fn register_cast(&self, builder: CastFunctionBuilder) -> Result<(), ExtensionError> {
+        // SAFETY: self.con is valid per Connection invariant.
+        unsafe { builder.register(self.con) }
+    }
+
+    #[cfg(feature = "duckdb-1-5")]
+    unsafe fn register_copy_function(
+        &self,
+        builder: CopyFunctionBuilder,
+    ) -> Result<(), ExtensionError> {
         // SAFETY: self.con is valid per Connection invariant.
         unsafe { builder.register(self.con) }
     }

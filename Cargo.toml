@@ -35,8 +35,16 @@ crate-type = ["rlib"]
 ## states, config option registration). Requires `libduckdb-sys >= 1.5.0` to be
 ## resolved by Cargo. Has no effect when compiled against libduckdb-sys 1.4.x.
 ##
-## This feature is intentionally empty until libduckdb-sys 1.5.0 is published
-## on crates.io, at which point version-specific wrappers will be added behind it.
+## Requires `libduckdb-sys >= 1.10500.0` (DuckDB 1.5.0) to be resolved by Cargo.
+## Enables wrappers for new C Extension API surfaces:
+## - `TypeId::TimeNs` column type
+## - Scalar function bind/init lifecycle and local state
+## - Scalar function varargs and volatile flags
+## - Config option registration (extension-defined settings)
+## - Copy function support (custom `COPY TO` handlers)
+## - Catalog entry lookup
+## - Client context access (file system, config, catalog)
+## - Table description metadata (column count, names, types)
 duckdb-1-5 = []
 
 ## Links a bundled copy of DuckDB for integration testing.

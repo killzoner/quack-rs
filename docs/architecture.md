@@ -28,13 +28,17 @@ quack_rs
 │       └── set      AggregateFunctionSetBuilder, OverloadBuilder
 ├── scalar
 │   └── builder/
-│       ├── single   ScalarFn type alias, ScalarFunctionBuilder
+│       ├── single   ScalarFn type alias, ScalarFunctionBuilder (+ varargs(), volatile(), bind(), init() with `duckdb-1-5`)
 │       └── set      ScalarFunctionSetBuilder, ScalarOverloadBuilder
 ├── cast
 │   └── builder      CastFunctionBuilder, CastFunctionInfo, CastMode
 ├── table
 │   ├── builder      TableFunctionBuilder, BindFn/InitFn/ScanFn type aliases
 │   └── info         BindInfo, InitInfo, FunctionInfo — callback info wrappers
+├── catalog          Catalog, CatalogEntry, CatalogEntryType — catalog entry lookup (requires `duckdb-1-5`)
+├── client_context   ClientContext — client context access (requires `duckdb-1-5`)
+├── config_option    ConfigOptionBuilder — extension-defined configuration options (requires `duckdb-1-5`)
+├── copy_function    CopyFunctionBuilder — custom COPY TO handlers (requires `duckdb-1-5`)
 ├── replacement_scan ReplacementScanBuilder — SELECT * FROM 'file.xyz' patterns
 ├── vector
 │   ├── reader       VectorReader — typed reads from duckdb_data_chunk
@@ -45,9 +49,14 @@ quack_rs
 │   ├── type_id      TypeId enum — all DuckDB column types
 │   ├── logical_type LogicalType — RAII for duckdb_logical_type
 │   └── null_handling NullHandling — NULL propagation behaviour
+├── table_description TableDescription — table metadata queries (requires `duckdb-1-5`)
+├── sql_macro        SqlMacro — SQL macro registration (scalar and table macros)
 ├── interval         DuckInterval, interval_to_micros (checked + saturating)
 ├── config           DbConfig — RAII wrapper for duckdb_config
 ├── error            ExtensionError, ExtResult<T>
+├── validate         Validation utilities for community extension compliance
+├── scaffold         Project scaffolding for DuckDB Rust extensions
+├── prelude          Convenience re-exports for common extension development
 └── testing
     └── harness      AggregateTestHarness<S> — pure-Rust aggregate testing
 ```
@@ -62,11 +71,16 @@ quack_rs
 | `aggregate::callbacks` | Signature documentation only (type aliases) | No |
 | `aggregate::builder::single` | `AggregateFunctionBuilder` — single-signature registration | Yes |
 | `aggregate::builder::set` | `AggregateFunctionSetBuilder`, `OverloadBuilder` | Yes |
-| `scalar::builder::single` | `ScalarFn` type alias, `ScalarFunctionBuilder` | Yes |
+| `scalar::builder::single` | `ScalarFn` type alias, `ScalarFunctionBuilder` (includes `varargs()`, `volatile()`, `bind()`, `init()` methods gated behind `duckdb-1-5`) | Yes |
 | `scalar::builder::set` | `ScalarFunctionSetBuilder`, `ScalarOverloadBuilder` | Yes |
 | `cast::builder` | `CastFunctionBuilder`, `CastFunctionInfo`, `CastMode` | Yes |
 | `table::builder` | `TableFunctionBuilder`, callback type aliases | Yes |
 | `table::info` | `BindInfo`, `InitInfo`, `FunctionInfo` — callback wrappers | Yes |
+| `catalog` | `Catalog`, `CatalogEntry`, `CatalogEntryType` — catalog entry lookup (requires `duckdb-1-5`) | Yes |
+| `client_context` | `ClientContext` — access to connection catalog, config options, and connection ID (requires `duckdb-1-5`) | Yes |
+| `config_option` | `ConfigOptionBuilder` — register extension-defined `SET`/`RESET` configuration options (requires `duckdb-1-5`) | Yes |
+| `copy_function` | `CopyFunctionBuilder` — custom `COPY TO` handler registration (requires `duckdb-1-5`) | Yes |
+| `table_description` | `TableDescription` — query table column count, names, and types at runtime (requires `duckdb-1-5`) | Yes |
 | `replacement_scan` | `ReplacementScanBuilder` — `SELECT * FROM 'file.xyz'` registration | Yes |
 | `vector::reader` | Typed reads with correct alignment and boolean semantics | Yes |
 | `vector::writer` | Typed writes with NULL flag support | Yes |
@@ -77,6 +91,10 @@ quack_rs
 | `config` | `DbConfig` — RAII wrapper for `duckdb_config` | Yes |
 | `interval` | Fixed-point microsecond arithmetic with overflow detection | No |
 | `error` | `std::error::Error` + `CString` conversion | No |
+| `sql_macro` | `SqlMacro` — register scalar and table SQL macros via `CREATE MACRO` | Yes |
+| `validate` | Validation utilities for community extension compliance (names, SPDX, semver, etc.) | No |
+| `scaffold` | Project scaffolding — generates the full file set for a DuckDB Rust extension | No |
+| `prelude` | Convenience re-exports for the most commonly used items | No |
 | `testing::harness` | Simulate DuckDB aggregate lifecycle in pure Rust | No |
 
 ---
@@ -123,6 +141,12 @@ Extension crate
     └── libduckdb-sys = ">=1.4.4, <2" { loadable-extension }
             └── (bundled DuckDB headers only — no linked library)
 ```
+
+The `duckdb-1-5` cargo feature flag gates modules that depend on DuckDB 1.5.0+
+C API symbols: `catalog`, `client_context`, `config_option`, `copy_function`, and
+`table_description`. It also enables `ScalarFunctionBuilder` methods `varargs()`,
+`volatile()`, `bind()`, and `init()`. The feature is defined in the crate's
+`Cargo.toml` and carries no extra dependencies — it only controls `#[cfg]` gates.
 
 The `loadable-extension` feature of `libduckdb-sys` changes the linkage model:
 instead of linking against `libduckdb`, the crate emits a shared library that

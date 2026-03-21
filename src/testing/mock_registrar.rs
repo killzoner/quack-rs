@@ -283,6 +283,14 @@ impl Registrar for MockRegistrar {
         });
         Ok(())
     }
+
+    #[cfg(feature = "duckdb-1-5")]
+    unsafe fn register_copy_function(
+        &self,
+        _builder: crate::copy_function::CopyFunctionBuilder,
+    ) -> Result<(), ExtensionError> {
+        Ok(())
+    }
 }
 
 #[cfg(test)]

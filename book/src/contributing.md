@@ -169,14 +169,18 @@ quack-rs/
 │   │       ├── single.rs          # ScalarFn type alias, ScalarFunctionBuilder
 │   │       ├── set.rs             # ScalarFunctionSetBuilder, ScalarOverloadBuilder
 │   │       └── tests.rs           # Unit tests
+│   ├── catalog.rs                 # Catalog access helpers (requires `duckdb-1-5`)
 │   ├── cast/
 │   │   ├── mod.rs                 # Re-exports
 │   │   └── builder.rs             # CastFunctionBuilder, CastFunctionInfo, CastMode
+│   ├── client_context.rs          # ClientContext wrapper (requires `duckdb-1-5`)
+│   ├── config_option.rs           # ConfigOption registration (requires `duckdb-1-5`)
+│   ├── copy_function.rs           # Copy function registration (requires `duckdb-1-5`)
 │   ├── replacement_scan/
 │   │   └── mod.rs                 # ReplacementScanBuilder — SELECT * FROM 'file.xyz' patterns
 │   ├── types/
 │   │   ├── mod.rs
-│   │   ├── type_id.rs             # TypeId enum (21 variants)
+│   │   ├── type_id.rs             # TypeId enum (33 variants)
 │   │   └── logical_type.rs        # LogicalType RAII wrapper
 │   ├── vector/
 │   │   ├── mod.rs
@@ -202,6 +206,7 @@ quack-rs/
 │   │   ├── mod.rs                 # ScaffoldConfig, GeneratedFile, generate_scaffold
 │   │   ├── templates.rs           # Template generators for scaffold files (pub(super))
 │   │   └── tests.rs               # Unit tests
+│   ├── table_description.rs       # TableDescription wrapper (requires `duckdb-1-5`)
 │   ├── table/
 │   │   ├── mod.rs
 │   │   ├── builder.rs             # TableFunctionBuilder, BindFn/InitFn/ScanFn aliases
@@ -223,7 +228,7 @@ quack-rs/
 ├── .github/workflows/ci.yml       # CI pipeline
 ├── .github/workflows/docs.yml     # GitHub Pages deployment
 ├── CONTRIBUTING.md
-├── LESSONS.md                     # The 15 DuckDB Rust FFI pitfalls
+├── LESSONS.md                     # The 16 DuckDB Rust FFI pitfalls
 ├── CHANGELOG.md
 └── README.md
 ```

@@ -21,17 +21,30 @@ TypeId::USmallInt   // u16
 TypeId::UInteger    // u32
 TypeId::UBigInt     // u64
 TypeId::HugeInt     // i128
+TypeId::UHugeInt    // u128
 TypeId::Float       // f32
 TypeId::Double      // f64
 TypeId::Timestamp
 TypeId::TimestampTz
+TypeId::TimestampS
+TypeId::TimestampMs
+TypeId::TimestampNs
 TypeId::Date
 TypeId::Time
+TypeId::TimeTz
 TypeId::Interval
 TypeId::Varchar
 TypeId::Blob
-TypeId::Uuid
+TypeId::Decimal
+TypeId::Enum
 TypeId::List
+TypeId::Struct
+TypeId::Map
+TypeId::Uuid
+TypeId::Union
+TypeId::Bit
+TypeId::Array
+TypeId::TimeNs      // duckdb-1-5
 ```
 
 `TypeId` is `Copy`, `Clone`, `Debug`, `PartialEq`, `Eq`, and `Display`.
