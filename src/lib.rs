@@ -120,6 +120,18 @@ pub mod types;
 pub mod validate;
 pub mod vector;
 
+// DuckDB 1.5.0+ modules — gated behind the `duckdb-1-5` feature flag.
+#[cfg(feature = "duckdb-1-5")]
+pub mod catalog;
+#[cfg(feature = "duckdb-1-5")]
+pub mod client_context;
+#[cfg(feature = "duckdb-1-5")]
+pub mod config_option;
+#[cfg(feature = "duckdb-1-5")]
+pub mod copy_function;
+#[cfg(feature = "duckdb-1-5")]
+pub mod table_description;
+
 /// The `DuckDB` C API version string required by [`duckdb_rs_extension_api_init`][libduckdb_sys::duckdb_rs_extension_api_init].
 ///
 /// This constant corresponds to `DuckDB` releases v1.4.x and v1.5.x. If you are

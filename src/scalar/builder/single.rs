@@ -12,6 +12,8 @@ use libduckdb_sys::{
     duckdb_scalar_function_set_name, duckdb_scalar_function_set_return_type,
     duckdb_scalar_function_set_special_handling, duckdb_vector, DuckDBSuccess,
 };
+#[cfg(feature = "duckdb-1-5")]
+use libduckdb_sys::{duckdb_scalar_function_set_varargs, duckdb_scalar_function_set_volatile};
 
 use crate::error::ExtensionError;
 use crate::types::{LogicalType, NullHandling, TypeId};
@@ -66,6 +68,10 @@ pub struct ScalarFunctionBuilder {
     pub(super) return_logical: Option<LogicalType>,
     pub(super) function: Option<ScalarFn>,
     pub(super) null_handling: NullHandling,
+    #[cfg(feature = "duckdb-1-5")]
+    pub(super) varargs: Option<LogicalType>,
+    #[cfg(feature = "duckdb-1-5")]
+    pub(super) volatile: bool,
 }
 
 impl ScalarFunctionBuilder {
@@ -83,6 +89,10 @@ impl ScalarFunctionBuilder {
             return_logical: None,
             function: None,
             null_handling: NullHandling::DefaultNullHandling,
+            #[cfg(feature = "duckdb-1-5")]
+            varargs: None,
+            #[cfg(feature = "duckdb-1-5")]
+            volatile: false,
         }
     }
 
@@ -107,6 +117,10 @@ impl ScalarFunctionBuilder {
             return_logical: None,
             function: None,
             null_handling: NullHandling::DefaultNullHandling,
+            #[cfg(feature = "duckdb-1-5")]
+            varargs: None,
+            #[cfg(feature = "duckdb-1-5")]
+            volatile: false,
         })
     }
 
@@ -163,6 +177,38 @@ impl ScalarFunctionBuilder {
     /// Sets the scalar function callback.
     pub fn function(mut self, f: ScalarFn) -> Self {
         self.function = Some(f);
+        self
+    }
+
+    /// Marks this function as accepting variadic arguments of the given type.
+    ///
+    /// After the fixed positional parameters, `DuckDB` will accept any number of
+    /// additional arguments that match the given type. Requires `duckdb-1-5`.
+    #[cfg(feature = "duckdb-1-5")]
+    pub fn varargs(mut self, type_id: TypeId) -> Self {
+        self.varargs = Some(LogicalType::new(type_id));
+        self
+    }
+
+    /// Marks this function as accepting variadic arguments with a complex type.
+    ///
+    /// Identical to [`varargs`][Self::varargs] but accepts a [`LogicalType`]
+    /// for parameterized types. Requires `duckdb-1-5`.
+    #[cfg(feature = "duckdb-1-5")]
+    pub fn varargs_logical(mut self, logical_type: LogicalType) -> Self {
+        self.varargs = Some(logical_type);
+        self
+    }
+
+    /// Marks this function as volatile.
+    ///
+    /// Volatile functions are re-evaluated for every row, even when called with
+    /// the same arguments (e.g. `random()`). Non-volatile functions may be
+    /// optimized by `DuckDB` to only execute once for constant arguments.
+    /// Requires `duckdb-1-5`.
+    #[cfg(feature = "duckdb-1-5")]
+    pub const fn volatile(mut self) -> Self {
+        self.volatile = true;
         self
     }
 
@@ -250,6 +296,24 @@ impl ScalarFunctionBuilder {
         // SAFETY: function is a valid extern "C" fn pointer.
         unsafe {
             duckdb_scalar_function_set_function(func, Some(function));
+        }
+
+        // Set varargs type if configured (DuckDB 1.5.0+)
+        #[cfg(feature = "duckdb-1-5")]
+        if let Some(ref varargs_type) = self.varargs {
+            // SAFETY: func and varargs_type.as_raw() are valid.
+            unsafe {
+                duckdb_scalar_function_set_varargs(func, varargs_type.as_raw());
+            }
+        }
+
+        // Set volatile flag if configured (DuckDB 1.5.0+)
+        #[cfg(feature = "duckdb-1-5")]
+        if self.volatile {
+            // SAFETY: func is a valid scalar function handle.
+            unsafe {
+                duckdb_scalar_function_set_volatile(func);
+            }
         }
 
         // Set special NULL handling if requested
