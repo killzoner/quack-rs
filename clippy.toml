@@ -4,8 +4,10 @@
 # Clippy configuration — pedantic + nursery lint levels.
 # Lint levels are set in Cargo.toml [lints.clippy]; this file holds per-lint overrides.
 
-# Minimum function line count before suggesting extraction
-too-many-lines-threshold = 60
+# Minimum function line count before suggesting extraction.
+# Set to 100 to accommodate FFI registration methods (e.g., builder::register)
+# which are inherently sequential and resist extraction.
+too-many-lines-threshold = 100
 
 # Maximum number of function arguments before warning
 too-many-arguments-threshold = 7
