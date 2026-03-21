@@ -5,6 +5,12 @@
 
 use std::ffi::CString;
 
+#[cfg(feature = "duckdb-1-5")]
+use libduckdb_sys::{
+    duckdb_bind_info, duckdb_init_info, duckdb_scalar_function_set_bind,
+    duckdb_scalar_function_set_init, duckdb_scalar_function_set_varargs,
+    duckdb_scalar_function_set_volatile,
+};
 use libduckdb_sys::{
     duckdb_connection, duckdb_create_scalar_function, duckdb_data_chunk,
     duckdb_destroy_scalar_function, duckdb_function_info, duckdb_register_scalar_function,
@@ -12,12 +18,24 @@ use libduckdb_sys::{
     duckdb_scalar_function_set_name, duckdb_scalar_function_set_return_type,
     duckdb_scalar_function_set_special_handling, duckdb_vector, DuckDBSuccess,
 };
-#[cfg(feature = "duckdb-1-5")]
-use libduckdb_sys::{duckdb_scalar_function_set_varargs, duckdb_scalar_function_set_volatile};
 
 use crate::error::ExtensionError;
 use crate::types::{LogicalType, NullHandling, TypeId};
 use crate::validate::validate_function_name;
+
+/// The scalar function bind callback signature (`DuckDB` 1.5.0+).
+///
+/// Called once during query planning. Use this to inspect arguments and
+/// allocate per-query state via `duckdb_scalar_function_bind_set_bind_data`.
+#[cfg(feature = "duckdb-1-5")]
+pub type ScalarBindFn = unsafe extern "C" fn(info: duckdb_bind_info);
+
+/// The scalar function init callback signature (`DuckDB` 1.5.0+).
+///
+/// Called once per thread before execution begins. Use this to allocate
+/// per-thread local state via `duckdb_scalar_function_init_set_state`.
+#[cfg(feature = "duckdb-1-5")]
+pub type ScalarInitFn = unsafe extern "C" fn(info: duckdb_init_info);
 
 /// The scalar function callback signature.
 ///
@@ -72,6 +90,10 @@ pub struct ScalarFunctionBuilder {
     pub(super) varargs: Option<LogicalType>,
     #[cfg(feature = "duckdb-1-5")]
     pub(super) volatile: bool,
+    #[cfg(feature = "duckdb-1-5")]
+    pub(super) bind: Option<ScalarBindFn>,
+    #[cfg(feature = "duckdb-1-5")]
+    pub(super) init: Option<ScalarInitFn>,
 }
 
 impl ScalarFunctionBuilder {
@@ -93,6 +115,10 @@ impl ScalarFunctionBuilder {
             varargs: None,
             #[cfg(feature = "duckdb-1-5")]
             volatile: false,
+            #[cfg(feature = "duckdb-1-5")]
+            bind: None,
+            #[cfg(feature = "duckdb-1-5")]
+            init: None,
         }
     }
 
@@ -121,6 +147,10 @@ impl ScalarFunctionBuilder {
             varargs: None,
             #[cfg(feature = "duckdb-1-5")]
             volatile: false,
+            #[cfg(feature = "duckdb-1-5")]
+            bind: None,
+            #[cfg(feature = "duckdb-1-5")]
+            init: None,
         })
     }
 
@@ -212,6 +242,30 @@ impl ScalarFunctionBuilder {
         self
     }
 
+    /// Sets a bind callback for this scalar function (`DuckDB` 1.5.0+).
+    ///
+    /// The bind callback is invoked once during query planning. It can inspect
+    /// the function arguments and store per-query data via
+    /// `duckdb_scalar_function_bind_set_bind_data`. This data can later be
+    /// retrieved during execution via `duckdb_scalar_function_get_bind_data`.
+    #[cfg(feature = "duckdb-1-5")]
+    pub fn bind(mut self, f: ScalarBindFn) -> Self {
+        self.bind = Some(f);
+        self
+    }
+
+    /// Sets an init callback for this scalar function (`DuckDB` 1.5.0+).
+    ///
+    /// The init callback is invoked once per thread before execution begins.
+    /// Use it to allocate per-thread local state via
+    /// `duckdb_scalar_function_init_set_state`. The state pointer can later be
+    /// retrieved during execution via `duckdb_scalar_function_get_state`.
+    #[cfg(feature = "duckdb-1-5")]
+    pub fn init(mut self, f: ScalarInitFn) -> Self {
+        self.init = Some(f);
+        self
+    }
+
     /// Sets the NULL handling behaviour for this function.
     ///
     /// By default, `DuckDB` returns NULL if any argument is NULL
@@ -298,7 +352,25 @@ impl ScalarFunctionBuilder {
             duckdb_scalar_function_set_function(func, Some(function));
         }
 
-        // Set varargs type if configured (DuckDB 1.5.0+)
+        // Set bind callback if configured (`DuckDB` 1.5.0+)
+        #[cfg(feature = "duckdb-1-5")]
+        if let Some(bind_fn) = self.bind {
+            // SAFETY: func is a valid scalar function handle.
+            unsafe {
+                duckdb_scalar_function_set_bind(func, Some(bind_fn));
+            }
+        }
+
+        // Set init callback if configured (`DuckDB` 1.5.0+)
+        #[cfg(feature = "duckdb-1-5")]
+        if let Some(init_fn) = self.init {
+            // SAFETY: func is a valid scalar function handle.
+            unsafe {
+                duckdb_scalar_function_set_init(func, Some(init_fn));
+            }
+        }
+
+        // Set varargs type if configured (`DuckDB` 1.5.0+)
         #[cfg(feature = "duckdb-1-5")]
         if let Some(ref varargs_type) = self.varargs {
             // SAFETY: func and varargs_type.as_raw() are valid.
@@ -307,7 +379,7 @@ impl ScalarFunctionBuilder {
             }
         }
 
-        // Set volatile flag if configured (DuckDB 1.5.0+)
+        // Set volatile flag if configured (`DuckDB` 1.5.0+)
         #[cfg(feature = "duckdb-1-5")]
         if self.volatile {
             // SAFETY: func is a valid scalar function handle.
