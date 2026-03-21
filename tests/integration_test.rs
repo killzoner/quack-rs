@@ -554,7 +554,7 @@ fn scaffold_generated_code_compiles() {
         if f.path == "Cargo.toml" {
             // Rewrite quack-rs dep to use local path
             let patched = f.content.replace(
-                r#"quack-rs = { version = "0.5" }"#,
+                r#"quack-rs = { version = "0.6" }"#,
                 &format!(
                     "quack-rs = {{ path = \"{}\" }}",
                     workspace_root.display().to_string().replace('\\', "/")

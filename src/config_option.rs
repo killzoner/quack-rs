@@ -16,9 +16,9 @@
 //! use quack_rs::types::TypeId;
 //!
 //! let option = ConfigOptionBuilder::try_new("my_ext_threshold")?
-//!     .description("Maximum threshold for my_ext operations")
+//!     .description("Maximum threshold for my_ext operations")?
 //!     .option_type(TypeId::BigInt)
-//!     .default_value("100")
+//!     .default_value("100")?
 //!     .scope(ConfigOptionScope::Global);
 //! # Ok::<(), quack_rs::error::ExtensionError>(())
 //! ```
@@ -94,9 +94,16 @@ impl ConfigOptionBuilder {
     }
 
     /// Sets the human-readable description for this option.
-    pub fn description(mut self, desc: &str) -> Self {
-        self.description = CString::new(desc).ok();
-        self
+    ///
+    /// # Errors
+    ///
+    /// Returns `ExtensionError` if `desc` contains a null byte.
+    pub fn description(mut self, desc: &str) -> Result<Self, ExtensionError> {
+        self.description =
+            Some(CString::new(desc).map_err(|_| {
+                ExtensionError::new("config option description contains null byte")
+            })?);
+        Ok(self)
     }
 
     /// Sets the value type for this option (e.g. `TypeId::BigInt`, `TypeId::Varchar`).
@@ -106,9 +113,16 @@ impl ConfigOptionBuilder {
     }
 
     /// Sets the default value as a string representation.
-    pub fn default_value(mut self, value: &str) -> Self {
-        self.default_value = CString::new(value).ok();
-        self
+    ///
+    /// # Errors
+    ///
+    /// Returns `ExtensionError` if `value` contains a null byte.
+    pub fn default_value(mut self, value: &str) -> Result<Self, ExtensionError> {
+        self.default_value =
+            Some(CString::new(value).map_err(|_| {
+                ExtensionError::new("config option default value contains null byte")
+            })?);
+        Ok(self)
     }
 
     /// Sets the scope for this option.
