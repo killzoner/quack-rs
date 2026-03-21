@@ -21,6 +21,6 @@ pub mod logical_type;
 pub mod null_handling;
 pub mod type_id;
 
-pub use logical_type::LogicalType;
+pub use logical_type::{LogicalType, LogicalTypeError};
 pub use null_handling::NullHandling;
 pub use type_id::TypeId;

@@ -16,6 +16,22 @@ use libduckdb_sys::{
     duckdb_create_list_type, duckdb_create_logical_type, duckdb_create_map_type,
     duckdb_create_struct_type, duckdb_destroy_logical_type, duckdb_logical_type,
 };
+use std::fmt;
+
+/// Error returned by fallible [`LogicalType`] constructors when the underlying
+/// `DuckDB` C API returns a null pointer.
+#[derive(Debug, Clone)]
+pub struct LogicalTypeError {
+    api_func: &'static str,
+}
+
+impl fmt::Display for LogicalTypeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} returned null", self.api_func)
+    }
+}
+
+impl std::error::Error for LogicalTypeError {}
 
 /// An RAII wrapper around a `duckdb_logical_type` handle.
 ///
@@ -150,6 +166,83 @@ impl LogicalType {
         };
         assert!(!inner.is_null(), "duckdb_create_struct_type returned null");
         Self { inner }
+    }
+
+    /// Fallible version of [`LogicalType::new`]. Returns an error instead of
+    /// panicking if the `DuckDB` C API returns a null pointer.
+    pub fn try_new(type_id: TypeId) -> Result<Self, LogicalTypeError> {
+        let inner = unsafe { duckdb_create_logical_type(type_id.to_duckdb_type()) };
+        if inner.is_null() {
+            return Err(LogicalTypeError {
+                api_func: "duckdb_create_logical_type",
+            });
+        }
+        Ok(Self { inner })
+    }
+
+    /// Fallible version of [`LogicalType::list`]. Returns an error instead of
+    /// panicking if the `DuckDB` C API returns a null pointer.
+    pub fn try_list(element_type: TypeId) -> Result<Self, LogicalTypeError> {
+        let element_lt = Self::try_new(element_type)?;
+        let inner = unsafe { duckdb_create_list_type(element_lt.as_raw()) };
+        if inner.is_null() {
+            return Err(LogicalTypeError {
+                api_func: "duckdb_create_list_type",
+            });
+        }
+        Ok(Self { inner })
+    }
+
+    /// Fallible version of [`LogicalType::map`]. Returns an error instead of
+    /// panicking if the `DuckDB` C API returns a null pointer.
+    pub fn try_map(key_type: TypeId, value_type: TypeId) -> Result<Self, LogicalTypeError> {
+        let key_lt = Self::try_new(key_type)?;
+        let val_lt = Self::try_new(value_type)?;
+        let inner = unsafe { duckdb_create_map_type(key_lt.as_raw(), val_lt.as_raw()) };
+        if inner.is_null() {
+            return Err(LogicalTypeError {
+                api_func: "duckdb_create_map_type",
+            });
+        }
+        Ok(Self { inner })
+    }
+
+    /// Fallible version of [`LogicalType::struct_type`]. Returns an error
+    /// instead of panicking if a field name contains an interior null byte or
+    /// if the `DuckDB` C API returns a null pointer.
+    pub fn try_struct_type(fields: &[(&str, TypeId)]) -> Result<Self, LogicalTypeError> {
+        use std::ffi::CString;
+
+        let field_types: Vec<Self> = fields
+            .iter()
+            .map(|&(_, t)| Self::try_new(t))
+            .collect::<Result<_, _>>()?;
+        let c_names: Vec<CString> = fields
+            .iter()
+            .map(|&(n, _)| {
+                CString::new(n).map_err(|_| LogicalTypeError {
+                    api_func: "CString::new (field name contains null byte)",
+                })
+            })
+            .collect::<Result<_, _>>()?;
+
+        let mut type_ptrs: Vec<duckdb_logical_type> =
+            field_types.iter().map(Self::as_raw).collect();
+        let mut name_ptrs: Vec<*const i8> = c_names.iter().map(|s| s.as_ptr()).collect();
+
+        let inner = unsafe {
+            duckdb_create_struct_type(
+                type_ptrs.as_mut_ptr(),
+                name_ptrs.as_mut_ptr().cast::<*const std::os::raw::c_char>(),
+                fields.len() as libduckdb_sys::idx_t,
+            )
+        };
+        if inner.is_null() {
+            return Err(LogicalTypeError {
+                api_func: "duckdb_create_struct_type",
+            });
+        }
+        Ok(Self { inner })
     }
 
     /// Returns the underlying raw `duckdb_logical_type` handle.
