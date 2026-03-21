@@ -53,6 +53,12 @@ fn main() {
 /// navigate up from our own `OUT_DIR` to that shared `build/` directory and
 /// search for a `libduckdb-sys-*` subdirectory that contains the extracted
 /// `DuckDB` source tree (present only when the `bundled` feature is active).
+///
+/// **Build-order caveat**: Cargo runs build scripts as soon as their
+/// `[build-dependencies]` are ready — *before* regular `[dependencies]` are
+/// compiled.  This means `libduckdb-sys` (a regular dependency) may still be
+/// compiling when this function executes.  We therefore poll with a timeout
+/// to wait for the headers to appear.
 fn find_duckdb_include() -> PathBuf {
     // OUT_DIR  = .../target/{profile}/build/quack-rs-{hash}/out
     // We want  = .../target/{profile}/build/
@@ -62,10 +68,29 @@ fn find_duckdb_include() -> PathBuf {
         .and_then(Path::parent) // .../build
         .expect("could not navigate to Cargo build directory from OUT_DIR");
 
-    for entry in std::fs::read_dir(build_dir)
-        .expect("could not read Cargo build directory")
-        .flatten()
-    {
+    // Poll for up to ~10 minutes (libduckdb-sys compiles the full DuckDB C++
+    // source when the `bundled` feature is active, which can take several
+    // minutes on CI runners).
+    for attempt in 0..120 {
+        if let Some(path) = scan_for_duckdb_headers(build_dir) {
+            return path;
+        }
+        if attempt < 119 {
+            std::thread::sleep(std::time::Duration::from_secs(5));
+        }
+    }
+
+    panic!(
+        "Could not find DuckDB headers from libduckdb-sys build output.\n\
+         Ensure that the `duckdb` dependency is resolved with `features = [\"bundled\"]`\n\
+         and that `libduckdb-sys` has been built before this crate."
+    );
+}
+
+/// Scans the Cargo build directory for `libduckdb-sys-*` subdirectories
+/// that contain the extracted DuckDB include tree.
+fn scan_for_duckdb_headers(build_dir: &Path) -> Option<PathBuf> {
+    for entry in std::fs::read_dir(build_dir).ok()?.flatten() {
         if !entry
             .file_name()
             .to_string_lossy()
@@ -76,13 +101,8 @@ fn find_duckdb_include() -> PathBuf {
 
         let candidate = entry.path().join("out/duckdb/src/include");
         if candidate.is_dir() {
-            return candidate;
+            return Some(candidate);
         }
     }
-
-    panic!(
-        "Could not find DuckDB headers from libduckdb-sys build output.\n\
-         Ensure that the `duckdb` dependency is resolved with `features = [\"bundled\"]`\n\
-         and that `libduckdb-sys` has been built before this crate."
-    );
+    None
 }
