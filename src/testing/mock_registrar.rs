@@ -345,6 +345,17 @@ mod tests {
             .returns(TypeId::BigInt);
         unsafe { mock.register_aggregate(builder).unwrap() };
         assert!(mock.has_aggregate("my_agg"));
+        assert_eq!(mock.aggregate_names(), vec!["my_agg"]);
+        assert_eq!(mock.total_registrations(), 1);
+    }
+
+    #[test]
+    fn mock_registrar_records_aggregate_set() {
+        let mock = MockRegistrar::new();
+        let builder = AggregateFunctionSetBuilder::new("my_agg_set");
+        unsafe { mock.register_aggregate_set(builder).unwrap() };
+        assert!(mock.has_aggregate_set("my_agg_set"));
+        assert_eq!(mock.aggregate_set_names(), vec!["my_agg_set"]);
         assert_eq!(mock.total_registrations(), 1);
     }
 
@@ -354,6 +365,7 @@ mod tests {
         let builder = TableFunctionBuilder::new("my_table");
         unsafe { mock.register_table(builder).unwrap() };
         assert!(mock.has_table("my_table"));
+        assert_eq!(mock.table_names(), vec!["my_table"]);
         assert_eq!(mock.total_registrations(), 1);
     }
 
@@ -363,6 +375,7 @@ mod tests {
         let macro_ = SqlMacro::scalar("my_macro", &["x"], "x + 1").unwrap();
         unsafe { mock.register_sql_macro(macro_).unwrap() };
         assert!(mock.has_sql_macro("my_macro"));
+        assert_eq!(mock.sql_macro_names(), vec!["my_macro"]);
         assert_eq!(mock.total_registrations(), 1);
     }
 
