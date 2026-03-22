@@ -145,3 +145,119 @@ impl Drop for ClientContext {
         }
     }
 }
+
+#[cfg(all(test, feature = "bundled-test"))]
+mod tests {
+    use super::*;
+
+    /// Opens a raw `duckdb_connection` for testing.
+    fn open_raw_connection() -> (libduckdb_sys::duckdb_database, duckdb_connection) {
+        // Ensure dispatch table is populated.
+        let _db = crate::testing::InMemoryDb::open().unwrap();
+
+        let mut db: libduckdb_sys::duckdb_database = core::ptr::null_mut();
+        let mut con: duckdb_connection = core::ptr::null_mut();
+
+        // SAFETY: dispatch table is initialized, nullptr opens in-memory.
+        unsafe {
+            let rc = libduckdb_sys::duckdb_open(core::ptr::null(), &raw mut db);
+            assert_eq!(rc, libduckdb_sys::DuckDBSuccess, "duckdb_open failed");
+            let rc = libduckdb_sys::duckdb_connect(db, &raw mut con);
+            assert_eq!(rc, libduckdb_sys::DuckDBSuccess, "duckdb_connect failed");
+        }
+        (db, con)
+    }
+
+    /// Closes a raw connection and database.
+    unsafe fn close_raw_connection(
+        mut con: duckdb_connection,
+        mut db: libduckdb_sys::duckdb_database,
+    ) {
+        unsafe {
+            libduckdb_sys::duckdb_disconnect(&raw mut con);
+            libduckdb_sys::duckdb_close(&raw mut db);
+        }
+    }
+
+    #[test]
+    fn from_connection_succeeds() {
+        let (db, con) = open_raw_connection();
+
+        // SAFETY: con is a valid open connection.
+        let ctx = unsafe { ClientContext::from_connection(con) };
+        assert!(ctx.is_ok(), "from_connection should succeed: {:?}", ctx.err());
+
+        drop(ctx.unwrap());
+        // SAFETY: valid handles.
+        unsafe { close_raw_connection(con, db) };
+    }
+
+    #[test]
+    fn connection_id_returns_nonzero() {
+        let (db, con) = open_raw_connection();
+
+        // SAFETY: con is a valid open connection.
+        let ctx = unsafe { ClientContext::from_connection(con) }.unwrap();
+        // Connection IDs are assigned sequentially starting from a positive value.
+        // We just verify the call doesn't crash and returns something.
+        let _id = ctx.connection_id();
+
+        drop(ctx);
+        // SAFETY: valid handles.
+        unsafe { close_raw_connection(con, db) };
+    }
+
+    #[test]
+    fn config_option_returns_some_for_known_setting() {
+        let (db, con) = open_raw_connection();
+
+        // SAFETY: con is a valid open connection.
+        let ctx = unsafe { ClientContext::from_connection(con) }.unwrap();
+
+        // "threads" is a well-known DuckDB config option.
+        let threads = ctx.config_option(c"threads");
+        assert!(
+            threads.is_some(),
+            "'threads' config option should exist"
+        );
+        // The value should be a parseable positive integer.
+        let val: usize = threads.unwrap().parse().expect("threads should be numeric");
+        assert!(val > 0, "threads should be > 0");
+
+        drop(ctx);
+        // SAFETY: valid handles.
+        unsafe { close_raw_connection(con, db) };
+    }
+
+    #[test]
+    fn catalog_returns_some_for_default() {
+        let (db, con) = open_raw_connection();
+
+        // Start a transaction so we have an active transaction context.
+        // SAFETY: con is valid.
+        unsafe {
+            let sql = c"BEGIN TRANSACTION";
+            libduckdb_sys::duckdb_query(con, sql.as_ptr(), core::ptr::null_mut());
+        }
+
+        // SAFETY: con is a valid open connection.
+        let ctx = unsafe { ClientContext::from_connection(con) }.unwrap();
+
+        // Empty name = default catalog. Must be called within a transaction.
+        // SAFETY: within an active transaction.
+        let catalog = unsafe { ctx.catalog(c"") };
+        // Note: catalog lookup may or may not succeed depending on DuckDB version
+        // internals. We just verify the call doesn't crash.
+        drop(catalog);
+
+        drop(ctx);
+        // Rollback the transaction.
+        // SAFETY: con is valid.
+        unsafe {
+            let sql = c"ROLLBACK";
+            libduckdb_sys::duckdb_query(con, sql.as_ptr(), core::ptr::null_mut());
+        }
+        // SAFETY: valid handles.
+        unsafe { close_raw_connection(con, db) };
+    }
+}

@@ -140,3 +140,130 @@ impl Drop for TableDescription {
         }
     }
 }
+
+#[cfg(all(test, feature = "bundled-test"))]
+mod tests {
+    use super::*;
+
+    /// Opens a raw `duckdb_connection` for testing.
+    ///
+    /// Uses `InMemoryDb::open()` to ensure the dispatch table is initialized,
+    /// then opens a separate raw database + connection via `libduckdb_sys`.
+    fn open_raw_connection() -> (libduckdb_sys::duckdb_database, duckdb_connection) {
+        // Ensure dispatch table is populated.
+        let _db = crate::testing::InMemoryDb::open().unwrap();
+
+        let mut db: libduckdb_sys::duckdb_database = core::ptr::null_mut();
+        let mut con: duckdb_connection = core::ptr::null_mut();
+
+        // SAFETY: dispatch table is initialized, nullptr opens in-memory.
+        unsafe {
+            let rc = libduckdb_sys::duckdb_open(core::ptr::null(), &raw mut db);
+            assert_eq!(rc, libduckdb_sys::DuckDBSuccess, "duckdb_open failed");
+            let rc = libduckdb_sys::duckdb_connect(db, &raw mut con);
+            assert_eq!(rc, libduckdb_sys::DuckDBSuccess, "duckdb_connect failed");
+        }
+        (db, con)
+    }
+
+    /// Closes a raw connection and database.
+    ///
+    /// # Safety
+    ///
+    /// `con` and `db` must be valid handles from `open_raw_connection`.
+    unsafe fn close_raw_connection(
+        mut con: duckdb_connection,
+        mut db: libduckdb_sys::duckdb_database,
+    ) {
+        unsafe {
+            libduckdb_sys::duckdb_disconnect(&raw mut con);
+            libduckdb_sys::duckdb_close(&raw mut db);
+        }
+    }
+
+    #[test]
+    fn describe_existing_table() {
+        let (db, con) = open_raw_connection();
+
+        // Create a table to describe.
+        let sql = c"CREATE TABLE test_tbl (id INTEGER, name VARCHAR, score DOUBLE)";
+        // SAFETY: con is valid.
+        unsafe {
+            let rc = libduckdb_sys::duckdb_query(con, sql.as_ptr(), core::ptr::null_mut());
+            assert_eq!(rc, libduckdb_sys::DuckDBSuccess, "CREATE TABLE failed");
+        }
+
+        // SAFETY: con is valid, table exists.
+        let desc = unsafe { TableDescription::create(con, "main", "test_tbl") };
+        assert!(desc.is_ok(), "describe should succeed: {:?}", desc.err());
+        let desc = desc.unwrap();
+
+        assert_eq!(desc.column_count(), 3);
+
+        assert_eq!(desc.column_name(0), Some("id".to_string()));
+        assert_eq!(desc.column_name(1), Some("name".to_string()));
+        assert_eq!(desc.column_name(2), Some("score".to_string()));
+
+        // Out-of-bounds index should return None.
+        assert_eq!(desc.column_name(99), None);
+
+        // Column types should be non-null.
+        let lt0 = desc.column_type(0);
+        assert!(lt0.is_some(), "column_type(0) should be Some");
+        // Clean up the logical type handle.
+        if let Some(mut lt) = lt0 {
+            // SAFETY: lt was returned by duckdb_table_description_get_column_type.
+            unsafe { libduckdb_sys::duckdb_destroy_logical_type(&raw mut lt) };
+        }
+
+        // Out-of-bounds column type should return None.
+        assert!(desc.column_type(99).is_none());
+
+        drop(desc);
+        // SAFETY: valid handles.
+        unsafe { close_raw_connection(con, db) };
+    }
+
+    #[test]
+    fn describe_nonexistent_table_returns_error() {
+        let (db, con) = open_raw_connection();
+
+        // SAFETY: con is valid, table does NOT exist.
+        let result = unsafe { TableDescription::create(con, "main", "no_such_table") };
+        assert!(result.is_err());
+        let err_msg = result.err().unwrap().to_string();
+        assert!(
+            err_msg.contains("no_such_table"),
+            "error should mention table name, got: {err_msg}"
+        );
+
+        // SAFETY: valid handles.
+        unsafe { close_raw_connection(con, db) };
+    }
+
+    #[test]
+    fn describe_schema_null_byte_rejected() {
+        let (db, con) = open_raw_connection();
+
+        // SAFETY: con is valid.
+        let result = unsafe { TableDescription::create(con, "bad\0schema", "t") };
+        assert!(result.is_err());
+        assert!(result.err().unwrap().to_string().contains("null byte"));
+
+        // SAFETY: valid handles.
+        unsafe { close_raw_connection(con, db) };
+    }
+
+    #[test]
+    fn describe_table_null_byte_rejected() {
+        let (db, con) = open_raw_connection();
+
+        // SAFETY: con is valid.
+        let result = unsafe { TableDescription::create(con, "main", "bad\0table") };
+        assert!(result.is_err());
+        assert!(result.err().unwrap().to_string().contains("null byte"));
+
+        // SAFETY: valid handles.
+        unsafe { close_raw_connection(con, db) };
+    }
+}
