@@ -33,7 +33,10 @@ examine_globs = [
 # Thin re-export modules and test-only code produce unproductive mutants.
 exclude_globs = [
     "src/prelude.rs",           # pure re-exports
-    "src/testing/**",           # test harness infrastructure
+    "src/testing/harness.rs",   # test harness infrastructure (FFI wiring)
+    "src/testing/in_memory_db.rs", # thin wrapper around DuckDB C API
+    "src/testing/mock_vector.rs",  # test-only vector stub
+    "src/testing/mod.rs",       # re-exports only
     "src/bin/**",               # binary entry points
 ]
 

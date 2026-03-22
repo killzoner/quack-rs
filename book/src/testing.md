@@ -153,7 +153,7 @@ opening a connection (see [Pitfall P9](reference/pitfalls.md#p9)):
 ```toml
 # In your extension's Cargo.toml
 [dev-dependencies]
-quack-rs = { version = "0.6", features = ["bundled-test"] }
+quack-rs = { version = "0.7", features = ["bundled-test"] }
 ```
 
 > **Build time**: enabling `bundled-test` compiles a full copy of DuckDB from
@@ -510,7 +510,7 @@ harness properties.
 
 ```toml
 [dev-dependencies]
-quack-rs = { version = "0.6", features = [] }
+quack-rs = { version = "0.7", features = [] }
 proptest = "1"
 ```
 

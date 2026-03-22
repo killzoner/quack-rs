@@ -117,7 +117,7 @@ See [`LESSONS.md`](./LESSONS.md) for full analysis of each pitfall.
 
 ```toml
 [dependencies]
-quack-rs = "0.6"
+quack-rs = "0.7"
 libduckdb-sys = { version = ">=1.4.4, <2", features = ["loadable-extension"] }
 ```
 
@@ -765,7 +765,7 @@ add wrappers in the relevant release.
 
 See [`CHANGELOG.md`](./CHANGELOG.md) for the full version history.
 
-**v0.6.0+** (unreleased) — Upgraded to DuckDB 1.5.0 (`libduckdb-sys` 1.10500.0). Populated the
+**v0.7.0** (2026-03-22) — Upgraded to DuckDB 1.5.0 (`libduckdb-sys` 1.10500.0). Populated the
 `duckdb-1-5` feature flag with five new modules: `catalog`, `client_context`, `config_option`,
 `copy_function`, `table_description`. Added `TypeId::TimeNs` and `ScalarFunctionBuilder` methods
 `varargs()`, `volatile()`, `bind()`, `init()`. COPY format handlers are now supported.
