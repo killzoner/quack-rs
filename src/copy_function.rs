@@ -201,7 +201,9 @@ mod tests {
     #[test]
     fn builder_stores_bind_callback() {
         unsafe extern "C" fn dummy_bind(_info: duckdb_copy_function_bind_info) {}
-        let builder = CopyFunctionBuilder::try_new("fmt").unwrap().bind(dummy_bind);
+        let builder = CopyFunctionBuilder::try_new("fmt")
+            .unwrap()
+            .bind(dummy_bind);
         assert_eq!(builder.name(), "fmt");
     }
 
@@ -221,7 +223,9 @@ mod tests {
             _chunk: duckdb_data_chunk,
         ) {
         }
-        let builder = CopyFunctionBuilder::try_new("fmt").unwrap().sink(dummy_sink);
+        let builder = CopyFunctionBuilder::try_new("fmt")
+            .unwrap()
+            .sink(dummy_sink);
         assert_eq!(builder.name(), "fmt");
     }
 

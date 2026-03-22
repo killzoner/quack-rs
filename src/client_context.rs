@@ -185,7 +185,11 @@ mod tests {
 
         // SAFETY: con is a valid open connection.
         let ctx = unsafe { ClientContext::from_connection(con) };
-        assert!(ctx.is_ok(), "from_connection should succeed: {:?}", ctx.err());
+        assert!(
+            ctx.is_ok(),
+            "from_connection should succeed: {:?}",
+            ctx.err()
+        );
 
         drop(ctx.unwrap());
         // SAFETY: valid handles.
@@ -216,10 +220,7 @@ mod tests {
 
         // "threads" is a well-known DuckDB config option.
         let threads = ctx.config_option(c"threads");
-        assert!(
-            threads.is_some(),
-            "'threads' config option should exist"
-        );
+        assert!(threads.is_some(), "'threads' config option should exist");
         // The value should be a parseable positive integer.
         let val: usize = threads.unwrap().parse().expect("threads should be numeric");
         assert!(val > 0, "threads should be > 0");
