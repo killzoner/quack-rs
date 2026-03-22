@@ -18,7 +18,7 @@ DuckDB vectors, and utilities for publishing community extensions.
 
 Building a DuckDB extension in Rust requires solving a set of undocumented
 FFI problems that every developer discovers independently. quack-rs encodes
-solutions to all 15 known pitfalls so you don't have to rediscover them.
+solutions to all 16 known pitfalls so you don't have to rediscover them.
 See the [Pitfall Catalog](reference/pitfalls.md).
 
 ### What DuckDB version does quack-rs target?
@@ -38,7 +38,7 @@ Rust **1.84.1** or later. This is enforced in `Cargo.toml` with
 
 Yes. It was extracted from
 [duckdb-behavioral](https://github.com/tomtom215/duckdb-behavioral), a
-production DuckDB community extension. All 15 pitfalls it solves were discovered
+production DuckDB community extension. All 16 pitfalls it solves were discovered
 in production.
 
 ---

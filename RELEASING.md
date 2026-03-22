@@ -182,6 +182,9 @@ Verify:
 - [ ] `.crate` artifact is attached
 - [ ] `SHA256SUMS` is attached
 - [ ] SLSA provenance attestation is linked (visible in the Actions run)
+- [ ] Download the `.crate` artifact and verify its SHA-256 matches `SHA256SUMS`
+- [ ] Book changelog (`book/src/reference/changelog.md`) is in sync with `CHANGELOG.md`
+- [ ] `SECURITY.md` supported versions table is up to date (for minor/major releases)
 
 ### Step 8 — Approve the crates.io deployment
 

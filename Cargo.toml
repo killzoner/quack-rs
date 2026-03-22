@@ -12,6 +12,7 @@ documentation = "https://docs.rs/quack-rs"
 readme = "README.md"
 keywords = ["duckdb", "extension", "ffi", "sql", "analytics"]
 categories = ["database", "api-bindings", "development-tools::ffi"]
+autobenches = false
 exclude = [
     "docs/",
     "examples/",
@@ -23,7 +24,6 @@ exclude = [
     "AUDIT.md",
     "RELEASING.md",
     "LESSONS.md",
-    "benches/",
 ]
 
 [lib]
@@ -90,6 +90,10 @@ proptest = "1"
 # Pin tempfile to avoid getrandom >=0.4 (which requires edition2024 / Rust >=1.85).
 # proptest requires only `tempfile ^3`, so 3.14 satisfies it while keeping MSRV 1.84.1.
 tempfile = "=3.14.0"
+
+[[bench]]
+name = "interval_bench"
+harness = false
 
 [profile.release]
 opt-level = 3
