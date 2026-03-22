@@ -54,7 +54,8 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   compatibility with DuckDB 1.4.x.
 
 - **CI action updates** — `Swatinem/rust-cache` v2.8.2→v2.9.1,
-  `actions/download-artifact` v8.0.0→v8.0.1.
+  `actions/download-artifact` v8.0.0→v8.0.1, `actions/cache` 5.0.3→5.0.4,
+  `codecov/codecov-action` 5.4.3→5.5.3.
 
 ### Fixed
 

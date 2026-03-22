@@ -52,10 +52,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Transitive dependency updates** — `cc` 1.2.56→1.2.57, `tar` 0.4.44→0.4.45,
   `rustls-webpki` 0.103.9→0.103.10, `arrow` 56.2.0→57.3.0, `clap` 4.5.60→4.6.0,
-  plus ~30 other minor/patch updates.
+  `tempfile` 3.14.0→3.27.0, plus ~30 other minor/patch updates.
 
 - **CI action updates** — `Swatinem/rust-cache` v2.8.2→v2.9.1,
-  `actions/download-artifact` v8.0.0→v8.0.1.
+  `actions/download-artifact` v8.0.0→v8.0.1, `actions/cache` 5.0.3→5.0.4,
+  `codecov/codecov-action` 5.4.3→5.5.3.
 
 ### Fixed
 
