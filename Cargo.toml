@@ -1,6 +1,6 @@
 [package]
 name = "quack-rs"
-version = "0.6.0"
+version = "0.7.0"
 edition = "2021"
 rust-version = "1.84.1"
 authors = ["Tom F. <tomf@tomtomtech.net>"]
@@ -24,6 +24,13 @@ exclude = [
     "AUDIT.md",
     "RELEASING.md",
     "LESSONS.md",
+    "CONTRIBUTING.md",
+    "GOVERNANCE.md",
+    "SECURITY.md",
+    "clippy.toml",
+    "codecov.yml",
+    "mutants.toml",
+    "rust-toolchain.toml",
 ]
 
 [lib]

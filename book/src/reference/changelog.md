@@ -10,6 +10,8 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-03-22
+
 ### Added
 
 - **`duckdb-1-5` feature modules** — the `duckdb-1-5` feature flag is no longer a
@@ -373,7 +375,8 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-[Unreleased]: https://github.com/tomtom215/quack-rs/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/tomtom215/quack-rs/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/tomtom215/quack-rs/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/tomtom215/quack-rs/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/tomtom215/quack-rs/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/tomtom215/quack-rs/compare/v0.4.0...v0.5.0
