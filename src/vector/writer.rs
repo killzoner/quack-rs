@@ -247,7 +247,7 @@ impl VectorWriter {
             duckdb_vector_assign_string_element_len(
                 self.vector,
                 idx as idx_t,
-                value.as_ptr().cast::<i8>(),
+                value.as_ptr().cast::<std::os::raw::c_char>(),
                 idx_t::try_from(value.len()).unwrap_or(idx_t::MAX),
             );
         }

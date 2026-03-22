@@ -123,7 +123,10 @@ impl ReplacementScanInfo {
     pub fn add_varchar_parameter(&self, value: &str) -> &Self {
         // SAFETY: creates a DuckDB VARCHAR value.
         let duckdb_val = unsafe {
-            duckdb_create_varchar_length(value.as_ptr().cast::<i8>(), value.len() as u64)
+            duckdb_create_varchar_length(
+                value.as_ptr().cast::<std::os::raw::c_char>(),
+                value.len() as u64,
+            )
         };
         // SAFETY: self.info is valid; duckdb_val is a valid newly created value.
         unsafe {
@@ -232,5 +235,17 @@ mod tests {
     fn replacement_scan_info_wraps_null() {
         // Constructing with null should not crash in itself (no `DuckDB` calls made).
         let _info = unsafe { ReplacementScanInfo::new(std::ptr::null_mut()) };
+    }
+
+    /// Verify that `set_error` rejects a message with an interior null byte.
+    ///
+    /// If the method body is mutated to `()` (a no-op), the panic never fires
+    /// and this `#[should_panic]` test fails — killing the mutant without
+    /// requiring a live `DuckDB` connection.
+    #[test]
+    #[should_panic(expected = "error message must not contain null bytes")]
+    fn set_error_panics_on_interior_null() {
+        let info = unsafe { ReplacementScanInfo::new(std::ptr::null_mut()) };
+        info.set_error("bad\0message");
     }
 }

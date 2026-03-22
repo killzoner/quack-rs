@@ -29,6 +29,12 @@ examine_globs = [
     "src/**/*.rs",
 ]
 
+# ── Features ─────────────────────────────────────────────────────────────────
+# Enable duckdb-1-5 so feature-gated code paths and their tests are included
+# in mutation testing.  Without this, mutants in #[cfg(feature = "duckdb-1-5")]
+# blocks are untestable (the tests that kill them are also feature-gated).
+features = ["duckdb-1-5"]
+
 # ── Exclusions ───────────────────────────────────────────────────────────────
 # Thin re-export modules and test-only code produce unproductive mutants.
 exclude_globs = [

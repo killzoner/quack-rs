@@ -154,13 +154,14 @@ impl LogicalType {
 
         let mut type_ptrs: Vec<duckdb_logical_type> =
             field_types.iter().map(Self::as_raw).collect();
-        let mut name_ptrs: Vec<*const i8> = c_names.iter().map(|s| s.as_ptr()).collect();
+        let mut name_ptrs: Vec<*const std::os::raw::c_char> =
+            c_names.iter().map(|s| s.as_ptr()).collect();
 
         // SAFETY: type_ptrs and name_ptrs are valid for the duration of this call.
         let inner = unsafe {
             duckdb_create_struct_type(
                 type_ptrs.as_mut_ptr(),
-                name_ptrs.as_mut_ptr().cast::<*const std::os::raw::c_char>(),
+                name_ptrs.as_mut_ptr(),
                 fields.len() as libduckdb_sys::idx_t,
             )
         };
@@ -228,12 +229,13 @@ impl LogicalType {
 
         let mut type_ptrs: Vec<duckdb_logical_type> =
             field_types.iter().map(Self::as_raw).collect();
-        let mut name_ptrs: Vec<*const i8> = c_names.iter().map(|s| s.as_ptr()).collect();
+        let mut name_ptrs: Vec<*const std::os::raw::c_char> =
+            c_names.iter().map(|s| s.as_ptr()).collect();
 
         let inner = unsafe {
             duckdb_create_struct_type(
                 type_ptrs.as_mut_ptr(),
-                name_ptrs.as_mut_ptr().cast::<*const std::os::raw::c_char>(),
+                name_ptrs.as_mut_ptr(),
                 fields.len() as libduckdb_sys::idx_t,
             )
         };

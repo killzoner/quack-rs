@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **ARM64 / aarch64 build** — replaced all `.cast::<i8>()` and `*const i8`
+  pointer casts with `std::os::raw::c_char`, which resolves to `i8` on
+  x86-64 and `u8` on ARM64 (where C `char` is unsigned). Eliminates
+  `E0308`/`E0277` mismatched-types errors when cross-compiling or building
+  natively on aarch64. Affected files: `replacement_scan/mod.rs`,
+  `types/logical_type.rs`, `vector/writer.rs`.
+
+### Internal
+
+- **Mutation testing** — `mutants.toml` now sets `features = ["duckdb-1-5"]`
+  so that `cargo mutants` compiles and tests feature-gated code paths.
+  Previously, four mutants in `MockRegistrar::copy_function_names`,
+  `has_copy_function`, and `total_registrations` were unreachable because
+  their tests were also feature-gated. Added
+  `mock_registrar_total_registrations_scalar_plus_copy_function` to
+  robustly kill the `+ with -` mutation in `total_registrations` by using
+  a non-zero `base` count.
+
 ## [0.7.0] - 2026-03-22
 
 ### Added

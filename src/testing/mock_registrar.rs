@@ -441,6 +441,29 @@ mod tests {
         assert_eq!(mock.total_registrations(), 1);
     }
 
+    /// Registers one scalar **and** one copy function so that
+    /// `total_registrations` must add (not subtract) the copy-function count.
+    /// With the `+ with -` mutation, `base(1) - copy_len(1) = 0 ≠ 2`.
+    #[test]
+    #[cfg(feature = "duckdb-1-5")]
+    fn mock_registrar_total_registrations_scalar_plus_copy_function() {
+        let mock = MockRegistrar::new();
+
+        let scalar = ScalarFunctionBuilder::new("my_scalar")
+            .param(TypeId::BigInt)
+            .returns(TypeId::BigInt);
+        let copy_fn = crate::copy_function::CopyFunctionBuilder::try_new("my_format").unwrap();
+
+        unsafe {
+            mock.register_scalar(scalar).unwrap();
+            mock.register_copy_function(copy_fn).unwrap();
+        }
+
+        assert_eq!(mock.total_registrations(), 2);
+        assert!(mock.has_scalar("my_scalar"));
+        assert!(mock.has_copy_function("my_format"));
+    }
+
     #[test]
     fn mock_registrar_used_with_generic_registrar() {
         // Demonstrates using MockRegistrar where &impl Registrar is expected.
