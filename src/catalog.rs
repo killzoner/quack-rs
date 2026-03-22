@@ -224,3 +224,73 @@ impl Drop for Catalog {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn catalog_entry_type_round_trip_all_variants() {
+        let variants = [
+            CatalogEntryType::Invalid,
+            CatalogEntryType::Table,
+            CatalogEntryType::View,
+            CatalogEntryType::Index,
+            CatalogEntryType::Schema,
+            CatalogEntryType::PreparedStatement,
+            CatalogEntryType::Sequence,
+            CatalogEntryType::Collation,
+            CatalogEntryType::Type,
+            CatalogEntryType::Database,
+        ];
+        for variant in variants {
+            let raw = variant.to_raw();
+            let back = CatalogEntryType::from_raw(raw);
+            assert_eq!(variant, back, "round-trip failed for {variant:?}");
+        }
+    }
+
+    #[test]
+    fn catalog_entry_type_unknown_raw_maps_to_invalid() {
+        // Any unknown value should map to Invalid.
+        let result = CatalogEntryType::from_raw(9999);
+        assert_eq!(result, CatalogEntryType::Invalid);
+    }
+
+    #[test]
+    fn catalog_entry_type_is_copy_and_eq() {
+        let a = CatalogEntryType::Table;
+        let b = a;
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn catalog_entry_type_debug_impl() {
+        let s = format!("{:?}", CatalogEntryType::View);
+        assert_eq!(s, "View");
+    }
+
+    #[test]
+    fn catalog_entry_type_distinct_raw_values() {
+        // Ensure no two variants share the same raw value.
+        let variants = [
+            CatalogEntryType::Invalid,
+            CatalogEntryType::Table,
+            CatalogEntryType::View,
+            CatalogEntryType::Index,
+            CatalogEntryType::Schema,
+            CatalogEntryType::PreparedStatement,
+            CatalogEntryType::Sequence,
+            CatalogEntryType::Collation,
+            CatalogEntryType::Type,
+            CatalogEntryType::Database,
+        ];
+        let raws: Vec<duckdb_catalog_entry_type> = variants.iter().map(|v| v.to_raw()).collect();
+        // Invalid is 0; every non-Invalid variant must differ from each other.
+        for (i, a) in raws.iter().enumerate().skip(1) {
+            for b in raws.iter().skip(i + 1) {
+                assert_ne!(a, b, "two non-Invalid variants share raw value {a}");
+            }
+        }
+    }
+}

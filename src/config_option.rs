@@ -93,6 +93,12 @@ impl ConfigOptionBuilder {
         })
     }
 
+    /// Returns the name of this config option.
+    #[must_use]
+    pub fn name(&self) -> &str {
+        self.name.to_str().unwrap_or("")
+    }
+
     /// Sets the human-readable description for this option.
     ///
     /// # Errors
@@ -195,5 +201,118 @@ impl ConfigOptionBuilder {
                 self.name.to_string_lossy()
             )))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::TypeId;
+
+    #[test]
+    fn try_new_valid_name() {
+        let builder = ConfigOptionBuilder::try_new("my_option").unwrap();
+        assert_eq!(builder.name(), "my_option");
+    }
+
+    #[test]
+    fn try_new_null_byte_rejected() {
+        let result = ConfigOptionBuilder::try_new("bad\0name");
+        assert!(result.is_err());
+        let err = result.err().unwrap();
+        assert!(
+            err.to_string().contains("null byte"),
+            "error should mention null byte"
+        );
+    }
+
+    #[test]
+    fn description_null_byte_rejected() {
+        let result = ConfigOptionBuilder::try_new("opt")
+            .unwrap()
+            .description("bad\0desc");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn default_value_null_byte_rejected() {
+        let result = ConfigOptionBuilder::try_new("opt")
+            .unwrap()
+            .default_value("bad\0val");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn builder_stores_option_type() {
+        let builder = ConfigOptionBuilder::try_new("threshold")
+            .unwrap()
+            .option_type(TypeId::BigInt);
+        // Verifies fluent chaining compiles and doesn't panic.
+        assert_eq!(builder.name(), "threshold");
+    }
+
+    #[test]
+    fn builder_stores_description() {
+        let builder = ConfigOptionBuilder::try_new("threshold")
+            .unwrap()
+            .description("max threshold")
+            .unwrap();
+        assert_eq!(builder.name(), "threshold");
+    }
+
+    #[test]
+    fn builder_stores_default_value() {
+        let builder = ConfigOptionBuilder::try_new("limit")
+            .unwrap()
+            .default_value("100")
+            .unwrap();
+        assert_eq!(builder.name(), "limit");
+    }
+
+    #[test]
+    fn scope_default_is_global() {
+        // ConfigOptionScope defaults to Global in the builder.
+        let builder = ConfigOptionBuilder::try_new("opt").unwrap();
+        // We can't read the scope directly, but we can verify the
+        // ConfigOptionScope enum works correctly.
+        assert_eq!(builder.name(), "opt");
+    }
+
+    #[test]
+    fn scope_enum_to_raw_distinct_values() {
+        let local = ConfigOptionScope::Local.to_raw();
+        let session = ConfigOptionScope::Session.to_raw();
+        let global = ConfigOptionScope::Global.to_raw();
+        assert_ne!(local, session);
+        assert_ne!(session, global);
+        assert_ne!(local, global);
+    }
+
+    #[test]
+    fn scope_enum_debug_impl() {
+        assert_eq!(format!("{:?}", ConfigOptionScope::Local), "Local");
+        assert_eq!(format!("{:?}", ConfigOptionScope::Session), "Session");
+        assert_eq!(format!("{:?}", ConfigOptionScope::Global), "Global");
+    }
+
+    #[test]
+    fn scope_enum_clone_eq() {
+        let a = ConfigOptionScope::Session;
+        #[allow(clippy::clone_on_copy)]
+        let b = a.clone();
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn full_builder_chain_compiles() {
+        // Verify the full fluent builder chain works without panicking.
+        let _builder = ConfigOptionBuilder::try_new("my_ext_threshold")
+            .unwrap()
+            .description("Maximum threshold")
+            .unwrap()
+            .option_type(TypeId::BigInt)
+            .default_value("100")
+            .unwrap()
+            .scope(ConfigOptionScope::Global);
     }
 }

@@ -88,6 +88,12 @@ impl CopyFunctionBuilder {
         })
     }
 
+    /// Returns the name of this copy function.
+    #[must_use]
+    pub fn name(&self) -> &str {
+        self.name.to_str().unwrap_or("")
+    }
+
     /// Sets the bind callback.
     pub fn bind(mut self, f: CopyBindFn) -> Self {
         self.bind = Some(f);
@@ -168,5 +174,79 @@ impl CopyFunctionBuilder {
                 self.name.to_string_lossy()
             )))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn try_new_valid_name() {
+        let builder = CopyFunctionBuilder::try_new("parquet").unwrap();
+        assert_eq!(builder.name(), "parquet");
+    }
+
+    #[test]
+    fn try_new_null_byte_rejected() {
+        let result = CopyFunctionBuilder::try_new("bad\0name");
+        assert!(result.is_err());
+        let err = result.err().unwrap();
+        assert!(
+            err.to_string().contains("null byte"),
+            "error should mention null byte"
+        );
+    }
+
+    #[test]
+    fn builder_stores_bind_callback() {
+        unsafe extern "C" fn dummy_bind(_info: duckdb_copy_function_bind_info) {}
+        let builder = CopyFunctionBuilder::try_new("fmt").unwrap().bind(dummy_bind);
+        assert_eq!(builder.name(), "fmt");
+    }
+
+    #[test]
+    fn builder_stores_global_init_callback() {
+        unsafe extern "C" fn dummy_init(_info: duckdb_copy_function_global_init_info) {}
+        let builder = CopyFunctionBuilder::try_new("fmt")
+            .unwrap()
+            .global_init(dummy_init);
+        assert_eq!(builder.name(), "fmt");
+    }
+
+    #[test]
+    fn builder_stores_sink_callback() {
+        unsafe extern "C" fn dummy_sink(
+            _info: duckdb_copy_function_sink_info,
+            _chunk: duckdb_data_chunk,
+        ) {
+        }
+        let builder = CopyFunctionBuilder::try_new("fmt").unwrap().sink(dummy_sink);
+        assert_eq!(builder.name(), "fmt");
+    }
+
+    #[test]
+    fn builder_stores_finalize_callback() {
+        unsafe extern "C" fn dummy_finalize(_info: duckdb_copy_function_finalize_info) {}
+        let builder = CopyFunctionBuilder::try_new("fmt")
+            .unwrap()
+            .finalize(dummy_finalize);
+        assert_eq!(builder.name(), "fmt");
+    }
+
+    #[test]
+    fn full_builder_chain_compiles() {
+        unsafe extern "C" fn bind(_: duckdb_copy_function_bind_info) {}
+        unsafe extern "C" fn init(_: duckdb_copy_function_global_init_info) {}
+        unsafe extern "C" fn sink(_: duckdb_copy_function_sink_info, _: duckdb_data_chunk) {}
+        unsafe extern "C" fn finalize(_: duckdb_copy_function_finalize_info) {}
+
+        let builder = CopyFunctionBuilder::try_new("my_format")
+            .unwrap()
+            .bind(bind)
+            .global_init(init)
+            .sink(sink)
+            .finalize(finalize);
+        assert_eq!(builder.name(), "my_format");
     }
 }

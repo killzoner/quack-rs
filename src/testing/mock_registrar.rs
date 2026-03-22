@@ -82,6 +82,8 @@ pub struct MockRegistrar {
     table_names: RefCell<Vec<String>>,
     sql_macro_names: RefCell<Vec<String>>,
     casts: RefCell<Vec<CastRecord>>,
+    #[cfg(feature = "duckdb-1-5")]
+    copy_function_names: RefCell<Vec<String>>,
 }
 
 impl MockRegistrar {
@@ -135,16 +137,38 @@ impl MockRegistrar {
         self.casts.borrow().clone()
     }
 
+    /// Returns the names of all copy functions registered so far.
+    #[cfg(feature = "duckdb-1-5")]
+    #[must_use]
+    pub fn copy_function_names(&self) -> Vec<String> {
+        self.copy_function_names.borrow().clone()
+    }
+
+    /// Returns `true` if a copy function with the given name was registered.
+    #[cfg(feature = "duckdb-1-5")]
+    #[must_use]
+    pub fn has_copy_function(&self, name: &str) -> bool {
+        self.copy_function_names.borrow().iter().any(|n| n == name)
+    }
+
     /// Returns the total number of registrations across all types.
     #[must_use]
     pub fn total_registrations(&self) -> usize {
-        self.scalar_names.borrow().len()
+        let base = self.scalar_names.borrow().len()
             + self.scalar_set_names.borrow().len()
             + self.aggregate_names.borrow().len()
             + self.aggregate_set_names.borrow().len()
             + self.table_names.borrow().len()
             + self.sql_macro_names.borrow().len()
-            + self.casts.borrow().len()
+            + self.casts.borrow().len();
+        #[cfg(feature = "duckdb-1-5")]
+        {
+            base + self.copy_function_names.borrow().len()
+        }
+        #[cfg(not(feature = "duckdb-1-5"))]
+        {
+            base
+        }
     }
 
     // ── Convenience predicates ──────────────────────────────────────────────
@@ -287,8 +311,11 @@ impl Registrar for MockRegistrar {
     #[cfg(feature = "duckdb-1-5")]
     unsafe fn register_copy_function(
         &self,
-        _builder: crate::copy_function::CopyFunctionBuilder,
+        builder: crate::copy_function::CopyFunctionBuilder,
     ) -> Result<(), ExtensionError> {
+        self.copy_function_names
+            .borrow_mut()
+            .push(builder.name().to_owned());
         Ok(())
     }
 }
@@ -371,6 +398,17 @@ mod tests {
         assert!(mock.has_scalar("fn_one"));
         assert!(mock.has_scalar("fn_two"));
         assert!(!mock.has_scalar("fn_three"));
+    }
+
+    #[test]
+    #[cfg(feature = "duckdb-1-5")]
+    fn mock_registrar_records_copy_function() {
+        let mock = MockRegistrar::new();
+        let builder = crate::copy_function::CopyFunctionBuilder::try_new("my_format").unwrap();
+        unsafe { mock.register_copy_function(builder).unwrap() };
+        assert!(mock.has_copy_function("my_format"));
+        assert_eq!(mock.copy_function_names(), vec!["my_format"]);
+        assert_eq!(mock.total_registrations(), 1);
     }
 
     #[test]
