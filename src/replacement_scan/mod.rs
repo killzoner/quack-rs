@@ -123,7 +123,10 @@ impl ReplacementScanInfo {
     pub fn add_varchar_parameter(&self, value: &str) -> &Self {
         // SAFETY: creates a DuckDB VARCHAR value.
         let duckdb_val = unsafe {
-            duckdb_create_varchar_length(value.as_ptr().cast::<i8>(), value.len() as u64)
+            duckdb_create_varchar_length(
+                value.as_ptr().cast::<std::os::raw::c_char>(),
+                value.len() as u64,
+            )
         };
         // SAFETY: self.info is valid; duckdb_val is a valid newly created value.
         unsafe {
