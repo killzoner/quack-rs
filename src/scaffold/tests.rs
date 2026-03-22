@@ -152,6 +152,15 @@ fn excluded_platforms_in_description() {
 }
 
 #[test]
+fn gitignore_has_target_and_duckdb_patterns() {
+    let files = generate_scaffold(&valid_config()).unwrap();
+    let gi = files.iter().find(|f| f.path == ".gitignore").unwrap();
+    assert!(gi.content.contains("/target"));
+    assert!(gi.content.contains("*.duckdb"));
+    assert!(gi.content.contains("build/"));
+}
+
+#[test]
 fn gitmodules_references_ci_tools() {
     let files = generate_scaffold(&valid_config()).unwrap();
     let gitmod = files.iter().find(|f| f.path == ".gitmodules").unwrap();

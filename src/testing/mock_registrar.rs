@@ -350,6 +350,17 @@ mod tests {
     }
 
     #[test]
+    fn mock_registrar_records_scalar_set() {
+        let mock = MockRegistrar::new();
+        let builder = crate::scalar::ScalarFunctionSetBuilder::new("my_set");
+        unsafe { mock.register_scalar_set(builder).unwrap() };
+        assert!(mock.has_scalar_set("my_set"));
+        assert!(!mock.has_scalar_set("other"));
+        assert_eq!(mock.scalar_set_names(), vec!["my_set"]);
+        assert_eq!(mock.total_registrations(), 1);
+    }
+
+    #[test]
     fn mock_registrar_records_aggregate_set() {
         let mock = MockRegistrar::new();
         let builder = AggregateFunctionSetBuilder::new("my_agg_set");
@@ -417,10 +428,16 @@ mod tests {
     #[cfg(feature = "duckdb-1-5")]
     fn mock_registrar_records_copy_function() {
         let mock = MockRegistrar::new();
+        assert!(!mock.has_copy_function("my_format"));
+        assert!(mock.copy_function_names().is_empty());
+
         let builder = crate::copy_function::CopyFunctionBuilder::try_new("my_format").unwrap();
         unsafe { mock.register_copy_function(builder).unwrap() };
+
         assert!(mock.has_copy_function("my_format"));
+        assert!(!mock.has_copy_function("other_format"));
         assert_eq!(mock.copy_function_names(), vec!["my_format"]);
+        assert_eq!(mock.copy_function_names().len(), 1);
         assert_eq!(mock.total_registrations(), 1);
     }
 
