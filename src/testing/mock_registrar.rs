@@ -452,8 +452,7 @@ mod tests {
         let scalar = ScalarFunctionBuilder::new("my_scalar")
             .param(TypeId::BigInt)
             .returns(TypeId::BigInt);
-        let copy_fn =
-            crate::copy_function::CopyFunctionBuilder::try_new("my_format").unwrap();
+        let copy_fn = crate::copy_function::CopyFunctionBuilder::try_new("my_format").unwrap();
 
         unsafe {
             mock.register_scalar(scalar).unwrap();
