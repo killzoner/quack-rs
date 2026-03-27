@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-03-27
+
+### Added
+
+- **`TypeId::Any`** — wildcard type for function overload resolution. Maps to
+  `DUCKDB_TYPE_ANY` in the C API. Requires `duckdb-1-5` feature.
+
+- **`TypeId::Varint`** — variable-length arbitrary-precision integer. Maps to
+  `DUCKDB_TYPE_BIGNUM` in the C API, exposed as `VARINT` in SQL. Requires
+  `duckdb-1-5` feature.
+
+- **`TypeId::SqlNull`** — explicit SQL NULL type representing the type of a
+  bare `NULL` literal before type resolution. Maps to `DUCKDB_TYPE_SQLNULL`
+  in the C API. Requires `duckdb-1-5` feature.
+
+- **DuckDB v1.5.1 compatibility evaluation** — comprehensive analysis of all
+  80+ changes in DuckDB v1.5.1 against quack-rs. See
+  `docs/duckdb-v1.5.1-evaluation.md`.
+
 ### Fixed
 
 - **ARM64 / aarch64 build** — replaced all `.cast::<i8>()` and `*const i8`
@@ -15,6 +34,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `E0308`/`E0277` mismatched-types errors when cross-compiling or building
   natively on aarch64. Affected files: `replacement_scan/mod.rs`,
   `types/logical_type.rs`, `vector/writer.rs`.
+
+### Changed
+
+- **DuckDB v1.5.1 compatibility** — updated `DUCKDB_API_VERSION` doc comment
+  and version range documentation to explicitly cover v1.5.1. The C API
+  version remains `"v1.2.0"` (unchanged from v1.5.0). Users are strongly
+  recommended to upgrade their DuckDB runtime to v1.5.1 for critical WAL
+  corruption and ART index correctness fixes.
 
 ### Internal
 

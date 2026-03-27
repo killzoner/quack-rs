@@ -9,7 +9,10 @@
 //! provides a safe, exhaustive enum for use in builder APIs.
 
 #[cfg(feature = "duckdb-1-5")]
-use libduckdb_sys::DUCKDB_TYPE_DUCKDB_TYPE_TIME_NS;
+use libduckdb_sys::{
+    DUCKDB_TYPE_DUCKDB_TYPE_ANY, DUCKDB_TYPE_DUCKDB_TYPE_BIGNUM,
+    DUCKDB_TYPE_DUCKDB_TYPE_SQLNULL, DUCKDB_TYPE_DUCKDB_TYPE_TIME_NS,
+};
 use libduckdb_sys::{
     DUCKDB_TYPE, DUCKDB_TYPE_DUCKDB_TYPE_ARRAY, DUCKDB_TYPE_DUCKDB_TYPE_BIGINT,
     DUCKDB_TYPE_DUCKDB_TYPE_BIT, DUCKDB_TYPE_DUCKDB_TYPE_BLOB, DUCKDB_TYPE_DUCKDB_TYPE_BOOLEAN,
@@ -114,6 +117,23 @@ pub enum TypeId {
     /// `TIME_NS` — time of day with nanosecond precision (`DuckDB` 1.5.0+)
     #[cfg(feature = "duckdb-1-5")]
     TimeNs,
+    /// `ANY` — wildcard type for function signatures (`DuckDB` 1.5.0+)
+    ///
+    /// Used in function overload resolution to accept any input type.
+    /// Not a concrete column type — typically used only in builder APIs.
+    #[cfg(feature = "duckdb-1-5")]
+    Any,
+    /// `VARINT` — variable-length integer (`DuckDB` 1.5.0+)
+    ///
+    /// Arbitrary-precision integer stored as a variable-length encoding.
+    /// Maps to `DUCKDB_TYPE_BIGNUM` in the C API.
+    #[cfg(feature = "duckdb-1-5")]
+    Varint,
+    /// `SQLNULL` — explicit SQL NULL type (`DuckDB` 1.5.0+)
+    ///
+    /// Represents the type of a bare `NULL` literal before type resolution.
+    #[cfg(feature = "duckdb-1-5")]
+    SqlNull,
 }
 
 impl TypeId {
@@ -167,6 +187,12 @@ impl TypeId {
             Self::Array => DUCKDB_TYPE_DUCKDB_TYPE_ARRAY,
             #[cfg(feature = "duckdb-1-5")]
             Self::TimeNs => DUCKDB_TYPE_DUCKDB_TYPE_TIME_NS,
+            #[cfg(feature = "duckdb-1-5")]
+            Self::Any => DUCKDB_TYPE_DUCKDB_TYPE_ANY,
+            #[cfg(feature = "duckdb-1-5")]
+            Self::Varint => DUCKDB_TYPE_DUCKDB_TYPE_BIGNUM,
+            #[cfg(feature = "duckdb-1-5")]
+            Self::SqlNull => DUCKDB_TYPE_DUCKDB_TYPE_SQLNULL,
         }
     }
 
@@ -218,6 +244,12 @@ impl TypeId {
             Self::Array => "ARRAY",
             #[cfg(feature = "duckdb-1-5")]
             Self::TimeNs => "TIME_NS",
+            #[cfg(feature = "duckdb-1-5")]
+            Self::Any => "ANY",
+            #[cfg(feature = "duckdb-1-5")]
+            Self::Varint => "VARINT",
+            #[cfg(feature = "duckdb-1-5")]
+            Self::SqlNull => "SQLNULL",
         }
     }
 }
@@ -270,6 +302,12 @@ mod tests {
             TypeId::Array,
             #[cfg(feature = "duckdb-1-5")]
             TypeId::TimeNs,
+            #[cfg(feature = "duckdb-1-5")]
+            TypeId::Any,
+            #[cfg(feature = "duckdb-1-5")]
+            TypeId::Varint,
+            #[cfg(feature = "duckdb-1-5")]
+            TypeId::SqlNull,
         ];
         for t in types {
             // sql_name should not be empty and should match Display

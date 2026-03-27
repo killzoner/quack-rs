@@ -1,6 +1,6 @@
 [package]
 name = "quack-rs"
-version = "0.7.0"
+version = "0.7.1"
 edition = "2021"
 rust-version = "1.84.1"
 authors = ["Tom F. <tomf@tomtomtech.net>"]
@@ -39,9 +39,10 @@ crate-type = ["rlib"]
 ## states, config option registration). Requires `libduckdb-sys >= 1.5.0` to be
 ## resolved by Cargo. Has no effect when compiled against libduckdb-sys 1.4.x.
 ##
-## Requires `libduckdb-sys >= 1.10500.0` (DuckDB 1.5.0) to be resolved by Cargo.
+## Requires `libduckdb-sys >= 1.10500.0` (DuckDB 1.5.0+) to be resolved by Cargo.
 ## Enables wrappers for new C Extension API surfaces:
 ## - `TypeId::TimeNs` column type
+## - `TypeId::Any`, `TypeId::Varint`, `TypeId::SqlNull` column types
 ## - Scalar function bind/init lifecycle and local state
 ## - Scalar function varargs and volatile flags
 ## - Config option registration (extension-defined settings)
