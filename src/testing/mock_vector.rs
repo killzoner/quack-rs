@@ -555,6 +555,123 @@ mod tests {
     }
 
     #[test]
+    fn reader_from_i32s() {
+        let r = MockVectorReader::from_i32s([Some(10), None, Some(-5)]);
+        assert_eq!(r.row_count(), 3);
+        assert!(r.is_valid(0));
+        assert!(!r.is_valid(1));
+        assert_eq!(r.try_get_i32(0), Some(10));
+        assert_eq!(r.try_get_i32(1), None);
+        assert_eq!(r.try_get_i32(2), Some(-5));
+    }
+
+    #[test]
+    fn reader_from_f64s() {
+        let r = MockVectorReader::from_f64s([Some(1.5), None, Some(-3.14)]);
+        assert_eq!(r.row_count(), 3);
+        assert!(r.is_valid(0));
+        assert!(!r.is_valid(1));
+        assert_eq!(r.try_get_f64(0), Some(1.5));
+        assert_eq!(r.try_get_f64(1), None);
+        assert_eq!(r.try_get_f64(2), Some(-3.14));
+    }
+
+    #[test]
+    fn reader_from_bools() {
+        let r = MockVectorReader::from_bools([Some(true), None, Some(false)]);
+        assert_eq!(r.row_count(), 3);
+        assert!(r.is_valid(0));
+        assert!(!r.is_valid(1));
+        assert_eq!(r.try_get_bool(0), Some(true));
+        assert_eq!(r.try_get_bool(1), None);
+        assert_eq!(r.try_get_bool(2), Some(false));
+    }
+
+    #[test]
+    fn writer_typed_getters_i32() {
+        let mut w = MockVectorWriter::new(2);
+        w.write_i32(0, 42);
+        w.set_null(1);
+        assert_eq!(w.try_get_i32(0), Some(42));
+        assert_eq!(w.try_get_i32(1), None);
+        // Wrong type returns None
+        assert_eq!(w.try_get_i64(0), None);
+    }
+
+    #[test]
+    fn writer_typed_getters_f64() {
+        let mut w = MockVectorWriter::new(2);
+        w.write_f64(0, 3.14);
+        w.set_null(1);
+        assert_eq!(w.try_get_f64(0), Some(3.14));
+        assert_eq!(w.try_get_f64(1), None);
+    }
+
+    #[test]
+    fn writer_typed_getters_bool() {
+        let mut w = MockVectorWriter::new(2);
+        w.write_bool(0, true);
+        w.write_bool(1, false);
+        assert_eq!(w.try_get_bool(0), Some(true));
+        assert_eq!(w.try_get_bool(1), Some(false));
+    }
+
+    #[test]
+    fn writer_u16_round_trip() {
+        let mut w = MockVectorWriter::new(1);
+        w.write_u16(0, 12345);
+        assert!(matches!(w.get(0), Some(MockDuckValue::U16(12345))));
+    }
+
+    #[test]
+    fn writer_i128_round_trip() {
+        let mut w = MockVectorWriter::new(1);
+        w.write_i128(0, i128::MAX);
+        assert!(matches!(w.get(0), Some(MockDuckValue::I128(v)) if *v == i128::MAX));
+    }
+
+    #[test]
+    fn writer_interval_round_trip() {
+        let interval = DuckInterval {
+            months: 1,
+            days: 2,
+            micros: 3_000_000,
+        };
+        let mut w = MockVectorWriter::new(1);
+        w.write_interval(0, interval);
+        assert_eq!(w.try_get_interval(0), Some(interval));
+    }
+
+    #[test]
+    fn reader_interval_round_trip() {
+        let interval = DuckInterval {
+            months: 6,
+            days: 15,
+            micros: 500_000,
+        };
+        let r = MockVectorReader::new([Some(MockDuckValue::Interval(interval))]);
+        assert_eq!(r.try_get_interval(0), Some(interval));
+    }
+
+    #[test]
+    fn reader_wrong_type_returns_none() {
+        let r = MockVectorReader::from_i64s([Some(42)]);
+        assert_eq!(r.try_get_i32(0), None);
+        assert_eq!(r.try_get_f64(0), None);
+        assert_eq!(r.try_get_bool(0), None);
+        assert_eq!(r.try_get_str(0), None);
+        assert_eq!(r.try_get_interval(0), None);
+    }
+
+    #[test]
+    fn writer_is_empty() {
+        let w = MockVectorWriter::new(0);
+        assert!(w.is_empty());
+        let w2 = MockVectorWriter::new(1);
+        assert!(!w2.is_empty());
+    }
+
+    #[test]
     fn mock_double_pattern() {
         // Demonstrates extracting callback logic into a testable pure-Rust function.
         fn double_values(reader: &MockVectorReader, writer: &mut MockVectorWriter) {

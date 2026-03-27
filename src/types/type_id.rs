@@ -362,4 +362,76 @@ mod tests {
         let s = format!("{:?}", TypeId::Interval);
         assert!(s.contains("Interval"));
     }
+
+    // ---- DuckDB 1.5.0+ variant tests ----
+
+    #[cfg(feature = "duckdb-1-5")]
+    #[test]
+    fn time_ns_maps_to_correct_duckdb_type() {
+        assert_eq!(
+            TypeId::TimeNs.to_duckdb_type(),
+            DUCKDB_TYPE_DUCKDB_TYPE_TIME_NS
+        );
+    }
+
+    #[cfg(feature = "duckdb-1-5")]
+    #[test]
+    fn any_maps_to_correct_duckdb_type() {
+        assert_eq!(
+            TypeId::Any.to_duckdb_type(),
+            DUCKDB_TYPE_DUCKDB_TYPE_ANY
+        );
+    }
+
+    #[cfg(feature = "duckdb-1-5")]
+    #[test]
+    fn varint_maps_to_correct_duckdb_type() {
+        assert_eq!(
+            TypeId::Varint.to_duckdb_type(),
+            DUCKDB_TYPE_DUCKDB_TYPE_BIGNUM
+        );
+    }
+
+    #[cfg(feature = "duckdb-1-5")]
+    #[test]
+    fn sql_null_maps_to_correct_duckdb_type() {
+        assert_eq!(
+            TypeId::SqlNull.to_duckdb_type(),
+            DUCKDB_TYPE_DUCKDB_TYPE_SQLNULL
+        );
+    }
+
+    #[cfg(feature = "duckdb-1-5")]
+    #[test]
+    fn duckdb_1_5_variants_sql_names() {
+        assert_eq!(TypeId::TimeNs.sql_name(), "TIME_NS");
+        assert_eq!(TypeId::Any.sql_name(), "ANY");
+        assert_eq!(TypeId::Varint.sql_name(), "VARINT");
+        assert_eq!(TypeId::SqlNull.sql_name(), "SQLNULL");
+    }
+
+    #[cfg(feature = "duckdb-1-5")]
+    #[test]
+    fn duckdb_1_5_variants_display_matches_sql_name() {
+        assert_eq!(format!("{}", TypeId::TimeNs), "TIME_NS");
+        assert_eq!(format!("{}", TypeId::Any), "ANY");
+        assert_eq!(format!("{}", TypeId::Varint), "VARINT");
+        assert_eq!(format!("{}", TypeId::SqlNull), "SQLNULL");
+    }
+
+    #[cfg(feature = "duckdb-1-5")]
+    #[test]
+    fn duckdb_1_5_variants_hash_eq() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(TypeId::TimeNs);
+        set.insert(TypeId::Any);
+        set.insert(TypeId::Varint);
+        set.insert(TypeId::SqlNull);
+        assert_eq!(set.len(), 4);
+        assert!(set.contains(&TypeId::TimeNs));
+        assert!(set.contains(&TypeId::Any));
+        assert!(set.contains(&TypeId::Varint));
+        assert!(set.contains(&TypeId::SqlNull));
+    }
 }

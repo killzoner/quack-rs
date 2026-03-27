@@ -173,6 +173,70 @@ impl Drop for DbConfig {
 
 // Note: DbConfig calls real DuckDB C API functions (duckdb_create_config,
 // duckdb_config_count, etc.) which are only available once DuckDB has
-// initialized the loadable-extension function pointers.  Unit tests in this
-// crate run without a live DuckDB process so no tests can be written here
-// that actually call DuckDB.  Live tests are exercised via examples/hello-ext.
+// initialized the loadable-extension function pointers. Tests require the
+// `bundled-test` feature to provide a real DuckDB runtime.
+
+#[cfg(all(test, feature = "bundled-test"))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn db_config_new_succeeds() {
+        let config = DbConfig::new();
+        assert!(config.is_ok());
+    }
+
+    #[test]
+    fn db_config_as_raw_is_not_null() {
+        let config = DbConfig::new().unwrap();
+        assert!(!config.as_raw().is_null());
+    }
+
+    #[test]
+    fn db_config_set_valid_option() {
+        let result = DbConfig::new()
+            .unwrap()
+            .set("access_mode", "READ_ONLY");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn db_config_set_chained() {
+        let result = DbConfig::new()
+            .unwrap()
+            .set("access_mode", "READ_ONLY")
+            .and_then(|c| c.set("threads", "2"));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn db_config_flag_count_is_positive() {
+        let count = DbConfig::flag_count();
+        assert!(count > 0, "DuckDB should have at least one config flag");
+    }
+
+    #[test]
+    fn db_config_get_flag_returns_name_and_desc() {
+        let (name, desc) = DbConfig::get_flag(0).unwrap();
+        assert!(!name.is_empty(), "flag name should not be empty");
+        assert!(!desc.is_empty(), "flag description should not be empty");
+    }
+
+    #[test]
+    fn db_config_get_flag_out_of_range() {
+        let result = DbConfig::get_flag(usize::MAX);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn db_config_set_null_byte_in_name_errors() {
+        let result = DbConfig::new().unwrap().set("bad\0name", "value");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn db_config_set_null_byte_in_value_errors() {
+        let result = DbConfig::new().unwrap().set("access_mode", "bad\0val");
+        assert!(result.is_err());
+    }
+}
