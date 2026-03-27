@@ -58,6 +58,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **CI action update** — `dtolnay/rust-toolchain` pinned to
+  `631a55b12751854ce901bb631d5902ceb48146f7` (PR #59).
+
 - **Mutation testing** — `mutants.toml` now sets `features = ["duckdb-1-5"]`
   so that `cargo mutants` compiles and tests feature-gated code paths.
   Previously, four mutants in `MockRegistrar::copy_function_names`,
