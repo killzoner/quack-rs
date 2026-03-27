@@ -28,19 +28,19 @@ Thank you for contributing! Please read this document before opening a PR.
 | `rustfmt` | stable | Formatting |
 | `clippy` | stable | Linting |
 | `cargo-deny` | latest | License/advisory checks |
-| DuckDB CLI | 1.4.4 or 1.5.0 | Live extension testing (required) |
+| DuckDB CLI | 1.4.4, 1.5.0, or 1.5.1 | Live extension testing (required) |
 
 Install the Rust toolchain via [rustup](https://rustup.rs/).
 
-Install DuckDB 1.5.0 (or 1.4.4) via `curl` (no system package manager needed):
+Install DuckDB 1.5.1 (or 1.4.4/1.5.0) via `curl` (no system package manager needed):
 
 ```bash
-curl -fsSL https://github.com/duckdb/duckdb/releases/download/v1.5.0/duckdb_cli-linux-amd64.zip \
+curl -fsSL https://github.com/duckdb/duckdb/releases/download/v1.5.1/duckdb_cli-linux-amd64.zip \
     -o /tmp/duckdb.zip \
     && unzip -o /tmp/duckdb.zip -d /tmp/ \
     && chmod +x /tmp/duckdb \
     && /tmp/duckdb --version
-# → v1.5.0
+# → v1.5.1
 ```
 
 ---

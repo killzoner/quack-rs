@@ -765,6 +765,11 @@ add wrappers in the relevant release.
 
 See [`CHANGELOG.md`](./CHANGELOG.md) for the full version history.
 
+**v0.7.1** (2026-03-27) — Upgraded to DuckDB 1.5.1 (`libduckdb-sys` 1.10501.0). Added
+`TypeId::Any`, `TypeId::Varint`, `TypeId::SqlNull` (behind `duckdb-1-5`). Fixed ARM64/aarch64
+builds. Added 28 new tests (DbConfig, MockVector, TypeId variants). Comprehensive v1.5.1
+compatibility evaluation. Users should upgrade DuckDB runtime for WAL and ART index fixes.
+
 **v0.7.0** (2026-03-22) — Upgraded to DuckDB 1.5.0 (`libduckdb-sys` 1.10500.0). Populated the
 `duckdb-1-5` feature flag with five new modules: `catalog`, `client_context`, `config_option`,
 `copy_function`, `table_description`. Added `TypeId::TimeNs` and `ScalarFunctionBuilder` methods
