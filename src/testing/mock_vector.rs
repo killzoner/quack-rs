@@ -567,13 +567,13 @@ mod tests {
 
     #[test]
     fn reader_from_f64s() {
-        let r = MockVectorReader::from_f64s([Some(1.5), None, Some(-3.14)]);
+        let r = MockVectorReader::from_f64s([Some(1.5), None, Some(-2.72)]);
         assert_eq!(r.row_count(), 3);
         assert!(r.is_valid(0));
         assert!(!r.is_valid(1));
         assert_eq!(r.try_get_f64(0), Some(1.5));
         assert_eq!(r.try_get_f64(1), None);
-        assert_eq!(r.try_get_f64(2), Some(-3.14));
+        assert_eq!(r.try_get_f64(2), Some(-2.72));
     }
 
     #[test]
@@ -601,9 +601,9 @@ mod tests {
     #[test]
     fn writer_typed_getters_f64() {
         let mut w = MockVectorWriter::new(2);
-        w.write_f64(0, 3.14);
+        w.write_f64(0, 2.72);
         w.set_null(1);
-        assert_eq!(w.try_get_f64(0), Some(3.14));
+        assert_eq!(w.try_get_f64(0), Some(2.72));
         assert_eq!(w.try_get_f64(1), None);
     }
 

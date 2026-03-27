@@ -535,9 +535,13 @@ fn scaffold_generated_code_compiles() {
 
     let files = generate_scaffold(&config).unwrap();
 
-    // Write to a temp directory
-    let tmp = std::env::temp_dir().join("quack_rs_scaffold_compile_test");
-    let _ = fs::remove_dir_all(&tmp);
+    // Write to a unique temp directory to avoid race conditions when running
+    // multiple test suites concurrently (e.g. with and without feature flags).
+    let tmp = tempfile::Builder::new()
+        .prefix("quack_rs_scaffold_compile_test_")
+        .tempdir()
+        .unwrap();
+    let tmp = tmp.path().to_path_buf();
     fs::create_dir_all(tmp.join("src")).unwrap();
 
     // The scaffold Cargo.toml references `quack-rs = "0.7"` from crates.io.

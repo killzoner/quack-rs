@@ -194,9 +194,7 @@ mod tests {
 
     #[test]
     fn db_config_set_valid_option() {
-        let result = DbConfig::new()
-            .unwrap()
-            .set("access_mode", "READ_ONLY");
+        let result = DbConfig::new().unwrap().set("access_mode", "READ_ONLY");
         assert!(result.is_ok());
     }
 

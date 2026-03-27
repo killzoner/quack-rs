@@ -8,12 +8,6 @@
 //! [`TypeId`] wraps the `DUCKDB_TYPE_*` integer constants from `libduckdb-sys` and
 //! provides a safe, exhaustive enum for use in builder APIs.
 
-#[cfg(feature = "duckdb-1-5")]
-use libduckdb_sys::{
-    DUCKDB_TYPE_DUCKDB_TYPE_ANY, DUCKDB_TYPE_DUCKDB_TYPE_BIGNUM,
-    DUCKDB_TYPE_DUCKDB_TYPE_INTEGER_LITERAL, DUCKDB_TYPE_DUCKDB_TYPE_SQLNULL,
-    DUCKDB_TYPE_DUCKDB_TYPE_STRING_LITERAL, DUCKDB_TYPE_DUCKDB_TYPE_TIME_NS,
-};
 use libduckdb_sys::{
     DUCKDB_TYPE, DUCKDB_TYPE_DUCKDB_TYPE_ARRAY, DUCKDB_TYPE_DUCKDB_TYPE_BIGINT,
     DUCKDB_TYPE_DUCKDB_TYPE_BIT, DUCKDB_TYPE_DUCKDB_TYPE_BLOB, DUCKDB_TYPE_DUCKDB_TYPE_BOOLEAN,
@@ -30,6 +24,12 @@ use libduckdb_sys::{
     DUCKDB_TYPE_DUCKDB_TYPE_UNION, DUCKDB_TYPE_DUCKDB_TYPE_USMALLINT,
     DUCKDB_TYPE_DUCKDB_TYPE_UTINYINT, DUCKDB_TYPE_DUCKDB_TYPE_UUID,
     DUCKDB_TYPE_DUCKDB_TYPE_VARCHAR,
+};
+#[cfg(feature = "duckdb-1-5")]
+use libduckdb_sys::{
+    DUCKDB_TYPE_DUCKDB_TYPE_ANY, DUCKDB_TYPE_DUCKDB_TYPE_BIGNUM,
+    DUCKDB_TYPE_DUCKDB_TYPE_INTEGER_LITERAL, DUCKDB_TYPE_DUCKDB_TYPE_SQLNULL,
+    DUCKDB_TYPE_DUCKDB_TYPE_STRING_LITERAL, DUCKDB_TYPE_DUCKDB_TYPE_TIME_NS,
 };
 
 /// Identifies a `DuckDB` column type.
@@ -402,10 +402,7 @@ mod tests {
     #[cfg(feature = "duckdb-1-5")]
     #[test]
     fn any_maps_to_correct_duckdb_type() {
-        assert_eq!(
-            TypeId::Any.to_duckdb_type(),
-            DUCKDB_TYPE_DUCKDB_TYPE_ANY
-        );
+        assert_eq!(TypeId::Any.to_duckdb_type(), DUCKDB_TYPE_DUCKDB_TYPE_ANY);
     }
 
     #[cfg(feature = "duckdb-1-5")]
