@@ -11,7 +11,8 @@
 #[cfg(feature = "duckdb-1-5")]
 use libduckdb_sys::{
     DUCKDB_TYPE_DUCKDB_TYPE_ANY, DUCKDB_TYPE_DUCKDB_TYPE_BIGNUM,
-    DUCKDB_TYPE_DUCKDB_TYPE_SQLNULL, DUCKDB_TYPE_DUCKDB_TYPE_TIME_NS,
+    DUCKDB_TYPE_DUCKDB_TYPE_INTEGER_LITERAL, DUCKDB_TYPE_DUCKDB_TYPE_SQLNULL,
+    DUCKDB_TYPE_DUCKDB_TYPE_STRING_LITERAL, DUCKDB_TYPE_DUCKDB_TYPE_TIME_NS,
 };
 use libduckdb_sys::{
     DUCKDB_TYPE, DUCKDB_TYPE_DUCKDB_TYPE_ARRAY, DUCKDB_TYPE_DUCKDB_TYPE_BIGINT,
@@ -134,6 +135,18 @@ pub enum TypeId {
     /// Represents the type of a bare `NULL` literal before type resolution.
     #[cfg(feature = "duckdb-1-5")]
     SqlNull,
+    /// `INTEGER_LITERAL` — integer literal type used during overload resolution (`DuckDB` 1.5.0+)
+    ///
+    /// Internal type representing an unresolved integer literal in SQL. Not a
+    /// concrete column type — used by `DuckDB`'s type resolution system.
+    #[cfg(feature = "duckdb-1-5")]
+    IntegerLiteral,
+    /// `STRING_LITERAL` — string literal type used during overload resolution (`DuckDB` 1.5.0+)
+    ///
+    /// Internal type representing an unresolved string literal in SQL. Not a
+    /// concrete column type — used by `DuckDB`'s type resolution system.
+    #[cfg(feature = "duckdb-1-5")]
+    StringLiteral,
 }
 
 impl TypeId {
@@ -193,6 +206,10 @@ impl TypeId {
             Self::Varint => DUCKDB_TYPE_DUCKDB_TYPE_BIGNUM,
             #[cfg(feature = "duckdb-1-5")]
             Self::SqlNull => DUCKDB_TYPE_DUCKDB_TYPE_SQLNULL,
+            #[cfg(feature = "duckdb-1-5")]
+            Self::IntegerLiteral => DUCKDB_TYPE_DUCKDB_TYPE_INTEGER_LITERAL,
+            #[cfg(feature = "duckdb-1-5")]
+            Self::StringLiteral => DUCKDB_TYPE_DUCKDB_TYPE_STRING_LITERAL,
         }
     }
 
@@ -250,6 +267,10 @@ impl TypeId {
             Self::Varint => "VARINT",
             #[cfg(feature = "duckdb-1-5")]
             Self::SqlNull => "SQLNULL",
+            #[cfg(feature = "duckdb-1-5")]
+            Self::IntegerLiteral => "INTEGER_LITERAL",
+            #[cfg(feature = "duckdb-1-5")]
+            Self::StringLiteral => "STRING_LITERAL",
         }
     }
 }
@@ -308,6 +329,10 @@ mod tests {
             TypeId::Varint,
             #[cfg(feature = "duckdb-1-5")]
             TypeId::SqlNull,
+            #[cfg(feature = "duckdb-1-5")]
+            TypeId::IntegerLiteral,
+            #[cfg(feature = "duckdb-1-5")]
+            TypeId::StringLiteral,
         ];
         for t in types {
             // sql_name should not be empty and should match Display
@@ -408,6 +433,8 @@ mod tests {
         assert_eq!(TypeId::Any.sql_name(), "ANY");
         assert_eq!(TypeId::Varint.sql_name(), "VARINT");
         assert_eq!(TypeId::SqlNull.sql_name(), "SQLNULL");
+        assert_eq!(TypeId::IntegerLiteral.sql_name(), "INTEGER_LITERAL");
+        assert_eq!(TypeId::StringLiteral.sql_name(), "STRING_LITERAL");
     }
 
     #[cfg(feature = "duckdb-1-5")]
@@ -417,6 +444,8 @@ mod tests {
         assert_eq!(format!("{}", TypeId::Any), "ANY");
         assert_eq!(format!("{}", TypeId::Varint), "VARINT");
         assert_eq!(format!("{}", TypeId::SqlNull), "SQLNULL");
+        assert_eq!(format!("{}", TypeId::IntegerLiteral), "INTEGER_LITERAL");
+        assert_eq!(format!("{}", TypeId::StringLiteral), "STRING_LITERAL");
     }
 
     #[cfg(feature = "duckdb-1-5")]
@@ -428,10 +457,32 @@ mod tests {
         set.insert(TypeId::Any);
         set.insert(TypeId::Varint);
         set.insert(TypeId::SqlNull);
-        assert_eq!(set.len(), 4);
+        set.insert(TypeId::IntegerLiteral);
+        set.insert(TypeId::StringLiteral);
+        assert_eq!(set.len(), 6);
         assert!(set.contains(&TypeId::TimeNs));
         assert!(set.contains(&TypeId::Any));
         assert!(set.contains(&TypeId::Varint));
         assert!(set.contains(&TypeId::SqlNull));
+        assert!(set.contains(&TypeId::IntegerLiteral));
+        assert!(set.contains(&TypeId::StringLiteral));
+    }
+
+    #[cfg(feature = "duckdb-1-5")]
+    #[test]
+    fn integer_literal_maps_to_correct_duckdb_type() {
+        assert_eq!(
+            TypeId::IntegerLiteral.to_duckdb_type(),
+            DUCKDB_TYPE_DUCKDB_TYPE_INTEGER_LITERAL
+        );
+    }
+
+    #[cfg(feature = "duckdb-1-5")]
+    #[test]
+    fn string_literal_maps_to_correct_duckdb_type() {
+        assert_eq!(
+            TypeId::StringLiteral.to_duckdb_type(),
+            DUCKDB_TYPE_DUCKDB_TYPE_STRING_LITERAL
+        );
     }
 }

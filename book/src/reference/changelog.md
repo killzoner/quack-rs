@@ -17,6 +17,10 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **`TypeId::Any`** — wildcard type for function overload resolution (`duckdb-1-5`)
 - **`TypeId::Varint`** — variable-length arbitrary-precision integer (`duckdb-1-5`)
 - **`TypeId::SqlNull`** — explicit SQL NULL type for bare `NULL` literals (`duckdb-1-5`)
+- **`TypeId::IntegerLiteral`** — integer literal type for overload resolution (`duckdb-1-5`)
+- **`TypeId::StringLiteral`** — string literal type for overload resolution (`duckdb-1-5`)
+- **`DbConfig` tests** — 9 new tests behind `bundled-test`
+- **`MockVectorReader`/`MockVectorWriter` tests** — 12 new tests for untested constructors and getters
 - **DuckDB v1.5.1 evaluation** — see `docs/duckdb-v1.5.1-evaluation.md`
 
 ### Fixed

@@ -42,7 +42,7 @@ crate-type = ["rlib"]
 ## Requires `libduckdb-sys >= 1.10500.0` (DuckDB 1.5.0+) to be resolved by Cargo.
 ## Enables wrappers for new C Extension API surfaces:
 ## - `TypeId::TimeNs` column type
-## - `TypeId::Any`, `TypeId::Varint`, `TypeId::SqlNull` column types
+## - `TypeId::Any`, `TypeId::Varint`, `TypeId::SqlNull`, `TypeId::IntegerLiteral`, `TypeId::StringLiteral` column types
 ## - Scalar function bind/init lifecycle and local state
 ## - Scalar function varargs and volatile flags
 ## - Config option registration (extension-defined settings)

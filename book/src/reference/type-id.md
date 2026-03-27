@@ -47,6 +47,8 @@ from `libduckdb-sys` and provides safe, named variants.
 | `TypeId::Any` | `ANY` | `DUCKDB_TYPE_ANY` | wildcard for function signatures (`duckdb-1-5`) |
 | `TypeId::Varint` | `VARINT` | `DUCKDB_TYPE_BIGNUM` | variable-length integer (`duckdb-1-5`) |
 | `TypeId::SqlNull` | `SQLNULL` | `DUCKDB_TYPE_SQLNULL` | explicit SQL NULL type (`duckdb-1-5`) |
+| `TypeId::IntegerLiteral` | `INTEGER_LITERAL` | `DUCKDB_TYPE_INTEGER_LITERAL` | unresolved integer literal (`duckdb-1-5`) |
+| `TypeId::StringLiteral` | `STRING_LITERAL` | `DUCKDB_TYPE_STRING_LITERAL` | unresolved string literal (`duckdb-1-5`) |
 
 ---
 
@@ -106,9 +108,9 @@ variants as follows:
 
 `HugeInt`, `Blob`, `List`, `Struct`, `Map`, `Uuid`, `Date`, `Time`, `Timestamp`,
 `TimestampTz`, `Decimal`, `TimestampS`, `TimestampMs`, `TimestampNs`, `Enum`,
-`Union`, `Bit`, `TimeTz`, `UHugeInt`, `Array`, `TimeNs`, `Any`, `Varint`, `SqlNull`
-do not yet have dedicated read/write helpers. Access these via the raw data pointer
-from `duckdb_vector_get_data`.
+`Union`, `Bit`, `TimeTz`, `UHugeInt`, `Array`, `TimeNs`, `Any`, `Varint`, `SqlNull`,
+`IntegerLiteral`, `StringLiteral` do not yet have dedicated read/write helpers.
+Access these via the raw data pointer from `duckdb_vector_get_data`.
 
 ---
 

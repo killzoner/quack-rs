@@ -45,9 +45,11 @@ TypeId::Union
 TypeId::Bit
 TypeId::Array
 TypeId::TimeNs      // duckdb-1-5
-TypeId::Any         // duckdb-1-5
-TypeId::Varint      // duckdb-1-5
-TypeId::SqlNull     // duckdb-1-5
+TypeId::Any              // duckdb-1-5
+TypeId::Varint           // duckdb-1-5
+TypeId::SqlNull          // duckdb-1-5
+TypeId::IntegerLiteral   // duckdb-1-5
+TypeId::StringLiteral    // duckdb-1-5
 ```
 
 `TypeId` is `Copy`, `Clone`, `Debug`, `PartialEq`, `Eq`, and `Display`.
