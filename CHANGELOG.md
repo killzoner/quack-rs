@@ -30,10 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   during overload resolution. Maps to `DUCKDB_TYPE_STRING_LITERAL`. Requires
   `duckdb-1-5` feature.
 
-- **`DbConfig` tests** — 9 new tests for `DbConfig::new()`, `set()`,
-  `flag_count()`, `get_flag()`, null-byte rejection, and error paths
-  (behind `bundled-test` feature).
-
 - **`MockVectorReader`/`MockVectorWriter` tests** — 12 new tests covering
   `from_i32s`, `from_f64s`, `from_bools` constructors, typed getters
   (`i32`, `f64`, `bool`), `u16`/`i128`/`interval` round-trips, wrong-type
