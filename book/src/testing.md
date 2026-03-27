@@ -396,20 +396,21 @@ Directives:
 | `query T` | Query returning one TEXT column |
 | `----` | Expected output follows |
 
-### Installing DuckDB (1.4.4 or 1.5.0)
+### Installing DuckDB (1.4.4, 1.5.0, or 1.5.1)
 
 A live DuckDB CLI is **required** for E2E testing. Install it via `curl`
-(no system package manager needed). Either DuckDB 1.4.4 or 1.5.0 works —
-both use the same C API version (`v1.2.0`):
+(no system package manager needed). DuckDB 1.4.4, 1.5.0, or 1.5.1 all work —
+they use the same C API version (`v1.2.0`). We recommend 1.5.1 for critical
+WAL and ART index fixes:
 
 ```bash
-# DuckDB 1.5.0 (latest)
-curl -fsSL https://github.com/duckdb/duckdb/releases/download/v1.5.0/duckdb_cli-linux-amd64.zip \
+# DuckDB 1.5.1 (recommended)
+curl -fsSL https://github.com/duckdb/duckdb/releases/download/v1.5.1/duckdb_cli-linux-amd64.zip \
     -o /tmp/duckdb.zip \
     && unzip -o /tmp/duckdb.zip -d /tmp/ \
     && chmod +x /tmp/duckdb \
     && /tmp/duckdb --version
-# → v1.5.0
+# → v1.5.1
 ```
 
 For macOS, replace `linux-amd64` with `osx-universal`. For Windows, use

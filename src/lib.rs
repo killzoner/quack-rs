@@ -77,7 +77,8 @@
 //!    or improved safety. When in doubt, prefer simplicity.
 //! 2. **No panics across FFI**: `unwrap()` is forbidden in FFI callbacks and entry points.
 //! 3. **Bounded version range**: `libduckdb-sys` uses `>=1.4.4, <2` to support `DuckDB` 1.4.x
-//!    and 1.5.x while preventing silent adoption of breaking changes in future major releases.
+//!    and 1.5.x (including v1.5.1) while preventing silent adoption of breaking changes in
+//!    future major releases.
 //! 4. **Testable business logic**: state structs have zero FFI dependencies.
 //!
 //! ## Pitfalls
@@ -134,16 +135,17 @@ pub mod table_description;
 
 /// The `DuckDB` C API version string required by [`duckdb_rs_extension_api_init`][libduckdb_sys::duckdb_rs_extension_api_init].
 ///
-/// This constant corresponds to `DuckDB` releases v1.4.x and v1.5.x. If you are
+/// This constant corresponds to `DuckDB` releases v1.4.x, v1.5.0, and v1.5.1.
+/// The C API version did **not** change between v1.5.0 and v1.5.1. If you are
 /// targeting a different `DuckDB` release, consult the `DuckDB` changelog for the
 /// C API version.
 ///
 /// # Pitfall P2: C API version ≠ `DuckDB` release version
 ///
 /// The `-dv` flag passed to `append_extension_metadata.py` must be this value
-/// (`"v1.2.0"`), **not** the `DuckDB` release version (`"v1.4.4"` / `"v1.5.0"`).
-/// Using the wrong value causes the metadata script to fail silently or produce
-/// incorrect metadata.
+/// (`"v1.2.0"`), **not** the `DuckDB` release version (`"v1.4.4"` / `"v1.5.0"` /
+/// `"v1.5.1"`). Using the wrong value causes the metadata script to fail silently
+/// or produce incorrect metadata.
 ///
 /// See `LESSONS.md` → Pitfall P2 for full details.
 pub const DUCKDB_API_VERSION: &str = "v1.2.0";

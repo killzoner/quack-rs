@@ -180,7 +180,7 @@ quack-rs/
 │   │   └── mod.rs                 # ReplacementScanBuilder — SELECT * FROM 'file.xyz' patterns
 │   ├── types/
 │   │   ├── mod.rs
-│   │   ├── type_id.rs             # TypeId enum (33 variants)
+│   │   ├── type_id.rs             # TypeId enum (34 base + 6 with duckdb-1-5)
 │   │   └── logical_type.rs        # LogicalType RAII wrapper
 │   ├── vector/
 │   │   ├── mod.rs

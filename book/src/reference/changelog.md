@@ -10,6 +10,29 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.1] — 2026-03-27
+
+### Added
+
+- **`TypeId::Any`** — wildcard type for function overload resolution (`duckdb-1-5`)
+- **`TypeId::Varint`** — variable-length arbitrary-precision integer (`duckdb-1-5`)
+- **`TypeId::SqlNull`** — explicit SQL NULL type for bare `NULL` literals (`duckdb-1-5`)
+- **`TypeId::IntegerLiteral`** — integer literal type for overload resolution (`duckdb-1-5`)
+- **`TypeId::StringLiteral`** — string literal type for overload resolution (`duckdb-1-5`)
+- **`MockVectorReader`/`MockVectorWriter` tests** — 12 new tests for untested constructors and getters
+- **DuckDB v1.5.1 evaluation** — see `docs/duckdb-v1.5.1-evaluation.md`
+
+### Fixed
+
+- **ARM64 / aarch64 build** — use `c_char` instead of `i8` for cross-platform
+  pointer casts
+
+### Changed
+
+- **DuckDB v1.5.1 compatibility** — documentation updated to explicitly cover
+  v1.5.1. C API version unchanged (`v1.2.0`). Recommend upgrading DuckDB
+  runtime for WAL corruption and ART index fixes.
+
 ## [0.7.0] — 2026-03-22
 
 ### Added
@@ -376,7 +399,8 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-[Unreleased]: https://github.com/tomtom215/quack-rs/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/tomtom215/quack-rs/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/tomtom215/quack-rs/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/tomtom215/quack-rs/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/tomtom215/quack-rs/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/tomtom215/quack-rs/compare/v0.5.0...v0.5.1

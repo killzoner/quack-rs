@@ -57,7 +57,7 @@ DuckDB's own documentation acknowledges the gap:
 
 `quack-rs` was extracted from
 [duckdb-behavioral](https://github.com/tomtom215/duckdb-behavioral), a production DuckDB
-community extension. Building that extension revealed **15 undocumented pitfalls** in DuckDB's
+community extension. Building that extension revealed **16 undocumented pitfalls** in DuckDB's
 Rust FFI surface — struct layouts, callback contracts, and initialization sequences that
 aren't covered anywhere in the DuckDB documentation or `libduckdb-sys` docs.
 

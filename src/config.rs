@@ -172,7 +172,8 @@ impl Drop for DbConfig {
 }
 
 // Note: DbConfig calls real DuckDB C API functions (duckdb_create_config,
-// duckdb_config_count, etc.) which are only available once DuckDB has
-// initialized the loadable-extension function pointers.  Unit tests in this
-// crate run without a live DuckDB process so no tests can be written here
-// that actually call DuckDB.  Live tests are exercised via examples/hello-ext.
+// duckdb_set_config, duckdb_config_count, etc.) which are only available when
+// the loadable-extension dispatch table has been populated — i.e. inside a
+// loaded extension or after `InMemoryDb::open()`. Direct unit tests are not
+// possible without that initialization (Pitfall P9). Verify DbConfig via E2E
+// SQLLogicTests in your extension's test suite.
