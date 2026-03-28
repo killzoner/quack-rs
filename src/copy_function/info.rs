@@ -48,7 +48,7 @@ impl CopyBindInfo {
     /// callback.
     #[inline]
     #[must_use]
-    pub unsafe fn new(info: duckdb_copy_function_bind_info) -> Self {
+    pub const unsafe fn new(info: duckdb_copy_function_bind_info) -> Self {
         Self { info }
     }
 
@@ -117,7 +117,7 @@ impl CopyBindInfo {
     ///
     /// # Safety
     ///
-    /// The inner handle must be valid (requires DuckDB runtime).
+    /// The inner handle must be valid (requires `DuckDB` runtime).
     pub unsafe fn get_client_context(&self) -> crate::client_context::ClientContext {
         let ctx = unsafe { duckdb_copy_function_bind_get_client_context(self.info) };
         unsafe { crate::client_context::ClientContext::from_raw(ctx) }
@@ -126,7 +126,7 @@ impl CopyBindInfo {
     /// Returns the underlying raw handle.
     #[inline]
     #[must_use]
-    pub fn as_raw(&self) -> duckdb_copy_function_bind_info {
+    pub const fn as_raw(&self) -> duckdb_copy_function_bind_info {
         self.info
     }
 }
@@ -148,7 +148,7 @@ impl CopyGlobalInitInfo {
     /// global init callback.
     #[inline]
     #[must_use]
-    pub unsafe fn new(info: duckdb_copy_function_global_init_info) -> Self {
+    pub const unsafe fn new(info: duckdb_copy_function_global_init_info) -> Self {
         Self { info }
     }
 
@@ -232,7 +232,7 @@ impl CopyGlobalInitInfo {
     ///
     /// # Safety
     ///
-    /// The inner handle must be valid (requires DuckDB runtime).
+    /// The inner handle must be valid (requires `DuckDB` runtime).
     pub unsafe fn get_client_context(&self) -> crate::client_context::ClientContext {
         let ctx = unsafe { duckdb_copy_function_global_init_get_client_context(self.info) };
         unsafe { crate::client_context::ClientContext::from_raw(ctx) }
@@ -241,7 +241,7 @@ impl CopyGlobalInitInfo {
     /// Returns the underlying raw handle.
     #[inline]
     #[must_use]
-    pub fn as_raw(&self) -> duckdb_copy_function_global_init_info {
+    pub const fn as_raw(&self) -> duckdb_copy_function_global_init_info {
         self.info
     }
 }
@@ -263,7 +263,7 @@ impl CopySinkInfo {
     /// sink callback.
     #[inline]
     #[must_use]
-    pub unsafe fn new(info: duckdb_copy_function_sink_info) -> Self {
+    pub const unsafe fn new(info: duckdb_copy_function_sink_info) -> Self {
         Self { info }
     }
 
@@ -318,7 +318,7 @@ impl CopySinkInfo {
     ///
     /// # Safety
     ///
-    /// The inner handle must be valid (requires DuckDB runtime).
+    /// The inner handle must be valid (requires `DuckDB` runtime).
     pub unsafe fn get_client_context(&self) -> crate::client_context::ClientContext {
         let ctx = unsafe { duckdb_copy_function_sink_get_client_context(self.info) };
         unsafe { crate::client_context::ClientContext::from_raw(ctx) }
@@ -327,7 +327,7 @@ impl CopySinkInfo {
     /// Returns the underlying raw handle.
     #[inline]
     #[must_use]
-    pub fn as_raw(&self) -> duckdb_copy_function_sink_info {
+    pub const fn as_raw(&self) -> duckdb_copy_function_sink_info {
         self.info
     }
 }
@@ -349,7 +349,7 @@ impl CopyFinalizeInfo {
     /// finalize callback.
     #[inline]
     #[must_use]
-    pub unsafe fn new(info: duckdb_copy_function_finalize_info) -> Self {
+    pub const unsafe fn new(info: duckdb_copy_function_finalize_info) -> Self {
         Self { info }
     }
 
@@ -404,7 +404,7 @@ impl CopyFinalizeInfo {
     ///
     /// # Safety
     ///
-    /// The inner handle must be valid (requires DuckDB runtime).
+    /// The inner handle must be valid (requires `DuckDB` runtime).
     pub unsafe fn get_client_context(&self) -> crate::client_context::ClientContext {
         let ctx = unsafe { duckdb_copy_function_finalize_get_client_context(self.info) };
         unsafe { crate::client_context::ClientContext::from_raw(ctx) }
@@ -413,7 +413,7 @@ impl CopyFinalizeInfo {
     /// Returns the underlying raw handle.
     #[inline]
     #[must_use]
-    pub fn as_raw(&self) -> duckdb_copy_function_finalize_info {
+    pub const fn as_raw(&self) -> duckdb_copy_function_finalize_info {
         self.info
     }
 }

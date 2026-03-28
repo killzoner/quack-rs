@@ -227,7 +227,7 @@ impl ScalarBindInfo {
     ///
     /// # Safety
     ///
-    /// The inner handle must be valid (requires DuckDB runtime).
+    /// The inner handle must be valid (requires `DuckDB` runtime).
     pub unsafe fn get_client_context(&self) -> crate::client_context::ClientContext {
         let mut ctx: duckdb_client_context = core::ptr::null_mut();
         unsafe { duckdb_scalar_function_get_client_context(self.info, &raw mut ctx) };
@@ -333,7 +333,7 @@ impl ScalarInitInfo {
     ///
     /// # Safety
     ///
-    /// The inner handle must be valid (requires DuckDB runtime).
+    /// The inner handle must be valid (requires `DuckDB` runtime).
     pub unsafe fn get_client_context(&self) -> crate::client_context::ClientContext {
         let mut ctx: duckdb_client_context = core::ptr::null_mut();
         unsafe { duckdb_scalar_function_init_get_client_context(self.info, &raw mut ctx) };

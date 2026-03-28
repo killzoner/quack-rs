@@ -171,7 +171,7 @@ impl BindInfo {
     ///
     /// # Safety
     ///
-    /// The inner handle must be valid (requires DuckDB runtime).
+    /// The inner handle must be valid (requires `DuckDB` runtime).
     #[cfg(feature = "duckdb-1-5")]
     pub unsafe fn get_client_context(&self) -> crate::client_context::ClientContext {
         let mut ctx: duckdb_client_context = core::ptr::null_mut();
