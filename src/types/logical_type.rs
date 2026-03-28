@@ -13,8 +13,10 @@
 
 use crate::types::TypeId;
 use libduckdb_sys::{
+    duckdb_create_array_type, duckdb_create_decimal_type, duckdb_create_enum_type,
     duckdb_create_list_type, duckdb_create_logical_type, duckdb_create_map_type,
-    duckdb_create_struct_type, duckdb_destroy_logical_type, duckdb_logical_type,
+    duckdb_create_struct_type, duckdb_create_union_type, duckdb_destroy_logical_type,
+    duckdb_logical_type,
 };
 use std::fmt;
 
@@ -186,6 +188,183 @@ impl LogicalType {
             )
         };
         assert!(!inner.is_null(), "duckdb_create_struct_type returned null");
+        Self { inner }
+    }
+
+    /// Creates a `DECIMAL(width, scale)` logical type.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use quack_rs::types::LogicalType;
+    ///
+    /// // DECIMAL(18, 3) — 18 total digits, 3 after the decimal point
+    /// let price = LogicalType::decimal(18, 3);
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if `duckdb_create_decimal_type` returns null.
+    #[must_use]
+    pub fn decimal(width: u8, scale: u8) -> Self {
+        let inner = unsafe { duckdb_create_decimal_type(width, scale) };
+        assert!(!inner.is_null(), "duckdb_create_decimal_type returned null");
+        Self { inner }
+    }
+
+    /// Creates an `ARRAY<element_type>[size]` logical type (fixed-size array).
+    ///
+    /// Unlike `LIST`, arrays have a fixed number of elements known at type
+    /// definition time.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use quack_rs::types::{LogicalType, TypeId};
+    ///
+    /// // FLOAT[3] — a 3-element array of floats (e.g., for a 3D vector)
+    /// let vec3 = LogicalType::array(TypeId::Float, 3);
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if `duckdb_create_array_type` returns null.
+    #[must_use]
+    pub fn array(element_type: TypeId, size: u64) -> Self {
+        let element_lt = Self::new(element_type);
+        let inner =
+            unsafe { duckdb_create_array_type(element_lt.as_raw(), size as libduckdb_sys::idx_t) };
+        assert!(!inner.is_null(), "duckdb_create_array_type returned null");
+        Self { inner }
+    }
+
+    /// Creates an `ARRAY<element>[size]` logical type from an existing [`LogicalType`].
+    ///
+    /// Use this when the element type is itself a complex type.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `duckdb_create_array_type` returns null.
+    #[must_use]
+    pub fn array_from_logical(element: &LogicalType, size: u64) -> Self {
+        let inner =
+            unsafe { duckdb_create_array_type(element.as_raw(), size as libduckdb_sys::idx_t) };
+        assert!(!inner.is_null(), "duckdb_create_array_type returned null");
+        Self { inner }
+    }
+
+    /// Creates a `UNION` logical type from a slice of `(name, type)` member definitions.
+    ///
+    /// A `UNION` can hold one value of any of its member types at a time,
+    /// similar to a tagged union or sum type.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use quack_rs::types::{LogicalType, TypeId};
+    ///
+    /// let result = LogicalType::union_type(&[
+    ///     ("str", TypeId::Varchar),
+    ///     ("num", TypeId::BigInt),
+    /// ]);
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if any member name contains an interior null byte, or if
+    /// `duckdb_create_union_type` returns null.
+    #[must_use]
+    pub fn union_type(members: &[(&str, TypeId)]) -> Self {
+        use std::ffi::CString;
+
+        let member_types: Vec<Self> = members.iter().map(|&(_, t)| Self::new(t)).collect();
+        let c_names: Vec<CString> = members
+            .iter()
+            .map(|&(n, _)| CString::new(n).expect("member name must not contain null bytes"))
+            .collect();
+
+        let mut type_ptrs: Vec<duckdb_logical_type> =
+            member_types.iter().map(Self::as_raw).collect();
+        let mut name_ptrs: Vec<*const std::os::raw::c_char> =
+            c_names.iter().map(|s| s.as_ptr()).collect();
+
+        let inner = unsafe {
+            duckdb_create_union_type(
+                type_ptrs.as_mut_ptr(),
+                name_ptrs.as_mut_ptr(),
+                members.len() as libduckdb_sys::idx_t,
+            )
+        };
+        assert!(!inner.is_null(), "duckdb_create_union_type returned null");
+        Self { inner }
+    }
+
+    /// Creates a `UNION` logical type from a slice of `(name, LogicalType)` members.
+    ///
+    /// Use this when members have complex types.
+    ///
+    /// # Panics
+    ///
+    /// Panics if any member name contains an interior null byte, or if
+    /// `duckdb_create_union_type` returns null.
+    #[must_use]
+    pub fn union_type_from_logical(members: &[(&str, LogicalType)]) -> Self {
+        use std::ffi::CString;
+
+        let c_names: Vec<CString> = members
+            .iter()
+            .map(|&(n, _)| CString::new(n).expect("member name must not contain null bytes"))
+            .collect();
+
+        let mut type_ptrs: Vec<duckdb_logical_type> =
+            members.iter().map(|(_, lt)| lt.as_raw()).collect();
+        let mut name_ptrs: Vec<*const std::os::raw::c_char> =
+            c_names.iter().map(|s| s.as_ptr()).collect();
+
+        let inner = unsafe {
+            duckdb_create_union_type(
+                type_ptrs.as_mut_ptr(),
+                name_ptrs.as_mut_ptr(),
+                members.len() as libduckdb_sys::idx_t,
+            )
+        };
+        assert!(!inner.is_null(), "duckdb_create_union_type returned null");
+        Self { inner }
+    }
+
+    /// Creates an `ENUM` logical type from a list of member names.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use quack_rs::types::LogicalType;
+    ///
+    /// let color = LogicalType::enum_type(&["red", "green", "blue"]);
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if any name contains an interior null byte, or if
+    /// `duckdb_create_enum_type` returns null.
+    #[must_use]
+    pub fn enum_type(members: &[&str]) -> Self {
+        use std::ffi::CString;
+
+        let c_names: Vec<CString> = members
+            .iter()
+            .map(|n| CString::new(*n).expect("enum member name must not contain null bytes"))
+            .collect();
+
+        let mut name_ptrs: Vec<*const std::os::raw::c_char> =
+            c_names.iter().map(|s| s.as_ptr()).collect();
+
+        let inner = unsafe {
+            duckdb_create_enum_type(
+                name_ptrs.as_mut_ptr(),
+                members.len() as libduckdb_sys::idx_t,
+            )
+        };
+        assert!(!inner.is_null(), "duckdb_create_enum_type returned null");
         Self { inner }
     }
 

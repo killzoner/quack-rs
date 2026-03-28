@@ -4,13 +4,14 @@
 // and encouraging more Rust development!
 
 use std::ffi::CString;
+use std::os::raw::c_void;
 
 use libduckdb_sys::{
-    duckdb_aggregate_function_set_destructor, duckdb_aggregate_function_set_functions,
-    duckdb_aggregate_function_set_name, duckdb_aggregate_function_set_return_type,
-    duckdb_aggregate_function_set_special_handling, duckdb_connection,
-    duckdb_create_aggregate_function, duckdb_destroy_aggregate_function,
-    duckdb_register_aggregate_function, DuckDBSuccess,
+    duckdb_aggregate_function_set_destructor, duckdb_aggregate_function_set_extra_info,
+    duckdb_aggregate_function_set_functions, duckdb_aggregate_function_set_name,
+    duckdb_aggregate_function_set_return_type, duckdb_aggregate_function_set_special_handling,
+    duckdb_connection, duckdb_create_aggregate_function, duckdb_delete_callback_t,
+    duckdb_destroy_aggregate_function, duckdb_register_aggregate_function, DuckDBSuccess,
 };
 
 use crate::aggregate::callbacks::{
@@ -68,6 +69,7 @@ pub struct AggregateFunctionBuilder {
     pub(super) finalize: Option<FinalizeFn>,
     pub(super) destructor: Option<DestroyFn>,
     pub(super) null_handling: NullHandling,
+    pub(super) extra_info: Option<(*mut c_void, duckdb_delete_callback_t)>,
 }
 
 impl AggregateFunctionBuilder {
@@ -90,6 +92,7 @@ impl AggregateFunctionBuilder {
             finalize: None,
             destructor: None,
             null_handling: NullHandling::DefaultNullHandling,
+            extra_info: None,
         }
     }
 
@@ -119,6 +122,7 @@ impl AggregateFunctionBuilder {
             finalize: None,
             destructor: None,
             null_handling: NullHandling::DefaultNullHandling,
+            extra_info: None,
         })
     }
 
@@ -256,6 +260,26 @@ impl AggregateFunctionBuilder {
         self
     }
 
+    /// Attaches arbitrary data to this aggregate function.
+    ///
+    /// The data pointer is available inside callbacks via
+    /// `duckdb_aggregate_function_get_extra_info`. The `destroy` callback is
+    /// called by `DuckDB` when the function is dropped to free the data.
+    ///
+    /// # Safety
+    ///
+    /// `data` must point to valid memory that outlives the function registration,
+    /// or will be freed by `destroy`. The typical pattern
+    /// is to box your data: `Box::into_raw(Box::new(my_data)).cast()`.
+    pub unsafe fn extra_info(
+        mut self,
+        data: *mut c_void,
+        destroy: duckdb_delete_callback_t,
+    ) -> Self {
+        self.extra_info = Some((data, destroy));
+        self
+    }
+
     /// Registers the aggregate function on the given connection.
     ///
     /// # Errors
@@ -362,6 +386,14 @@ impl AggregateFunctionBuilder {
             // SAFETY: func is a valid aggregate function handle.
             unsafe {
                 duckdb_aggregate_function_set_special_handling(func);
+            }
+        }
+
+        // Set extra info if provided
+        if let Some((data, destroy)) = self.extra_info {
+            // SAFETY: func is valid; data and destroy are provided by caller.
+            unsafe {
+                duckdb_aggregate_function_set_extra_info(func, data, destroy);
             }
         }
 

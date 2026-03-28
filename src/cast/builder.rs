@@ -189,8 +189,10 @@ pub type CastFn = unsafe extern "C" fn(
 /// ```
 #[must_use]
 pub struct CastFunctionBuilder {
-    source: TypeId,
-    target: TypeId,
+    source: Option<TypeId>,
+    source_logical: Option<LogicalType>,
+    target: Option<TypeId>,
+    target_logical: Option<LogicalType>,
     function: Option<CastFn>,
     implicit_cost: Option<i64>,
     extra_info: Option<(*mut c_void, duckdb_delete_callback_t)>,
@@ -205,25 +207,48 @@ impl CastFunctionBuilder {
     /// Creates a new builder that will cast `source` values into `target` values.
     pub const fn new(source: TypeId, target: TypeId) -> Self {
         Self {
-            source,
-            target,
+            source: Some(source),
+            source_logical: None,
+            target: Some(target),
+            target_logical: None,
             function: None,
             implicit_cost: None,
             extra_info: None,
         }
     }
 
-    /// Returns the source type this cast converts from.
+    /// Creates a new builder using [`LogicalType`]s for source and target.
+    ///
+    /// Use this when the source or target types are complex (e.g.
+    /// `DECIMAL(18, 3)`, `LIST(VARCHAR)`, etc.) and cannot be expressed as
+    /// simple [`TypeId`] values.
+    pub fn new_logical(source: LogicalType, target: LogicalType) -> Self {
+        Self {
+            source: None,
+            source_logical: Some(source),
+            target: None,
+            target_logical: Some(target),
+            function: None,
+            implicit_cost: None,
+            extra_info: None,
+        }
+    }
+
+    /// Returns the source type this cast converts from (if set via [`new`][Self::new]).
+    ///
+    /// Returns `None` if the source was set via [`new_logical`][Self::new_logical].
     ///
     /// Useful for introspection and for [`MockRegistrar`][crate::testing::MockRegistrar].
-    pub const fn source(&self) -> TypeId {
+    pub const fn source(&self) -> Option<TypeId> {
         self.source
     }
 
-    /// Returns the target type this cast converts to.
+    /// Returns the target type this cast converts to (if set via [`new`][Self::new]).
+    ///
+    /// Returns `None` if the target was set via [`new_logical`][Self::new_logical].
     ///
     /// Useful for introspection and for [`MockRegistrar`][crate::testing::MockRegistrar].
-    pub const fn target(&self) -> TypeId {
+    pub const fn target(&self) -> Option<TypeId> {
         self.target
     }
 
@@ -281,15 +306,27 @@ impl CastFunctionBuilder {
         // SAFETY: allocates a new cast function handle.
         let cast = unsafe { duckdb_create_cast_function() };
 
-        // Set source type
-        let src_lt = LogicalType::new(self.source);
+        // Resolve source type: prefer explicit LogicalType over TypeId.
+        let src_lt = if let Some(lt) = self.source_logical {
+            lt
+        } else if let Some(id) = self.source {
+            LogicalType::new(id)
+        } else {
+            return Err(ExtensionError::new("cast source type not set"));
+        };
         // SAFETY: cast and src_lt.as_raw() are valid.
         unsafe {
             duckdb_cast_function_set_source_type(cast, src_lt.as_raw());
         }
 
-        // Set target type
-        let tgt_lt = LogicalType::new(self.target);
+        // Resolve target type: prefer explicit LogicalType over TypeId.
+        let tgt_lt = if let Some(lt) = self.target_logical {
+            lt
+        } else if let Some(id) = self.target {
+            LogicalType::new(id)
+        } else {
+            return Err(ExtensionError::new("cast target type not set"));
+        };
         // SAFETY: cast and tgt_lt.as_raw() are valid.
         unsafe {
             duckdb_cast_function_set_target_type(cast, tgt_lt.as_raw());
@@ -330,10 +367,9 @@ impl CastFunctionBuilder {
         if result == DuckDBSuccess {
             Ok(())
         } else {
-            Err(ExtensionError::new(format!(
-                "duckdb_register_cast_function failed ({:?} → {:?})",
-                self.source, self.target
-            )))
+            Err(ExtensionError::new(
+                "duckdb_register_cast_function failed",
+            ))
         }
     }
 }
@@ -357,8 +393,8 @@ mod tests {
     #[test]
     fn builder_stores_source_and_target() {
         let b = CastFunctionBuilder::new(TypeId::Varchar, TypeId::Integer);
-        assert_eq!(b.source, TypeId::Varchar);
-        assert_eq!(b.target, TypeId::Integer);
+        assert_eq!(b.source(), Some(TypeId::Varchar));
+        assert_eq!(b.target(), Some(TypeId::Integer));
     }
 
     #[test]

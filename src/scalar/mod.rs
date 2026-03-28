@@ -41,5 +41,7 @@
 //! ```
 
 pub mod builder;
+pub mod info;
 
 pub use builder::{ScalarFunctionBuilder, ScalarFunctionSetBuilder, ScalarOverloadBuilder};
+pub use info::ScalarFunctionInfo;

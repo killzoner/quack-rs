@@ -103,11 +103,14 @@ pub use crate::cast::{CastFn, CastFunctionBuilder, CastFunctionInfo, CastMode};
 
 // Aggregate functions
 pub use crate::aggregate::{
-    AggregateFunctionBuilder, AggregateFunctionSetBuilder, AggregateState, FfiState,
+    AggregateFunctionBuilder, AggregateFunctionInfo, AggregateFunctionSetBuilder, AggregateState,
+    FfiState,
 };
 
 // Scalar functions
-pub use crate::scalar::{ScalarFunctionBuilder, ScalarFunctionSetBuilder, ScalarOverloadBuilder};
+pub use crate::scalar::{
+    ScalarFunctionBuilder, ScalarFunctionInfo, ScalarFunctionSetBuilder, ScalarOverloadBuilder,
+};
 
 // Table functions
 pub use crate::table::{

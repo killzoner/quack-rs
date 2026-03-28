@@ -58,10 +58,10 @@ use crate::types::TypeId;
 /// A record of a single cast function registration.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CastRecord {
-    /// The source type being cast from.
-    pub source: TypeId,
-    /// The target type being cast to.
-    pub target: TypeId,
+    /// The source type being cast from (if set via simple `TypeId`).
+    pub source: Option<TypeId>,
+    /// The target type being cast to (if set via simple `TypeId`).
+    pub target: Option<TypeId>,
 }
 
 /// An in-memory mock implementation of [`Registrar`] for unit testing.
@@ -397,8 +397,8 @@ mod tests {
         unsafe { mock.register_cast(builder).unwrap() };
         let casts = mock.casts();
         assert_eq!(casts.len(), 1);
-        assert_eq!(casts[0].source, TypeId::Varchar);
-        assert_eq!(casts[0].target, TypeId::Integer);
+        assert_eq!(casts[0].source, Some(TypeId::Varchar));
+        assert_eq!(casts[0].target, Some(TypeId::Integer));
         assert_eq!(mock.total_registrations(), 1);
     }
 

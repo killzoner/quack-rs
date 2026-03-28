@@ -56,7 +56,9 @@
 
 pub mod builder;
 pub mod callbacks;
+pub mod info;
 pub mod state;
 
 pub use builder::{AggregateFunctionBuilder, AggregateFunctionSetBuilder};
+pub use info::AggregateFunctionInfo;
 pub use state::{AggregateState, FfiState};

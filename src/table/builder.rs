@@ -91,9 +91,9 @@ pub type ScanFn = unsafe extern "C" fn(info: duckdb_function_info, output: duckd
 pub type ExtraDestroyFn = unsafe extern "C" fn(data: *mut c_void);
 
 /// A named parameter specification: (name, type).
-struct NamedParam {
-    name: CString,
-    type_id: TypeId,
+enum NamedParam {
+    Simple { name: CString, type_id: TypeId },
+    Logical { name: CString, logical_type: LogicalType },
 }
 
 /// Builder for registering a `DuckDB` table function.
@@ -119,6 +119,7 @@ struct NamedParam {
 pub struct TableFunctionBuilder {
     name: CString,
     params: Vec<TypeId>,
+    logical_params: Vec<(usize, LogicalType)>,
     named_params: Vec<NamedParam>,
     bind: Option<BindFn>,
     init: Option<InitFn>,
@@ -138,6 +139,7 @@ impl TableFunctionBuilder {
         Self {
             name: CString::new(name).expect("function name must not contain null bytes"),
             params: Vec::new(),
+            logical_params: Vec::new(),
             named_params: Vec::new(),
             bind: None,
             init: None,
@@ -160,6 +162,7 @@ impl TableFunctionBuilder {
         Ok(Self {
             name: c_name,
             params: Vec::new(),
+            logical_params: Vec::new(),
             named_params: Vec::new(),
             bind: None,
             init: None,
@@ -183,6 +186,16 @@ impl TableFunctionBuilder {
         self
     }
 
+    /// Adds a positional parameter with a complex [`LogicalType`].
+    ///
+    /// Use this for parameterized types that [`TypeId`] cannot express, such as
+    /// `LIST(BIGINT)`, `MAP(VARCHAR, INTEGER)`, or `STRUCT(...)`.
+    pub fn param_logical(mut self, logical_type: LogicalType) -> Self {
+        let position = self.params.len() + self.logical_params.len();
+        self.logical_params.push((position, logical_type));
+        self
+    }
+
     /// Adds a named parameter (e.g., `my_fn(path := 'data.csv')`).
     ///
     /// Named parameters are accessed in the bind callback via
@@ -192,9 +205,24 @@ impl TableFunctionBuilder {
     ///
     /// Panics if `name` contains an interior null byte.
     pub fn named_param(mut self, name: &str, type_id: TypeId) -> Self {
-        self.named_params.push(NamedParam {
+        self.named_params.push(NamedParam::Simple {
             name: CString::new(name).expect("parameter name must not contain null bytes"),
             type_id,
+        });
+        self
+    }
+
+    /// Adds a named parameter with a complex [`LogicalType`].
+    ///
+    /// Use this for parameterized types that [`TypeId`] cannot express.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `name` contains an interior null byte.
+    pub fn named_param_logical(mut self, name: &str, logical_type: LogicalType) -> Self {
+        self.named_params.push(NamedParam::Logical {
+            name: CString::new(name).expect("parameter name must not contain null bytes"),
+            logical_type,
         });
         self
     }
@@ -290,21 +318,58 @@ impl TableFunctionBuilder {
             duckdb_table_function_set_name(func, self.name.as_ptr());
         }
 
-        // Add positional parameters.
-        for type_id in &self.params {
-            let lt = LogicalType::new(*type_id);
-            // SAFETY: func and lt.as_raw() are valid.
-            unsafe {
-                duckdb_table_function_add_parameter(func, lt.as_raw());
+        // Add positional parameters: merge simple TypeId params and complex LogicalType
+        // params in the order they were added (tracked by position).
+        {
+            let mut simple_idx = 0;
+            let mut logical_idx = 0;
+            let total = self.params.len() + self.logical_params.len();
+            for pos in 0..total {
+                if logical_idx < self.logical_params.len()
+                    && self.logical_params[logical_idx].0 == pos
+                {
+                    unsafe {
+                        duckdb_table_function_add_parameter(
+                            func,
+                            self.logical_params[logical_idx].1.as_raw(),
+                        );
+                    }
+                    logical_idx += 1;
+                } else if simple_idx < self.params.len() {
+                    let lt = LogicalType::new(self.params[simple_idx]);
+                    unsafe {
+                        duckdb_table_function_add_parameter(func, lt.as_raw());
+                    }
+                    simple_idx += 1;
+                }
             }
         }
 
         // Add named parameters.
         for np in &self.named_params {
-            let lt = LogicalType::new(np.type_id);
-            // SAFETY: func, name ptr, and lt.as_raw() are valid.
-            unsafe {
-                duckdb_table_function_add_named_parameter(func, np.name.as_ptr(), lt.as_raw());
+            match np {
+                NamedParam::Simple { name, type_id } => {
+                    let lt = LogicalType::new(*type_id);
+                    unsafe {
+                        duckdb_table_function_add_named_parameter(
+                            func,
+                            name.as_ptr(),
+                            lt.as_raw(),
+                        );
+                    }
+                }
+                NamedParam::Logical {
+                    name,
+                    logical_type,
+                } => {
+                    unsafe {
+                        duckdb_table_function_add_named_parameter(
+                            func,
+                            name.as_ptr(),
+                            logical_type.as_raw(),
+                        );
+                    }
+                }
             }
         }
 
@@ -385,8 +450,14 @@ mod tests {
             .named_param("path", TypeId::Varchar)
             .named_param("limit", TypeId::BigInt);
         assert_eq!(b.named_params.len(), 2);
-        assert_eq!(b.named_params[0].name.to_str().unwrap(), "path");
-        assert_eq!(b.named_params[1].name.to_str().unwrap(), "limit");
+        match &b.named_params[0] {
+            NamedParam::Simple { name, .. } => assert_eq!(name.to_str().unwrap(), "path"),
+            _ => panic!("expected Simple"),
+        }
+        match &b.named_params[1] {
+            NamedParam::Simple { name, .. } => assert_eq!(name.to_str().unwrap(), "limit"),
+            _ => panic!("expected Simple"),
+        }
     }
 
     #[test]

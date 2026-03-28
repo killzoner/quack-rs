@@ -798,8 +798,8 @@ fn mock_registrar_records_cast() {
     assert_eq!(
         casts[0],
         CastRecord {
-            source: TypeId::Varchar,
-            target: TypeId::Integer,
+            source: Some(TypeId::Varchar),
+            target: Some(TypeId::Integer),
         }
     );
 }
@@ -872,6 +872,6 @@ fn cast_builder_source_target_accessors() {
     use quack_rs::types::TypeId;
 
     let b = CastFunctionBuilder::new(TypeId::Varchar, TypeId::Integer);
-    assert_eq!(b.source(), TypeId::Varchar);
-    assert_eq!(b.target(), TypeId::Integer);
+    assert_eq!(b.source(), Some(TypeId::Varchar));
+    assert_eq!(b.target(), Some(TypeId::Integer));
 }
