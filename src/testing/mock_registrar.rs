@@ -465,6 +465,67 @@ mod tests {
     }
 
     #[test]
+    fn mock_registrar_has_aggregate_false_when_empty() {
+        let mock = MockRegistrar::new();
+        assert!(!mock.has_aggregate("x"));
+    }
+
+    #[test]
+    fn mock_registrar_has_aggregate_set_false_when_empty() {
+        let mock = MockRegistrar::new();
+        assert!(!mock.has_aggregate_set("x"));
+    }
+
+    #[test]
+    fn mock_registrar_has_table_false_when_empty() {
+        let mock = MockRegistrar::new();
+        assert!(!mock.has_table("x"));
+    }
+
+    #[test]
+    fn mock_registrar_has_sql_macro_false_when_empty() {
+        let mock = MockRegistrar::new();
+        assert!(!mock.has_sql_macro("x"));
+    }
+
+    #[test]
+    fn mock_registrar_has_scalar_false_when_empty() {
+        let mock = MockRegistrar::new();
+        assert!(!mock.has_scalar("x"));
+    }
+
+    #[test]
+    fn mock_registrar_empty_total_registrations() {
+        let mock = MockRegistrar::new();
+        assert_eq!(mock.total_registrations(), 0);
+    }
+
+    #[test]
+    fn mock_registrar_total_registrations_counts_all_types() {
+        let mock = MockRegistrar::new();
+
+        let scalar = ScalarFunctionBuilder::new("sc")
+            .param(TypeId::BigInt)
+            .returns(TypeId::BigInt);
+        let agg = AggregateFunctionBuilder::new("ag")
+            .param(TypeId::BigInt)
+            .returns(TypeId::BigInt);
+        let table = TableFunctionBuilder::new("tb");
+        let macro_ = SqlMacro::scalar("mc", &["x"], "x + 1").unwrap();
+        let cast = CastFunctionBuilder::new(TypeId::Varchar, TypeId::Integer);
+
+        unsafe {
+            mock.register_scalar(scalar).unwrap();
+            mock.register_aggregate(agg).unwrap();
+            mock.register_table(table).unwrap();
+            mock.register_sql_macro(macro_).unwrap();
+            mock.register_cast(cast).unwrap();
+        }
+
+        assert_eq!(mock.total_registrations(), 5);
+    }
+
+    #[test]
     fn mock_registrar_used_with_generic_registrar() {
         // Demonstrates using MockRegistrar where &impl Registrar is expected.
         fn register_all(reg: &impl Registrar) -> Result<(), ExtensionError> {

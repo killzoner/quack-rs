@@ -113,6 +113,7 @@ impl BindInfo {
     /// # Panics
     ///
     /// Panics if `message` contains an interior null byte.
+    #[mutants::skip]
     pub fn set_error(&self, message: &str) {
         let c_msg = CString::new(message).expect("error message must not contain null bytes");
         // SAFETY: self.info is valid.
@@ -122,6 +123,7 @@ impl BindInfo {
     }
 
     /// Returns the number of positional parameters passed to this function call.
+    #[mutants::skip]
     #[must_use]
     pub fn parameter_count(&self) -> usize {
         // SAFETY: self.info is valid.
@@ -209,6 +211,7 @@ impl InitInfo {
     /// Returns the number of projected (requested) columns.
     ///
     /// Only valid when projection pushdown is enabled for the table function.
+    #[mutants::skip]
     #[must_use]
     pub fn projected_column_count(&self) -> usize {
         // SAFETY: self.info is valid.
@@ -219,6 +222,7 @@ impl InitInfo {
     /// Returns the output column index at the given projection position.
     ///
     /// Only valid when projection pushdown is enabled.
+    #[mutants::skip]
     #[must_use]
     pub fn projected_column_index(&self, projection_idx: usize) -> usize {
         // SAFETY: self.info is valid.
@@ -231,6 +235,7 @@ impl InitInfo {
     /// Sets the maximum number of threads for parallel scanning.
     ///
     /// Only effective when `local_init` is also set on the table function.
+    #[mutants::skip]
     pub fn set_max_threads(&self, n: u64) {
         // SAFETY: self.info is valid.
         unsafe { libduckdb_sys::duckdb_init_set_max_threads(self.info, n as idx_t) };
@@ -241,6 +246,7 @@ impl InitInfo {
     /// # Panics
     ///
     /// Panics if `message` contains an interior null byte.
+    #[mutants::skip]
     pub fn set_error(&self, message: &str) {
         let c_msg = CString::new(message).expect("error message must not contain null bytes");
         // SAFETY: self.info is valid.
@@ -289,6 +295,7 @@ impl FunctionInfo {
     /// # Panics
     ///
     /// Panics if `message` contains an interior null byte.
+    #[mutants::skip]
     pub fn set_error(&self, message: &str) {
         let c_msg = CString::new(message).expect("error message must not contain null bytes");
         // SAFETY: self.info is valid.

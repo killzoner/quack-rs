@@ -81,6 +81,7 @@ bundled-test = ["dep:duckdb"]
 [dependencies]
 libduckdb-sys = { version = ">=1.4.4, <2", features = ["loadable-extension"] }
 duckdb = { version = ">=1.4.4, <2", features = ["bundled"], optional = true }
+mutants = "0.0.4"
 
 [build-dependencies]
 # Used only when the `bundled-test` feature is active: compiles the thin C++

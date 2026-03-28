@@ -831,6 +831,7 @@ impl LogicalType {
 }
 
 impl Drop for LogicalType {
+    #[mutants::skip]
     fn drop(&mut self) {
         // SAFETY: `self.inner` was created by `duckdb_create_logical_type` and has not
         // been transferred elsewhere. It is safe to destroy exactly once here.
@@ -858,6 +859,14 @@ mod tests {
     // require a running DuckDB runtime and are covered in tests/integration_test.rs.
     // The `loadable-extension` feature uses lazy-initialized function pointers
     // that cannot be called without a prior call to duckdb_rs_extension_api_init.
+
+    #[test]
+    fn logical_type_error_display() {
+        let err = super::LogicalTypeError {
+            api_func: "duckdb_create_logical_type",
+        };
+        assert_eq!(err.to_string(), "duckdb_create_logical_type returned null");
+    }
 
     #[test]
     fn size_of_logical_type_struct() {

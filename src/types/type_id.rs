@@ -562,4 +562,48 @@ mod tests {
             DUCKDB_TYPE_DUCKDB_TYPE_STRING_LITERAL
         );
     }
+
+    #[test]
+    fn from_duckdb_type_roundtrip() {
+        let variants = [
+            TypeId::Boolean,
+            TypeId::TinyInt,
+            TypeId::SmallInt,
+            TypeId::Integer,
+            TypeId::BigInt,
+            TypeId::UTinyInt,
+            TypeId::USmallInt,
+            TypeId::UInteger,
+            TypeId::UBigInt,
+            TypeId::HugeInt,
+            TypeId::Float,
+            TypeId::Double,
+            TypeId::Timestamp,
+            TypeId::TimestampTz,
+            TypeId::Date,
+            TypeId::Time,
+            TypeId::Interval,
+            TypeId::Varchar,
+            TypeId::Blob,
+            TypeId::Decimal,
+            TypeId::TimestampS,
+            TypeId::TimestampMs,
+            TypeId::TimestampNs,
+            TypeId::Enum,
+            TypeId::List,
+            TypeId::Struct,
+            TypeId::Map,
+            TypeId::Uuid,
+            TypeId::Union,
+            TypeId::Bit,
+            TypeId::TimeTz,
+            TypeId::UHugeInt,
+            TypeId::Array,
+        ];
+        for &tid in &variants {
+            let raw = tid.to_duckdb_type();
+            let back = TypeId::from_duckdb_type(raw);
+            assert_eq!(back, tid, "roundtrip failed for {tid:?}");
+        }
+    }
 }

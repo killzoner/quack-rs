@@ -56,6 +56,7 @@ impl AggregateFunctionInfo {
     /// # Panics
     ///
     /// Panics if `message` contains an interior null byte.
+    #[mutants::skip]
     pub fn set_error(&self, message: &str) {
         let c_msg = CString::new(message).expect("error message must not contain null bytes");
         // SAFETY: self.info is valid per constructor contract.

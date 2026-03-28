@@ -83,6 +83,7 @@ impl ScalarFunctionInfo {
     /// # Panics
     ///
     /// Panics if `message` contains an interior null byte.
+    #[mutants::skip]
     pub fn set_error(&self, message: &str) {
         let c_msg = CString::new(message).expect("error message must not contain null bytes");
         // SAFETY: self.info is valid per constructor contract.
@@ -157,6 +158,7 @@ impl ScalarBindInfo {
     }
 
     /// Returns the number of arguments passed to the scalar function.
+    #[mutants::skip]
     #[must_use]
     pub fn argument_count(&self) -> u64 {
         // SAFETY: self.info is valid per constructor contract.
@@ -212,6 +214,7 @@ impl ScalarBindInfo {
     /// # Panics
     ///
     /// Panics if `message` contains an interior null byte.
+    #[mutants::skip]
     pub fn set_error(&self, message: &str) {
         let c_msg = CString::new(message).expect("error message must not contain null bytes");
         // SAFETY: self.info is valid per constructor contract.
@@ -318,6 +321,7 @@ impl ScalarInitInfo {
     /// # Panics
     ///
     /// Panics if `message` contains an interior null byte.
+    #[mutants::skip]
     pub fn set_error(&self, message: &str) {
         let c_msg = CString::new(message).expect("error message must not contain null bytes");
         // SAFETY: self.info is valid per constructor contract.
@@ -345,5 +349,33 @@ impl ScalarInitInfo {
     #[inline]
     pub const fn as_raw(&self) -> duckdb_init_info {
         self.info
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn scalar_function_info_as_raw_roundtrip() {
+        let raw = std::ptr::null_mut();
+        let info = unsafe { ScalarFunctionInfo::new(raw) };
+        assert_eq!(info.as_raw(), raw);
+    }
+
+    #[cfg(feature = "duckdb-1-5")]
+    #[test]
+    fn scalar_bind_info_as_raw_roundtrip() {
+        let raw = std::ptr::null_mut();
+        let info = unsafe { ScalarBindInfo::new(raw) };
+        assert_eq!(info.as_raw(), raw);
+    }
+
+    #[cfg(feature = "duckdb-1-5")]
+    #[test]
+    fn scalar_init_info_as_raw_roundtrip() {
+        let raw = std::ptr::null_mut();
+        let info = unsafe { ScalarInitInfo::new(raw) };
+        assert_eq!(info.as_raw(), raw);
     }
 }

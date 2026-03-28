@@ -493,4 +493,25 @@ mod tests {
     fn try_new_null_byte_rejected() {
         assert!(TableFunctionBuilder::try_new("func\0name").is_err());
     }
+
+    #[test]
+    fn param_logical_position_tracking() {
+        // Create a fake LogicalType from a dangling (non-null) pointer.
+        // We leak the builder at the end to prevent Drop from calling
+        // duckdb_destroy_logical_type on the invalid pointer.
+        let fake_lt = unsafe { LogicalType::from_raw(std::ptr::NonNull::dangling().as_ptr()) };
+
+        // Build with one simple param followed by one logical param.
+        let b = TableFunctionBuilder::new("f")
+            .param(TypeId::Integer)
+            .param_logical(fake_lt);
+
+        assert_eq!(b.params.len(), 1);
+        assert_eq!(b.logical_params.len(), 1);
+        assert_eq!(b.logical_params[0].0, 1); // position should be 1, not 0
+
+        // Prevent drop of the LogicalType inside b.logical_params
+        // by leaking the entire builder.
+        std::mem::forget(b);
+    }
 }
