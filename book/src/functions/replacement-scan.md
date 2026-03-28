@@ -10,19 +10,31 @@ and have DuckDB automatically invoke your extension's table-valued scan instead 
 trying to open the path as a built-in file type. This is how DuckDB's built-in CSV,
 Parquet, and JSON readers work.
 
-`quack-rs` provides `ReplacementScanBuilder` to register a replacement scan with
-a 4-method chain.
+`quack-rs` provides `ReplacementScanBuilder` (a static registration helper) and
+`ReplacementScanInfo` (an ergonomic wrapper for callbacks).
 
-## Builder API
+## Registration API
+
+Unlike the other builders in quack-rs, `ReplacementScanBuilder` uses a single
+static call because the DuckDB C API takes all arguments at once:
 
 ```rust
 use quack_rs::replacement_scan::ReplacementScanBuilder;
 
-ReplacementScanBuilder::new()
-    .callback(my_scan_callback)
-    .delete_callback(my_delete_callback)      // optional but recommended
-    .extra_data(Box::into_raw(Box::new(my_state)) as *mut _)
-    .register(db)?;
+// Low-level: pass raw extra_data and an optional delete callback.
+unsafe {
+    ReplacementScanBuilder::register(
+        db,                            // duckdb_database
+        my_scan_callback,              // ReplacementScanFn
+        std::ptr::null_mut(),          // extra_data (or a raw pointer)
+        None,                          // delete_callback
+    );
+}
+
+// Ergonomic: pass owned Rust data; boxing and destructor are handled for you.
+unsafe {
+    ReplacementScanBuilder::register_with_data(db, my_scan_callback, my_state);
+}
 ```
 
 > **Note:** Replacement scans are registered on a **database** handle
@@ -30,30 +42,41 @@ ReplacementScanBuilder::new()
 
 ## Callback signature
 
+The raw callback receives `duckdb_replacement_scan_info`, but you can wrap it
+with `ReplacementScanInfo` for ergonomic, safe access:
+
 ```rust
+use quack_rs::replacement_scan::ReplacementScanInfo;
+
 unsafe extern "C" fn my_scan_callback(
     info: duckdb_replacement_scan_info,
     table_name: *const ::std::os::raw::c_char,
-    data: *mut ::std::os::raw::c_void,
+    _data: *mut ::std::os::raw::c_void,
 ) {
-    // table_name is the path string from FROM '...'
     let path = unsafe { std::ffi::CStr::from_ptr(table_name) }
         .to_str()
         .unwrap_or("");
 
-    // Only handle files that match your format
     if !path.ends_with(".myformat") {
         return; // pass — DuckDB will try other handlers
     }
 
-    // Tell DuckDB which function to call for this path
-    unsafe { duckdb_replacement_scan_set_function_name(info, c"read_myformat".as_ptr()) };
-    // Add the path as a parameter
-    let val = unsafe { duckdb_create_varchar_length(path.as_ptr().cast(), path.len() as _) };
-    unsafe { duckdb_replacement_scan_add_parameter(info, val) };
-    unsafe { duckdb_destroy_value(&mut { val }) };
+    // Use ReplacementScanInfo for ergonomic access
+    unsafe {
+        ReplacementScanInfo::new(info)
+            .set_function("read_myformat")
+            .add_varchar_parameter(path);
+    }
 }
 ```
+
+### `ReplacementScanInfo` methods
+
+| Method | Description |
+|--------|-------------|
+| `set_function(name)` | Redirect to the named table function |
+| `add_varchar_parameter(value)` | Add a VARCHAR parameter to the redirected call |
+| `set_error(message)` | Report an error (aborts this replacement scan) |
 
 ## When to use replacement scans vs table functions
 

@@ -160,10 +160,12 @@ quack-rs/
 │   │   │   ├── single.rs          # AggregateFunctionBuilder (single-signature)
 │   │   │   ├── set.rs             # AggregateFunctionSetBuilder, OverloadBuilder
 │   │   │   └── tests.rs           # Unit tests
+│   │   ├── info.rs                # AggregateFunctionInfo
 │   │   ├── callbacks.rs           # Callback type aliases
 │   │   └── state.rs               # AggregateState trait, FfiState<T>
 │   ├── scalar/
 │   │   ├── mod.rs
+│   │   ├── info.rs                # ScalarFunctionInfo, ScalarBindInfo, ScalarInitInfo
 │   │   └── builder/               # Builder types for scalar function registration
 │   │       ├── mod.rs             # Module doc + re-exports
 │   │       ├── single.rs          # ScalarFn type alias, ScalarFunctionBuilder
@@ -175,19 +177,22 @@ quack-rs/
 │   │   └── builder.rs             # CastFunctionBuilder, CastFunctionInfo, CastMode
 │   ├── client_context.rs          # ClientContext wrapper (requires `duckdb-1-5`)
 │   ├── config_option.rs           # ConfigOption registration (requires `duckdb-1-5`)
-│   ├── copy_function.rs           # Copy function registration (requires `duckdb-1-5`)
+│   ├── copy_function/
+│   │   ├── mod.rs                 # CopyFunctionBuilder (requires `duckdb-1-5`)
+│   │   └── info.rs                # CopyBindInfo, CopySinkInfo, etc.
 │   ├── replacement_scan/
 │   │   └── mod.rs                 # ReplacementScanBuilder — SELECT * FROM 'file.xyz' patterns
 │   ├── types/
 │   │   ├── mod.rs
-│   │   ├── type_id.rs             # TypeId enum (34 base + 6 with duckdb-1-5)
+│   │   ├── type_id.rs             # TypeId enum (33 base + 6 with duckdb-1-5)
 │   │   └── logical_type.rs        # LogicalType RAII wrapper
 │   ├── vector/
 │   │   ├── mod.rs
 │   │   ├── reader.rs              # VectorReader
 │   │   ├── writer.rs              # VectorWriter
 │   │   ├── validity.rs            # ValidityBitmap
-│   │   └── string.rs              # DuckStringView, read_duck_string
+│   │   ├── string.rs              # DuckStringView, read_duck_string
+│   │   └── complex.rs             # StructVector, ListVector, MapVector, ArrayVector
 │   ├── validate/
 │   │   ├── mod.rs
 │   │   ├── description_yml/       # Parse and validate description.yml metadata
@@ -215,7 +220,10 @@ quack-rs/
 │   │   └── init_data.rs           # FfiInitData<T>, FfiLocalInitData<T>
 │   └── testing/
 │       ├── mod.rs
-│       └── harness.rs             # AggregateTestHarness<S>
+│       ├── harness.rs             # AggregateTestHarness<S>
+│       ├── mock_vector.rs         # MockVectorReader, MockVectorWriter, MockDuckValue
+│       ├── mock_registrar.rs      # MockRegistrar, CastRecord
+│       └── in_memory_db.rs        # InMemoryDb (requires `bundled-test`)
 ├── tests/
 │   └── integration_test.rs
 ├── benches/

@@ -20,47 +20,32 @@ For a single signature, use `AggregateFunctionBuilder` directly.
 ## Registration
 
 ```rust
-use quack_rs::aggregate::{AggregateFunctionBuilder, AggregateFunctionSetBuilder};
+use quack_rs::aggregate::AggregateFunctionSetBuilder;
 use quack_rs::types::TypeId;
 
 unsafe fn register(con: duckdb_connection) -> Result<(), ExtensionError> {
     unsafe {
-        let mut set = AggregateFunctionSetBuilder::new("retention");
-
-        // 2-column overload: retention(c1 BOOLEAN, c2 BOOLEAN)
-        let f2 = AggregateFunctionBuilder::new("retention")  // name required on each member
-            .param(TypeId::Boolean)
-            .param(TypeId::Boolean)
+        AggregateFunctionSetBuilder::new("retention")
             .returns(TypeId::Varchar)
-            .state_size(state_size)
-            .init(state_init)
-            .update(update_2)
-            .combine(combine)
-            .finalize(finalize)
-            .destructor(state_destroy)
-            .build()?;
-        set.add(f2)?;
-
-        // 3-column overload: retention(c1 BOOLEAN, c2 BOOLEAN, c3 BOOLEAN)
-        let f3 = AggregateFunctionBuilder::new("retention")  // same name
-            .param(TypeId::Boolean)
-            .param(TypeId::Boolean)
-            .param(TypeId::Boolean)
-            .returns(TypeId::Varchar)
-            .state_size(state_size)
-            .init(state_init)
-            .update(update_3)
-            .combine(combine)
-            .finalize(finalize)
-            .destructor(state_destroy)
-            .build()?;
-        set.add(f3)?;
-
-        set.register(con)?;
+            .overloads(2..=3, |n, builder| {
+                // Each overload gets `n` BOOLEAN parameters
+                let b = (0..n).fold(builder, |b, _| b.param(TypeId::Boolean));
+                b.state_size(state_size)
+                    .init(state_init)
+                    .update(update)
+                    .combine(combine)
+                    .finalize(finalize)
+                    .destructor(state_destroy)
+            })
+            .register(con)?;
     }
     Ok(())
 }
 ```
+
+The `overloads` method accepts a `RangeInclusive<usize>` and a closure that
+receives the arity `n` and a fresh `OverloadBuilder`. The builder sets the
+function name on each individual member internally.
 
 ---
 
@@ -74,8 +59,8 @@ unsafe fn register(con: duckdb_connection) -> Result<(), ExtensionError> {
 > `test/api/capi/test_capi_aggregate_functions.cpp`. In `duckdb-behavioral`, 6 of 7 functions
 > failed to register silently due to this bug.
 
-`AggregateFunctionBuilder` sets the name on the individual function when you call `.build()`.
-`AggregateFunctionSetBuilder` enforces that each member has a name before it can be added.
+`AggregateFunctionSetBuilder` enforces that each member has its name set internally
+when the `overloads` closure builds each function.
 
 See [Pitfall L6](../reference/pitfalls.md#l6-function-set-name-must-be-set-on-each-member).
 

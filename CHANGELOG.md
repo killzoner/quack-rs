@@ -197,7 +197,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Builder introspection accessors** — `pub fn name(&self) -> &str` added to
   `ScalarFunctionBuilder`, `ScalarFunctionSetBuilder`, `AggregateFunctionBuilder`,
   `AggregateFunctionSetBuilder`, and `TableFunctionBuilder`. `pub fn source(&self)
-  -> TypeId` and `pub fn target(&self) -> TypeId` added to `CastFunctionBuilder`.
+  -> Option<TypeId>` and `pub fn target(&self) -> Option<TypeId>` added to `CastFunctionBuilder`.
 
 ### Security
 

@@ -5,7 +5,8 @@ return a result set rather than a scalar value. DuckDB table functions have thre
 lifecycle callbacks: **bind**, **init**, and **scan**.
 
 `quack-rs` provides `TableFunctionBuilder` plus the helper types `BindInfo`,
-`FfiBindData<T>`, and `FfiInitData<T>` to eliminate the raw FFI boilerplate.
+`InitInfo`, `FunctionInfo`, `FfiBindData<T>`, `FfiInitData<T>`, and
+`FfiLocalInitData<T>` to eliminate the raw FFI boilerplate.
 
 ## Lifecycle
 
@@ -25,13 +26,15 @@ use quack_rs::table::{TableFunctionBuilder, BindInfo, FfiBindData, FfiInitData};
 use quack_rs::types::TypeId;
 
 TableFunctionBuilder::new("my_function")
-    .add_parameter(TypeId::BigInt)          // positional parameter types
-    .add_result_column("value", TypeId::BigInt) // output columns
-    .bind(my_bind_callback)
+    .param(TypeId::BigInt)                 // positional parameter types
+    .bind(my_bind_callback)               // declare output columns inside bind
     .init(my_init_callback)
     .scan(my_scan_callback)
     .register(con)?;
 ```
+
+Output columns are declared inside the bind callback using `BindInfo::add_result_column`,
+not on the builder itself.
 
 ## State management
 
@@ -93,8 +96,8 @@ unsafe extern "C" fn gs_init(info: duckdb_init_info) {
 
 // Scan: emit a batch of rows
 unsafe extern "C" fn gs_scan(info: duckdb_function_info, output: duckdb_data_chunk) {
-    let bind = unsafe { FfiBindData::<GsBindData>::get(duckdb_function_get_bind_data(info)) };
-    let state = unsafe { FfiInitData::<GsScanState>::get_mut(duckdb_function_get_init_data(info)) };
+    let bind = unsafe { FfiBindData::<GsBindData>::get_from_function(info) }.unwrap();
+    let state = unsafe { FfiInitData::<GsScanState>::get_mut(info) }.unwrap();
 
     let remaining = bind.total - state.pos;
     let batch = remaining.min(2048).max(0) as usize;
@@ -112,8 +115,7 @@ unsafe extern "C" fn gs_scan(info: duckdb_function_info, output: duckdb_data_chu
 
 ```rust
 TableFunctionBuilder::new("generate_series_ext")
-    .add_parameter(TypeId::BigInt)
-    .add_result_column("value", TypeId::BigInt)
+    .param(TypeId::BigInt)
     .bind(gs_bind)
     .init(gs_init)
     .scan(gs_scan)
@@ -185,6 +187,68 @@ TableFunctionBuilder::new("my_func")
 
 See `examples/hello-ext/src/lib.rs` for a complete example using `named_param`,
 `local_init`, and `set_max_threads`.
+
+### Complex parameter types
+
+For parameterised types that `TypeId` cannot express (e.g. `LIST(BIGINT)`,
+`MAP(VARCHAR, INTEGER)`, `STRUCT(...)`), use `param_logical` and
+`named_param_logical`:
+
+```rust
+use quack_rs::types::LogicalType;
+
+TableFunctionBuilder::new("read_data")
+    .param_logical(LogicalType::list(TypeId::Varchar))        // positional LIST param
+    .named_param_logical("options", LogicalType::map(          // named MAP param
+        TypeId::Varchar, TypeId::Varchar,
+    ))
+    .bind(bind_fn)
+    .init(init_fn)
+    .scan(scan_fn)
+    .register(con)?;
+```
+
+### BindInfo helpers
+
+`BindInfo` wraps `duckdb_bind_info` and exposes these methods:
+
+| Method | Description |
+|--------|-------------|
+| `add_result_column(name, TypeId)` | Declares an output column |
+| `add_result_column_with_type(name, &LogicalType)` | Output column with complex type |
+| `set_cardinality(rows, is_exact)` | Cardinality hint for the optimizer |
+| `set_error(message)` | Report a bind-time error |
+| `parameter_count()` | Number of positional parameters |
+| `get_parameter(index)` | Returns a positional parameter value (`duckdb_value`) |
+| `get_named_parameter(name)` | Returns a named parameter value (`duckdb_value`) |
+| `get_extra_info()` | Returns the extra-info pointer set on the function |
+| `get_client_context()` | Returns a `ClientContext` (requires `duckdb-1-5` feature) |
+
+### InitInfo helpers
+
+`InitInfo` wraps `duckdb_init_info`:
+
+| Method | Description |
+|--------|-------------|
+| `projected_column_count()` | Number of projected columns (with pushdown) |
+| `projected_column_index(idx)` | Output column index at projection position |
+| `set_max_threads(n)` | Maximum parallel scan threads |
+| `set_error(message)` | Report an init-time error |
+| `get_extra_info()` | Returns the extra-info pointer set on the function |
+
+### FunctionInfo helpers
+
+`FunctionInfo` wraps `duckdb_function_info` (scan callbacks):
+
+| Method | Description |
+|--------|-------------|
+| `set_error(message)` | Report a scan-time error |
+| `get_extra_info()` | Returns the extra-info pointer set on the function |
+
+### Extra info
+
+Use `TableFunctionBuilder::extra_info` to attach function-level data that is
+accessible from all callbacks (bind, init, and scan) via `get_extra_info()`.
 
 ## Verified output (DuckDB 1.4.4 and 1.5.0)
 

@@ -22,14 +22,17 @@
 //! | `entry_point_v2!` | `entry_point` module (macro) |
 //! | [`Connection`] | `connection` module |
 //! | [`Registrar`] | `connection` module |
+//! | [`CastFn`] | `cast` module |
 //! | [`CastFunctionBuilder`] | `cast` module |
 //! | [`CastFunctionInfo`] | `cast` module |
 //! | [`CastMode`] | `cast` module |
 //! | [`AggregateFunctionBuilder`] | `aggregate` module |
+//! | [`AggregateFunctionInfo`] | `aggregate` module |
 //! | [`AggregateFunctionSetBuilder`] | `aggregate` module |
 //! | [`AggregateState`] | `aggregate` module |
 //! | [`FfiState`] | `aggregate` module |
 //! | [`ScalarFunctionBuilder`] | `scalar` module |
+//! | [`ScalarFunctionInfo`] | `scalar` module |
 //! | [`ScalarFunctionSetBuilder`] | `scalar` module |
 //! | [`ScalarOverloadBuilder`] | `scalar` module |
 //! | [`TableFunctionBuilder`] | `table` module |
@@ -44,6 +47,7 @@
 //! | [`SqlMacro`] | `sql_macro` module |
 //! | [`VectorReader`] | `vector` module |
 //! | [`VectorWriter`] | `vector` module |
+//! | [`ArrayVector`] | `vector::complex` module |
 //! | [`StructVector`] | `vector::complex` module |
 //! | [`ListVector`] | `vector::complex` module |
 //! | [`MapVector`] | `vector::complex` module |

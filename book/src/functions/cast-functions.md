@@ -129,6 +129,32 @@ The `examples/hello-ext` extension registers two cast functions:
 
 See `examples/hello-ext/src/lib.rs` for complete, copy-paste-ready references.
 
+## Complex source and target types
+
+For casts involving complex types like `DECIMAL(18, 3)` or `LIST(VARCHAR)`, use
+the `new_logical` constructor instead of `new`:
+
+```rust,no_run
+# use quack_rs::cast::CastFunctionBuilder;
+# use quack_rs::types::{LogicalType, TypeId};
+# use libduckdb_sys::{duckdb_function_info, duckdb_vector, idx_t};
+# unsafe extern "C" fn my_cast(_: duckdb_function_info, _: idx_t, _: duckdb_vector, _: duckdb_vector) -> bool { true }
+# fn register(con: libduckdb_sys::duckdb_connection) -> Result<(), quack_rs::error::ExtensionError> {
+unsafe {
+    CastFunctionBuilder::new_logical(
+        LogicalType::list(TypeId::Varchar),   // LIST(VARCHAR) source
+        LogicalType::list(TypeId::Integer),   // LIST(INTEGER) target
+    )
+    .function(my_cast)
+    .register(con)
+}
+# }
+```
+
+The `source()` and `target()` accessor methods return `Option<TypeId>` — they
+return `None` when the type was set via `new_logical` (since a `LogicalType`
+cannot always be expressed as a simple `TypeId`).
+
 ## API reference
 
 - [`CastFunctionBuilder`][quack_rs::cast::CastFunctionBuilder] — the main builder

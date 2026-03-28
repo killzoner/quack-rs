@@ -104,6 +104,22 @@ unsafe { writer.set_null(row) };
 
 ---
 
+## Utility functions
+
+The `quack_rs::vector` module provides two utility functions:
+
+```rust
+use quack_rs::vector::{vector_size, vector_get_column_type};
+
+// Returns the default vector size used by DuckDB (typically 2048).
+let size: u64 = vector_size();
+
+// Returns the LogicalType of a vector (unsafe — requires a valid duckdb_vector).
+let lt = unsafe { vector_get_column_type(some_vector) };
+```
+
+---
+
 ## Memory layout details
 
 DuckDB stores vector data as flat arrays. `VectorReader` and `VectorWriter` compute

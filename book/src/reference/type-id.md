@@ -64,6 +64,18 @@ use quack_rs::types::TypeId;
 let raw: libduckdb_sys::DUCKDB_TYPE = TypeId::BigInt.to_duckdb_type();
 ```
 
+### `from_duckdb_type(raw) → TypeId`
+
+Converts a raw `DUCKDB_TYPE` constant back into a `TypeId`. Panics if the value
+does not match any known `DUCKDB_TYPE` constant.
+
+```rust
+use quack_rs::types::TypeId;
+
+let type_id = TypeId::from_duckdb_type(libduckdb_sys::DUCKDB_TYPE_DUCKDB_TYPE_BIGINT);
+assert_eq!(type_id, TypeId::BigInt);
+```
+
 ### `sql_name() → &'static str`
 
 Returns the SQL type name as a static string.
@@ -162,3 +174,35 @@ let lt: LogicalType = TypeId::BigInt.into();
 
 `LogicalType` wraps `duckdb_logical_type` with RAII cleanup, preventing the
 memory leak described in [Pitfall L7](pitfalls.md#l7-logicaltype-memory-leak).
+
+### Constructors
+
+| Constructor | Creates |
+|-------------|---------|
+| `new(type_id)` | Simple type from a `TypeId` |
+| `from_raw(ptr)` | Takes ownership of a raw handle (unsafe) |
+| `decimal(width, scale)` | `DECIMAL(width, scale)` |
+| `list(element_type)` | `LIST<T>` from a `TypeId` |
+| `list_from_logical(element)` | `LIST<T>` from an existing `LogicalType` |
+| `map(key, value)` | `MAP<K, V>` from `TypeId`s |
+| `map_from_logical(key, value)` | `MAP<K, V>` from existing `LogicalType`s |
+| `struct_type(fields)` | `STRUCT` from `&[(&str, TypeId)]` |
+| `struct_type_from_logical(fields)` | `STRUCT` from `&[(&str, LogicalType)]` |
+| `union_type(members)` | `UNION` from `&[(&str, TypeId)]` |
+| `union_type_from_logical(members)` | `UNION` from `&[(&str, LogicalType)]` |
+| `enum_type(members)` | `ENUM` from `&[&str]` |
+| `array(element_type, size)` | `ARRAY<T>[size]` from a `TypeId` |
+| `array_from_logical(element, size)` | `ARRAY<T>[size]` from an existing `LogicalType` |
+
+### Introspection methods
+
+All introspection methods are `unsafe` (require a valid DuckDB runtime handle):
+
+`get_type_id`, `get_alias`, `set_alias`, `decimal_width`, `decimal_scale`,
+`decimal_internal_type`, `enum_internal_type`, `enum_dictionary_size`,
+`enum_dictionary_value`, `list_child_type`, `map_key_type`, `map_value_type`,
+`struct_child_count`, `struct_child_name`, `struct_child_type`,
+`union_member_count`, `union_member_name`, `union_member_type`,
+`array_size`, `array_child_type`.
+
+See [Type System](../concepts/types.md) for the full introspection table.

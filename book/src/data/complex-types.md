@@ -1,7 +1,7 @@
-# Complex Types: STRUCT, LIST, MAP
+# Complex Types: STRUCT, LIST, MAP, ARRAY
 
-DuckDB's complex types — `STRUCT`, `LIST`, and `MAP` — are stored as nested vectors.
-`quack-rs` provides three helper types in [`vector::complex`] to access the child
+DuckDB's complex types — `STRUCT`, `LIST`, `MAP`, and `ARRAY` — are stored as nested vectors.
+`quack-rs` provides four helper types in [`vector::complex`] to access the child
 vectors without manual offset arithmetic.
 
 ## Overview
@@ -11,6 +11,7 @@ vectors without manual offset arithmetic.
 | `STRUCT{a T, b U, …}` | Parent vector + N child vectors (one per field) | `StructVector` |
 | `LIST<T>` | Parent vector holds `{offset, length}` per row; flat child vector holds elements | `ListVector` |
 | `MAP<K, V>` | Stored as `LIST<STRUCT{key K, value V}>` | `MapVector` |
+| `ARRAY<T>[N]` | Fixed-size array; single child vector | `ArrayVector` |
 
 ## Reading complex types (input vectors)
 
@@ -135,6 +136,22 @@ for (row, pairs) in all_pairs.iter().enumerate() {
 unsafe { MapVector::set_size(map_vec, total_pairs) };
 ```
 
+## Constructing complex logical types
+
+Use `LogicalType` constructors to define complex column types. Each constructor
+has a variant that accepts `TypeId` values (for simple element types) and a
+`_from_logical` variant (for nested complex types):
+
+| Constructor | `_from_logical` variant | Creates |
+|-------------|------------------------|---------|
+| `LogicalType::list(TypeId)` | `list_from_logical(&LogicalType)` | `LIST<T>` |
+| `LogicalType::map(TypeId, TypeId)` | `map_from_logical(&LogicalType, &LogicalType)` | `MAP<K, V>` |
+| `LogicalType::struct_type(&[(&str, TypeId)])` | `struct_type_from_logical(&[(&str, LogicalType)])` | `STRUCT{...}` |
+| `LogicalType::union_type(&[(&str, TypeId)])` | `union_type_from_logical(&[(&str, LogicalType)])` | `UNION(...)` |
+| `LogicalType::array(TypeId, u64)` | `array_from_logical(&LogicalType, u64)` | `ARRAY<T>[N]` |
+| `LogicalType::enum_type(&[&str])` | — | `ENUM(...)` |
+| `LogicalType::decimal(u8, u8)` | — | `DECIMAL(w, s)` |
+
 ## API reference
 
 All helpers are in `quack_rs::vector::complex` (re-exported from `quack_rs::prelude`).
@@ -172,5 +189,11 @@ All helpers are in `quack_rs::vector::complex` (re-exported from `quack_rs::prel
 | `set_size(vec, n)` | Sets total entry count after writing |
 | `get_entry(vec, row)` | Returns `{offset, length}` for a row (reading) |
 | `set_entry(vec, row, offset, length)` | Sets `{offset, length}` for a row (writing) |
+
+### `ArrayVector`
+
+| Method | Description |
+|--------|-------------|
+| `get_child(vec)` | Returns the child vector of a fixed-size ARRAY vector |
 
 [`vector::complex`]: ../../src/vector/complex.rs
