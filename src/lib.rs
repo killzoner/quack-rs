@@ -63,11 +63,11 @@
 //! | [`scaffold`] | Project generator for new extensions (no C++ glue needed) |
 //! | [`testing`] | Test harness for aggregate state logic |
 //! | [`prelude`] | Convenience re-exports of the most commonly used items |
-//! | [`catalog`] | Catalog entry lookup (`duckdb-1-5` feature) |
-//! | [`client_context`] | Client context access (`duckdb-1-5` feature) |
-//! | [`config_option`] | Extension-defined configuration options (`duckdb-1-5` feature) |
-//! | [`copy_function`] | Custom `COPY TO` handlers (`duckdb-1-5` feature) |
-//! | [`table_description`] | Table metadata queries (`duckdb-1-5` feature) |
+//! | `catalog` | Catalog entry lookup (`duckdb-1-5` feature) |
+//! | `client_context` | Client context access (`duckdb-1-5` feature) |
+//! | `config_option` | Extension-defined configuration options (`duckdb-1-5` feature) |
+//! | `copy_function` | Custom `COPY TO` handlers (`duckdb-1-5` feature) |
+//! | `table_description` | Table metadata queries (`duckdb-1-5` feature) |
 //!
 //! ## Safety
 //!
