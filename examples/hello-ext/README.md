@@ -29,7 +29,7 @@ or copy-paste starting point for your own extension.
 All functions use `entry_point_v2!` with `Connection`/`Registrar` for type-safe
 registration.
 
-All **29 live SQL tests** pass against both **DuckDB 1.4.4** and **DuckDB 1.5.0**.
+All **39 live SQL tests** pass against both **DuckDB 1.4.4** and **DuckDB 1.5.0**.
 
 ```sql
 -- Aggregate: count words across rows

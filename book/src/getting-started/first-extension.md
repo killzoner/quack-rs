@@ -262,7 +262,7 @@ a failure — this propagates to the entry point and is surfaced to the user.
 ## Part 4 — Entry point
 
 ```rust
-quack_rs::entry_point!(hello_ext_init_c_api, |con| register(con));
+quack_rs::entry_point!(hello_ext_init_c_api, |con| unsafe { register(con) });
 ```
 
 This one line emits:
@@ -276,7 +276,7 @@ pub unsafe extern "C" fn hello_ext_init_c_api(
     unsafe {
         quack_rs::entry_point::init_extension(
             info, access, quack_rs::DUCKDB_API_VERSION,
-            |con| register(con),
+            |con| unsafe { register(con) },
         )
     }
 }

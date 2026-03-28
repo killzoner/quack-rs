@@ -58,10 +58,10 @@ use crate::types::TypeId;
 /// A record of a single cast function registration.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CastRecord {
-    /// The source type being cast from.
-    pub source: TypeId,
-    /// The target type being cast to.
-    pub target: TypeId,
+    /// The source type being cast from (if set via simple `TypeId`).
+    pub source: Option<TypeId>,
+    /// The target type being cast to (if set via simple `TypeId`).
+    pub target: Option<TypeId>,
 }
 
 /// An in-memory mock implementation of [`Registrar`] for unit testing.
@@ -397,8 +397,8 @@ mod tests {
         unsafe { mock.register_cast(builder).unwrap() };
         let casts = mock.casts();
         assert_eq!(casts.len(), 1);
-        assert_eq!(casts[0].source, TypeId::Varchar);
-        assert_eq!(casts[0].target, TypeId::Integer);
+        assert_eq!(casts[0].source, Some(TypeId::Varchar));
+        assert_eq!(casts[0].target, Some(TypeId::Integer));
         assert_eq!(mock.total_registrations(), 1);
     }
 
@@ -462,6 +462,67 @@ mod tests {
         assert_eq!(mock.total_registrations(), 2);
         assert!(mock.has_scalar("my_scalar"));
         assert!(mock.has_copy_function("my_format"));
+    }
+
+    #[test]
+    fn mock_registrar_has_aggregate_false_when_empty() {
+        let mock = MockRegistrar::new();
+        assert!(!mock.has_aggregate("x"));
+    }
+
+    #[test]
+    fn mock_registrar_has_aggregate_set_false_when_empty() {
+        let mock = MockRegistrar::new();
+        assert!(!mock.has_aggregate_set("x"));
+    }
+
+    #[test]
+    fn mock_registrar_has_table_false_when_empty() {
+        let mock = MockRegistrar::new();
+        assert!(!mock.has_table("x"));
+    }
+
+    #[test]
+    fn mock_registrar_has_sql_macro_false_when_empty() {
+        let mock = MockRegistrar::new();
+        assert!(!mock.has_sql_macro("x"));
+    }
+
+    #[test]
+    fn mock_registrar_has_scalar_false_when_empty() {
+        let mock = MockRegistrar::new();
+        assert!(!mock.has_scalar("x"));
+    }
+
+    #[test]
+    fn mock_registrar_empty_total_registrations() {
+        let mock = MockRegistrar::new();
+        assert_eq!(mock.total_registrations(), 0);
+    }
+
+    #[test]
+    fn mock_registrar_total_registrations_counts_all_types() {
+        let mock = MockRegistrar::new();
+
+        let scalar = ScalarFunctionBuilder::new("sc")
+            .param(TypeId::BigInt)
+            .returns(TypeId::BigInt);
+        let agg = AggregateFunctionBuilder::new("ag")
+            .param(TypeId::BigInt)
+            .returns(TypeId::BigInt);
+        let table = TableFunctionBuilder::new("tb");
+        let macro_ = SqlMacro::scalar("mc", &["x"], "x + 1").unwrap();
+        let cast = CastFunctionBuilder::new(TypeId::Varchar, TypeId::Integer);
+
+        unsafe {
+            mock.register_scalar(scalar).unwrap();
+            mock.register_aggregate(agg).unwrap();
+            mock.register_table(table).unwrap();
+            mock.register_sql_macro(macro_).unwrap();
+            mock.register_cast(cast).unwrap();
+        }
+
+        assert_eq!(mock.total_registrations(), 5);
     }
 
     #[test]

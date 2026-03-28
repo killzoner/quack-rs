@@ -11,8 +11,9 @@ Frequently asked questions about quack-rs and building DuckDB extensions in Rust
 quack-rs is a Rust SDK for building DuckDB loadable extensions using DuckDB's
 pure C Extension API. It provides safe, ergonomic builders for registering
 scalar functions, aggregate functions, table functions, cast functions,
-replacement scans, and SQL macros, along with helpers for reading and writing
-DuckDB vectors, and utilities for publishing community extensions.
+replacement scans, SQL macros, and copy functions (via the `duckdb-1-5`
+feature), along with helpers for reading and writing DuckDB vectors, and
+utilities for publishing community extensions.
 
 ### Why does this exist?
 
@@ -82,8 +83,10 @@ as many `register_*` functions as needed:
 quack_rs::entry_point::init_extension(info, access, DUCKDB_API_VERSION, |con| {
     unsafe { register_word_count(con) }?;
     unsafe { register_sentence_count(con) }?;
-    SqlMacro::scalar("double_it", &["x"], "x * 2")?
-        .register(con)?;
+    unsafe {
+        SqlMacro::scalar("double_it", &["x"], "x * 2")?
+            .register(con)?;
+    }
     Ok(())
 })
 ```

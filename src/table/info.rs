@@ -10,11 +10,17 @@
 
 use std::ffi::CString;
 
+use std::os::raw::c_void;
+
 use libduckdb_sys::{
-    duckdb_bind_add_result_column, duckdb_bind_info, duckdb_bind_set_cardinality,
-    duckdb_bind_set_error, duckdb_function_info, duckdb_function_set_error, duckdb_init_info,
-    duckdb_init_set_error, idx_t,
+    duckdb_bind_add_result_column, duckdb_bind_get_extra_info, duckdb_bind_get_named_parameter,
+    duckdb_bind_get_parameter, duckdb_bind_info, duckdb_bind_set_cardinality,
+    duckdb_bind_set_error, duckdb_function_get_extra_info, duckdb_function_info,
+    duckdb_function_set_error, duckdb_init_get_extra_info, duckdb_init_info, duckdb_init_set_error,
+    duckdb_value, idx_t,
 };
+#[cfg(feature = "duckdb-1-5")]
+use libduckdb_sys::{duckdb_client_context, duckdb_table_function_get_client_context};
 
 use crate::types::{LogicalType, TypeId};
 
@@ -107,6 +113,7 @@ impl BindInfo {
     /// # Panics
     ///
     /// Panics if `message` contains an interior null byte.
+    #[mutants::skip]
     pub fn set_error(&self, message: &str) {
         let c_msg = CString::new(message).expect("error message must not contain null bytes");
         // SAFETY: self.info is valid.
@@ -116,11 +123,62 @@ impl BindInfo {
     }
 
     /// Returns the number of positional parameters passed to this function call.
+    #[mutants::skip]
     #[must_use]
     pub fn parameter_count(&self) -> usize {
         // SAFETY: self.info is valid.
         usize::try_from(unsafe { libduckdb_sys::duckdb_bind_get_parameter_count(self.info) })
             .unwrap_or(0)
+    }
+
+    /// Returns the parameter value at the given positional index.
+    ///
+    /// # Safety
+    ///
+    /// - `index` must be less than [`parameter_count`][BindInfo::parameter_count].
+    /// - The caller is responsible for destroying the returned `duckdb_value`.
+    pub unsafe fn get_parameter(&self, index: u64) -> duckdb_value {
+        unsafe { duckdb_bind_get_parameter(self.info, index) }
+    }
+
+    /// Returns the parameter value for the given named parameter.
+    ///
+    /// # Safety
+    ///
+    /// - `name` must correspond to a named parameter declared for this function.
+    /// - The caller is responsible for destroying the returned `duckdb_value`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `name` contains an interior null byte.
+    pub unsafe fn get_named_parameter(&self, name: &str) -> duckdb_value {
+        let c_name = CString::new(name).expect("parameter name must not contain null bytes");
+        unsafe { duckdb_bind_get_named_parameter(self.info, c_name.as_ptr()) }
+    }
+
+    /// Returns the extra info pointer set on the table function.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure the returned pointer (if non-null) is used
+    /// according to its original type.
+    pub unsafe fn get_extra_info(&self) -> *mut c_void {
+        unsafe { duckdb_bind_get_extra_info(self.info) }
+    }
+
+    /// Returns the client context for this callback.
+    ///
+    /// The returned [`ClientContext`][crate::client_context::ClientContext] provides
+    /// access to the connection's catalog, configuration, and connection ID.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be valid (requires `DuckDB` runtime).
+    #[cfg(feature = "duckdb-1-5")]
+    pub unsafe fn get_client_context(&self) -> crate::client_context::ClientContext {
+        let mut ctx: duckdb_client_context = core::ptr::null_mut();
+        unsafe { duckdb_table_function_get_client_context(self.info, &raw mut ctx) };
+        unsafe { crate::client_context::ClientContext::from_raw(ctx) }
     }
 
     /// Returns the raw `duckdb_bind_info` handle.
@@ -153,6 +211,7 @@ impl InitInfo {
     /// Returns the number of projected (requested) columns.
     ///
     /// Only valid when projection pushdown is enabled for the table function.
+    #[mutants::skip]
     #[must_use]
     pub fn projected_column_count(&self) -> usize {
         // SAFETY: self.info is valid.
@@ -163,6 +222,7 @@ impl InitInfo {
     /// Returns the output column index at the given projection position.
     ///
     /// Only valid when projection pushdown is enabled.
+    #[mutants::skip]
     #[must_use]
     pub fn projected_column_index(&self, projection_idx: usize) -> usize {
         // SAFETY: self.info is valid.
@@ -175,6 +235,7 @@ impl InitInfo {
     /// Sets the maximum number of threads for parallel scanning.
     ///
     /// Only effective when `local_init` is also set on the table function.
+    #[mutants::skip]
     pub fn set_max_threads(&self, n: u64) {
         // SAFETY: self.info is valid.
         unsafe { libduckdb_sys::duckdb_init_set_max_threads(self.info, n as idx_t) };
@@ -185,10 +246,21 @@ impl InitInfo {
     /// # Panics
     ///
     /// Panics if `message` contains an interior null byte.
+    #[mutants::skip]
     pub fn set_error(&self, message: &str) {
         let c_msg = CString::new(message).expect("error message must not contain null bytes");
         // SAFETY: self.info is valid.
         unsafe { duckdb_init_set_error(self.info, c_msg.as_ptr()) };
+    }
+
+    /// Returns the extra info pointer set on the table function.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure the returned pointer (if non-null) is used
+    /// according to its original type.
+    pub unsafe fn get_extra_info(&self) -> *mut c_void {
+        unsafe { duckdb_init_get_extra_info(self.info) }
     }
 
     /// Returns the raw `duckdb_init_info` handle.
@@ -223,10 +295,21 @@ impl FunctionInfo {
     /// # Panics
     ///
     /// Panics if `message` contains an interior null byte.
+    #[mutants::skip]
     pub fn set_error(&self, message: &str) {
         let c_msg = CString::new(message).expect("error message must not contain null bytes");
         // SAFETY: self.info is valid.
         unsafe { duckdb_function_set_error(self.info, c_msg.as_ptr()) };
+    }
+
+    /// Returns the extra info pointer set on the table function.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure the returned pointer (if non-null) is used
+    /// according to its original type.
+    pub unsafe fn get_extra_info(&self) -> *mut c_void {
+        unsafe { duckdb_function_get_extra_info(self.info) }
     }
 
     /// Returns the raw `duckdb_function_info` handle.

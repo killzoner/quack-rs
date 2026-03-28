@@ -23,10 +23,12 @@ quack_rs
 ├── aggregate
 │   ├── state        FfiState<T> — raw-pointer lifecycle wrapper
 │   ├── callbacks    Type aliases for the 6 DuckDB aggregate callback signatures
+│   ├── info         AggregateFunctionInfo — callback info wrapper
 │   └── builder/
 │       ├── single   AggregateFunctionBuilder (single-signature)
 │       └── set      AggregateFunctionSetBuilder, OverloadBuilder
 ├── scalar
+│   ├── info         ScalarFunctionInfo (+ ScalarBindInfo, ScalarInitInfo with `duckdb-1-5`)
 │   └── builder/
 │       ├── single   ScalarFn type alias, ScalarFunctionBuilder (+ varargs(), volatile(), bind(), init() with `duckdb-1-5`)
 │       └── set      ScalarFunctionSetBuilder, ScalarOverloadBuilder
@@ -34,17 +36,20 @@ quack_rs
 │   └── builder      CastFunctionBuilder, CastFunctionInfo, CastMode
 ├── table
 │   ├── builder      TableFunctionBuilder, BindFn/InitFn/ScanFn type aliases
-│   └── info         BindInfo, InitInfo, FunctionInfo — callback info wrappers
+│   ├── info         BindInfo, InitInfo, FunctionInfo — callback info wrappers
+│   ├── bind_data    FfiBindData<T> — type-safe bind-phase data storage
+│   └── init_data    FfiInitData<T>, FfiLocalInitData<T> — scan state storage
 ├── catalog          Catalog, CatalogEntry, CatalogEntryType — catalog entry lookup (requires `duckdb-1-5`)
 ├── client_context   ClientContext — client context access (requires `duckdb-1-5`)
 ├── config_option    ConfigOptionBuilder — extension-defined configuration options (requires `duckdb-1-5`)
-├── copy_function    CopyFunctionBuilder — custom COPY TO handlers (requires `duckdb-1-5`)
+├── copy_function    CopyFunctionBuilder, CopyBindInfo, CopySinkInfo — custom COPY TO handlers (requires `duckdb-1-5`)
 ├── replacement_scan ReplacementScanBuilder — SELECT * FROM 'file.xyz' patterns
 ├── vector
 │   ├── reader       VectorReader — typed reads from duckdb_data_chunk
 │   ├── writer       VectorWriter — typed writes to duckdb_vector
 │   ├── validity     ValidityBitmap — NULL flag management
-│   └── string       DuckStringView — 16-byte duckdb_string_t format
+│   ├── string       DuckStringView — 16-byte duckdb_string_t format
+│   └── complex      StructVector, ListVector, MapVector, ArrayVector
 ├── types
 │   ├── type_id      TypeId enum — all DuckDB column types
 │   ├── logical_type LogicalType — RAII for duckdb_logical_type
@@ -58,7 +63,10 @@ quack_rs
 ├── scaffold         Project scaffolding for DuckDB Rust extensions
 ├── prelude          Convenience re-exports for common extension development
 └── testing
-    └── harness      AggregateTestHarness<S> — pure-Rust aggregate testing
+    ├── harness          AggregateTestHarness<S> — pure-Rust aggregate testing
+    ├── mock_vector      MockVectorReader, MockVectorWriter, MockDuckValue
+    ├── mock_registrar   MockRegistrar, CastRecord — registration verification
+    └── in_memory_db     InMemoryDb — bundled DuckDB for SQL-level tests (requires `bundled-test`)
 ```
 
 ### Module responsibilities
@@ -69,23 +77,28 @@ quack_rs
 | `connection` | `Connection` facade + `Registrar` trait — version-agnostic registration | Yes |
 | `aggregate::state` | `Box<T>` lifecycle behind a raw pointer | Yes |
 | `aggregate::callbacks` | Signature documentation only (type aliases) | No |
+| `aggregate::info` | `AggregateFunctionInfo` — callback info wrapper | Yes |
 | `aggregate::builder::single` | `AggregateFunctionBuilder` — single-signature registration | Yes |
 | `aggregate::builder::set` | `AggregateFunctionSetBuilder`, `OverloadBuilder` | Yes |
+| `scalar::info` | `ScalarFunctionInfo` (+ `ScalarBindInfo`, `ScalarInitInfo` with `duckdb-1-5`) | Yes |
 | `scalar::builder::single` | `ScalarFn` type alias, `ScalarFunctionBuilder` (includes `varargs()`, `volatile()`, `bind()`, `init()` methods gated behind `duckdb-1-5`) | Yes |
 | `scalar::builder::set` | `ScalarFunctionSetBuilder`, `ScalarOverloadBuilder` | Yes |
 | `cast::builder` | `CastFunctionBuilder`, `CastFunctionInfo`, `CastMode` | Yes |
 | `table::builder` | `TableFunctionBuilder`, callback type aliases | Yes |
 | `table::info` | `BindInfo`, `InitInfo`, `FunctionInfo` — callback wrappers | Yes |
+| `table::bind_data` | `FfiBindData<T>` — type-safe bind-phase data storage | Yes |
+| `table::init_data` | `FfiInitData<T>`, `FfiLocalInitData<T>` — scan state storage | Yes |
 | `catalog` | `Catalog`, `CatalogEntry`, `CatalogEntryType` — catalog entry lookup (requires `duckdb-1-5`) | Yes |
 | `client_context` | `ClientContext` — access to connection catalog, config options, and connection ID (requires `duckdb-1-5`) | Yes |
 | `config_option` | `ConfigOptionBuilder` — register extension-defined `SET`/`RESET` configuration options (requires `duckdb-1-5`) | Yes |
-| `copy_function` | `CopyFunctionBuilder` — custom `COPY TO` handler registration (requires `duckdb-1-5`) | Yes |
+| `copy_function` | `CopyFunctionBuilder`, `CopyBindInfo`, `CopySinkInfo`, `CopyGlobalInitInfo`, `CopyFinalizeInfo` — custom `COPY TO` handler registration (requires `duckdb-1-5`) | Yes |
 | `table_description` | `TableDescription` — query table column count, names, and types at runtime (requires `duckdb-1-5`) | Yes |
 | `replacement_scan` | `ReplacementScanBuilder` — `SELECT * FROM 'file.xyz'` registration | Yes |
 | `vector::reader` | Typed reads with correct alignment and boolean semantics | Yes |
 | `vector::writer` | Typed writes with NULL flag support | Yes |
 | `vector::validity` | Bit-packed validity bitmap abstraction | Yes |
 | `vector::string` | Inline vs. pointer string format handling | Yes |
+| `vector::complex` | `StructVector`, `ListVector`, `MapVector`, `ArrayVector` — nested type access | Yes |
 | `types::type_id` | Enum mapping to `DUCKDB_TYPE_*` constants | No |
 | `types::logical_type` | RAII drop for `duckdb_logical_type` | Yes |
 | `config` | `DbConfig` — RAII wrapper for `duckdb_config` | Yes |
@@ -96,6 +109,9 @@ quack_rs
 | `scaffold` | Project scaffolding — generates the full file set for a DuckDB Rust extension | No |
 | `prelude` | Convenience re-exports for the most commonly used items | No |
 | `testing::harness` | Simulate DuckDB aggregate lifecycle in pure Rust | No |
+| `testing::mock_vector` | In-memory `MockVectorReader` / `MockVectorWriter` for callback testing | No |
+| `testing::mock_registrar` | `MockRegistrar` — records registrations without a DuckDB connection | No |
+| `testing::in_memory_db` | `InMemoryDb` — bundled DuckDB for SQL-level tests (requires `bundled-test`) | Yes |
 
 ---
 

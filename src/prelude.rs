@@ -22,14 +22,17 @@
 //! | `entry_point_v2!` | `entry_point` module (macro) |
 //! | [`Connection`] | `connection` module |
 //! | [`Registrar`] | `connection` module |
+//! | [`CastFn`] | `cast` module |
 //! | [`CastFunctionBuilder`] | `cast` module |
 //! | [`CastFunctionInfo`] | `cast` module |
 //! | [`CastMode`] | `cast` module |
 //! | [`AggregateFunctionBuilder`] | `aggregate` module |
+//! | [`AggregateFunctionInfo`] | `aggregate` module |
 //! | [`AggregateFunctionSetBuilder`] | `aggregate` module |
 //! | [`AggregateState`] | `aggregate` module |
 //! | [`FfiState`] | `aggregate` module |
 //! | [`ScalarFunctionBuilder`] | `scalar` module |
+//! | [`ScalarFunctionInfo`] | `scalar` module |
 //! | [`ScalarFunctionSetBuilder`] | `scalar` module |
 //! | [`ScalarOverloadBuilder`] | `scalar` module |
 //! | [`TableFunctionBuilder`] | `table` module |
@@ -44,6 +47,10 @@
 //! | [`SqlMacro`] | `sql_macro` module |
 //! | [`VectorReader`] | `vector` module |
 //! | [`VectorWriter`] | `vector` module |
+//! | [`ArrayVector`] | `vector::complex` module |
+//! | [`StructVector`] | `vector::complex` module |
+//! | [`ListVector`] | `vector::complex` module |
+//! | [`MapVector`] | `vector::complex` module |
 //! | [`TypeId`] | `types` module |
 //! | [`LogicalType`] | `types` module |
 //! | [`NullHandling`] | `types` module |
@@ -64,8 +71,8 @@
 //! - `scaffold::*` — project generation (use explicitly)
 //! - `testing::*` — test harness (typically imported only in `#[cfg(test)]`)
 //! - `interval::read_interval_at` — low-level; use [`VectorReader::read_interval`] instead
-//! - `vector::complex::*` — low-level; import explicitly when working with complex types
 //!
+
 //! # Example
 //!
 //! ```rust,no_run
@@ -100,11 +107,23 @@ pub use crate::cast::{CastFn, CastFunctionBuilder, CastFunctionInfo, CastMode};
 
 // Aggregate functions
 pub use crate::aggregate::{
-    AggregateFunctionBuilder, AggregateFunctionSetBuilder, AggregateState, FfiState,
+    AggregateFunctionBuilder, AggregateFunctionInfo, AggregateFunctionSetBuilder, AggregateState,
+    FfiState,
 };
 
 // Scalar functions
-pub use crate::scalar::{ScalarFunctionBuilder, ScalarFunctionSetBuilder, ScalarOverloadBuilder};
+#[cfg(feature = "duckdb-1-5")]
+pub use crate::scalar::{ScalarBindInfo, ScalarInitInfo};
+pub use crate::scalar::{
+    ScalarFunctionBuilder, ScalarFunctionInfo, ScalarFunctionSetBuilder, ScalarOverloadBuilder,
+};
+
+// Copy functions
+#[cfg(feature = "duckdb-1-5")]
+pub use crate::copy_function::{
+    CopyBindFn, CopyBindInfo, CopyFinalizeFn, CopyFinalizeInfo, CopyFunctionBuilder,
+    CopyGlobalInitFn, CopyGlobalInitInfo, CopySinkFn, CopySinkInfo,
+};
 
 // Table functions
 pub use crate::table::{
@@ -119,6 +138,7 @@ pub use crate::replacement_scan::{ReplacementScanBuilder, ReplacementScanInfo};
 pub use crate::sql_macro::SqlMacro;
 
 // Vector I/O
+pub use crate::vector::complex::{ArrayVector, ListVector, MapVector, StructVector};
 pub use crate::vector::{VectorReader, VectorWriter};
 
 // Types

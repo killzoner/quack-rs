@@ -54,9 +54,9 @@
 //! ```
 
 use libduckdb_sys::{
-    duckdb_list_entry, duckdb_list_vector_get_child, duckdb_list_vector_get_size,
-    duckdb_list_vector_reserve, duckdb_list_vector_set_size, duckdb_struct_vector_get_child,
-    duckdb_vector, duckdb_vector_get_data, idx_t,
+    duckdb_array_vector_get_child, duckdb_list_entry, duckdb_list_vector_get_child,
+    duckdb_list_vector_get_size, duckdb_list_vector_reserve, duckdb_list_vector_set_size,
+    duckdb_struct_vector_get_child, duckdb_vector, duckdb_vector_get_data, idx_t,
 };
 
 use crate::vector::{VectorReader, VectorWriter};
@@ -352,6 +352,25 @@ impl MapVector {
     #[must_use]
     pub unsafe fn get_entry(vector: duckdb_vector, row_idx: usize) -> duckdb_list_entry {
         unsafe { ListVector::get_entry(vector, row_idx) }
+    }
+}
+
+// ─── ARRAY ──────────────────────────────────────────────────────────────────
+
+/// Helpers for working with `ARRAY` vectors (fixed-size arrays).
+pub struct ArrayVector;
+
+impl ArrayVector {
+    /// Returns the child vector of an array vector.
+    ///
+    /// # Safety
+    ///
+    /// - `vector` must be a valid `DuckDB` ARRAY vector.
+    /// - The returned handle is borrowed from `vector` and must not outlive it.
+    #[inline]
+    #[must_use]
+    pub unsafe fn get_child(vector: duckdb_vector) -> duckdb_vector {
+        unsafe { duckdb_array_vector_get_child(vector) }
     }
 }
 

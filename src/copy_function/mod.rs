@@ -26,6 +26,10 @@
 //! # Ok::<(), quack_rs::error::ExtensionError>(())
 //! ```
 
+pub mod info;
+
+pub use info::{CopyBindInfo, CopyFinalizeInfo, CopyGlobalInitInfo, CopySinkInfo};
+
 use std::ffi::CString;
 
 use libduckdb_sys::{
@@ -252,5 +256,39 @@ mod tests {
             .sink(sink)
             .finalize(finalize);
         assert_eq!(builder.name(), "my_format");
+    }
+
+    #[test]
+    fn builder_stores_all_callbacks() {
+        unsafe extern "C" fn my_bind(_: duckdb_copy_function_bind_info) {}
+        unsafe extern "C" fn my_init(_: duckdb_copy_function_global_init_info) {}
+        unsafe extern "C" fn my_sink(_: duckdb_copy_function_sink_info, _: duckdb_data_chunk) {}
+        unsafe extern "C" fn my_finalize(_: duckdb_copy_function_finalize_info) {}
+
+        let b = CopyFunctionBuilder::try_new("f")
+            .unwrap()
+            .bind(my_bind)
+            .global_init(my_init)
+            .sink(my_sink)
+            .finalize(my_finalize);
+        assert!(b.bind.is_some());
+        assert!(b.global_init.is_some());
+        assert!(b.sink.is_some());
+        assert!(b.finalize.is_some());
+    }
+
+    #[test]
+    fn try_new_stores_name() {
+        let b = CopyFunctionBuilder::try_new("my_copy").unwrap();
+        assert_eq!(b.name(), "my_copy");
+    }
+
+    #[test]
+    fn callbacks_default_to_none() {
+        let b = CopyFunctionBuilder::try_new("fmt").unwrap();
+        assert!(b.bind.is_none());
+        assert!(b.global_init.is_none());
+        assert!(b.sink.is_none());
+        assert!(b.finalize.is_none());
     }
 }

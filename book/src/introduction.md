@@ -45,11 +45,11 @@ DuckDB's own documentation acknowledges the gap:
 | Replacement scans | ✅ `ReplacementScanBuilder` |
 | SQL macros (scalar) | ✅ `SqlMacro::scalar` |
 | SQL macros (table) | ✅ `SqlMacro::table` |
+| Copy functions (`COPY TO`) | ✅ `CopyFunctionBuilder` (requires `duckdb-1-5`) |
 
 > **Note:** Window functions have no counterpart in DuckDB's public C Extension API
 > and cannot be implemented from Rust (or any language) via that API.
-> COPY format handlers are now supported via the `copy_function` module
-> (requires `duckdb-1-5`). See [Known Limitations](reference/known-limitations.md).
+> See [Known Limitations](reference/known-limitations.md).
 
 ---
 
@@ -76,7 +76,7 @@ The full catalog is documented in the [Pitfall Reference](reference/pitfalls.md)
 ## Key features
 
 - **Zero C++** — no `CMakeLists.txt`, no header files, no glue code
-- **All C API function types** — scalar, aggregate, table, cast, replacement scan, SQL macro
+- **All C API function types** — scalar, aggregate, table, cast, replacement scan, SQL macro, copy function (`duckdb-1-5`)
 - **Panic-free FFI** — `init_extension` never panics; errors surface via `Result`
 - **RAII memory management** — `LogicalType` and `FfiState<T>` prevent leaks and double-frees
 - **Type-safe builders** — `ScalarFunctionBuilder`, `AggregateFunctionBuilder`, `TableFunctionBuilder`, `CastFunctionBuilder`, `ReplacementScanBuilder`

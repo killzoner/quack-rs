@@ -319,3 +319,80 @@ ScalarFunctionBuilder::new("stateful_fn")
     .function(stateful_fn)
     .register(con)?;
 ```
+
+---
+
+## Extra info
+
+Attach arbitrary data to a scalar function using `extra_info`. This is useful for
+parameterising the function behaviour (e.g., a locale or configuration struct).
+The method is available on both `ScalarFunctionBuilder` and `ScalarOverloadBuilder`.
+
+```rust
+use std::os::raw::c_void;
+
+let config = Box::into_raw(Box::new("en_US".to_string())).cast::<c_void>();
+unsafe {
+    ScalarFunctionBuilder::new("locale_upper")
+        .param(TypeId::Varchar)
+        .returns(TypeId::Varchar)
+        .extra_info(config, Some(my_destroy))
+        .function(locale_upper_fn)
+        .register(con)?;
+}
+```
+
+Inside the callback, retrieve the extra info with `ScalarFunctionInfo::get_extra_info()`.
+
+---
+
+## `ScalarFunctionInfo`
+
+`ScalarFunctionInfo` wraps the `duckdb_function_info` handle provided to a scalar
+function callback. It exposes:
+
+- `get_extra_info() -> *mut c_void` — retrieves the extra-info pointer set during
+  registration
+- `set_error(message)` — reports an error, causing DuckDB to abort the query
+
+```rust
+use quack_rs::scalar::ScalarFunctionInfo;
+
+unsafe extern "C" fn my_fn(
+    info: duckdb_function_info,
+    input: duckdb_data_chunk,
+    output: duckdb_vector,
+) {
+    let info = unsafe { ScalarFunctionInfo::new(info) };
+    let extra = unsafe { info.get_extra_info() };
+    // ... use extra info, or report errors via info.set_error("...") ...
+}
+```
+
+With the `duckdb-1-5` feature, `ScalarFunctionInfo` also provides:
+
+- `get_bind_data() -> *mut c_void` — retrieves bind data set during the bind callback
+- `get_state() -> *mut c_void` — retrieves per-thread state set during the init callback
+
+### `ScalarBindInfo` (`duckdb-1-5`)
+
+`ScalarBindInfo` wraps the `duckdb_bind_info` handle provided to a scalar function
+bind callback. It exposes:
+
+- `argument_count() -> u64` — number of arguments
+- `get_argument(index) -> duckdb_expression` — argument expression at `index`
+- `get_extra_info() -> *mut c_void` — the extra-info pointer from registration
+- `set_bind_data(data, destroy)` — stores per-query data retrievable during execution
+- `set_error(message)` — reports an error
+- `get_client_context() -> ClientContext` — access to the connection's catalog and config
+
+### `ScalarInitInfo` (`duckdb-1-5`)
+
+`ScalarInitInfo` wraps the `duckdb_init_info` handle provided to a scalar function
+init callback. It exposes:
+
+- `get_extra_info() -> *mut c_void` — the extra-info pointer from registration
+- `get_bind_data() -> *mut c_void` — the bind data from the bind callback
+- `set_state(state, destroy)` — stores per-thread state retrievable during execution
+- `set_error(message)` — reports an error
+- `get_client_context() -> ClientContext` — access to the connection's catalog and config

@@ -356,9 +356,9 @@ dealing with these constants directly.
 | L6 | Function silently not registered | Missing `set_name` on individual function in set | Use `AggregateFunctionSetBuilder` / `ScalarFunctionSetBuilder` |
 | L7 | Memory leak | `duckdb_create_logical_type` without `destroy` | Use `LogicalType` RAII wrapper |
 | P1 | Extension fails to load | `[lib] name` ≠ description.yml `name` | Match them exactly |
-| P8 | Extension fails API init | Using DuckDB release version in `api_init` | Use C API version (`"v1.2.0"`) |
+| P2 | Extension fails API init | Using DuckDB release version in `api_init` | Use C API version (`"v1.2.0"`) |
 
-See [LESSONS.md](../LESSONS.md) for all 15 pitfalls with full analysis.
+See [LESSONS.md](../LESSONS.md) for all 16 pitfalls with full analysis.
 
 ---
 

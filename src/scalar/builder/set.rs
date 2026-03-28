@@ -4,14 +4,16 @@
 // and encouraging more Rust development!
 
 use std::ffi::CString;
+use std::os::raw::c_void;
 
 use libduckdb_sys::{
     duckdb_add_scalar_function_to_set, duckdb_connection, duckdb_create_scalar_function,
-    duckdb_create_scalar_function_set, duckdb_destroy_scalar_function,
+    duckdb_create_scalar_function_set, duckdb_delete_callback_t, duckdb_destroy_scalar_function,
     duckdb_destroy_scalar_function_set, duckdb_register_scalar_function_set,
-    duckdb_scalar_function_add_parameter, duckdb_scalar_function_set_function,
-    duckdb_scalar_function_set_name, duckdb_scalar_function_set_return_type,
-    duckdb_scalar_function_set_special_handling, DuckDBSuccess,
+    duckdb_scalar_function_add_parameter, duckdb_scalar_function_set_extra_info,
+    duckdb_scalar_function_set_function, duckdb_scalar_function_set_name,
+    duckdb_scalar_function_set_return_type, duckdb_scalar_function_set_special_handling,
+    DuckDBSuccess,
 };
 
 use crate::error::ExtensionError;
@@ -79,6 +81,7 @@ pub(super) struct ScalarOverloadSpec {
     pub(super) return_logical: Option<LogicalType>,
     pub(super) function: Option<ScalarFn>,
     pub(super) null_handling: NullHandling,
+    pub(super) extra_info: Option<(*mut c_void, duckdb_delete_callback_t)>,
 }
 
 impl ScalarFunctionSetBuilder {
@@ -126,6 +129,7 @@ impl ScalarFunctionSetBuilder {
             return_logical: builder.return_logical,
             function: builder.function,
             null_handling: builder.null_handling,
+            extra_info: builder.extra_info,
         });
         self
     }
@@ -226,6 +230,14 @@ impl ScalarFunctionSetBuilder {
                 }
             }
 
+            // Set extra info if provided
+            if let Some((data, destroy)) = overload.extra_info {
+                // SAFETY: func is valid; data and destroy are provided by caller.
+                unsafe {
+                    duckdb_scalar_function_set_extra_info(func, data, destroy);
+                }
+            }
+
             // Add to set
             unsafe {
                 duckdb_add_scalar_function_to_set(set, func);
@@ -265,6 +277,7 @@ pub struct ScalarOverloadBuilder {
     pub(super) return_logical: Option<LogicalType>,
     pub(super) function: Option<ScalarFn>,
     pub(super) null_handling: NullHandling,
+    pub(super) extra_info: Option<(*mut c_void, duckdb_delete_callback_t)>,
 }
 
 impl ScalarOverloadBuilder {
@@ -277,6 +290,7 @@ impl ScalarOverloadBuilder {
             return_logical: None,
             function: None,
             null_handling: NullHandling::DefaultNullHandling,
+            extra_info: None,
         }
     }
 
@@ -334,6 +348,26 @@ impl ScalarOverloadBuilder {
     /// NULL values in your callback and handle them yourself.
     pub const fn null_handling(mut self, handling: NullHandling) -> Self {
         self.null_handling = handling;
+        self
+    }
+
+    /// Attaches arbitrary data to this overload.
+    ///
+    /// The data pointer is available inside the callback via
+    /// `duckdb_function_get_extra_info`. The `destroy` callback is called by
+    /// `DuckDB` when the function is dropped to free the data.
+    ///
+    /// # Safety
+    ///
+    /// `data` must point to valid memory that outlives the function registration,
+    /// or will be freed by `destroy`. The typical pattern
+    /// is to box your data: `Box::into_raw(Box::new(my_data)).cast()`.
+    pub unsafe fn extra_info(
+        mut self,
+        data: *mut c_void,
+        destroy: duckdb_delete_callback_t,
+    ) -> Self {
+        self.extra_info = Some((data, destroy));
         self
     }
 }

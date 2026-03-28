@@ -28,11 +28,12 @@ unsafe fn register(con: &Connection) -> Result<(), ExtensionError> {
         con.register_aggregate_set(/* AggregateFunctionSetBuilder */)?;
         con.register_sql_macro(/* SqlMacro */)?;
         con.register_replacement_scan(/* callback, data, destructor */);
+        // con.register_copy_function(/* CopyFunctionBuilder */)?;  // requires duckdb-1-5
     }
     Ok(())
 }
 
-entry_point_v2!(my_extension_init_c_api, |con| register(con));
+entry_point_v2!(my_extension_init_c_api, |con| unsafe { register(con) });
 ```
 
 This emits:
@@ -46,7 +47,7 @@ pub unsafe extern "C" fn my_extension_init_c_api(
     unsafe {
         quack_rs::entry_point::init_extension_v2(
             info, access, quack_rs::DUCKDB_API_VERSION,
-            |con| register(con),
+            |con| unsafe { register(con) },
         )
     }
 }
