@@ -10,13 +10,14 @@ use std::os::raw::c_void;
 
 #[cfg(feature = "duckdb-1-5")]
 use libduckdb_sys::{
-    duckdb_bind_info, duckdb_delete_callback_t, duckdb_expression, duckdb_init_info,
-    duckdb_scalar_function_bind_get_argument, duckdb_scalar_function_bind_get_argument_count,
-    duckdb_scalar_function_bind_get_extra_info, duckdb_scalar_function_bind_set_error,
-    duckdb_scalar_function_get_bind_data, duckdb_scalar_function_get_state,
-    duckdb_scalar_function_init_get_bind_data, duckdb_scalar_function_init_get_extra_info,
-    duckdb_scalar_function_init_set_error, duckdb_scalar_function_init_set_state,
-    duckdb_scalar_function_set_bind_data,
+    duckdb_bind_info, duckdb_client_context, duckdb_delete_callback_t, duckdb_expression,
+    duckdb_init_info, duckdb_scalar_function_bind_get_argument,
+    duckdb_scalar_function_bind_get_argument_count, duckdb_scalar_function_bind_get_extra_info,
+    duckdb_scalar_function_bind_set_error, duckdb_scalar_function_get_bind_data,
+    duckdb_scalar_function_get_client_context, duckdb_scalar_function_get_state,
+    duckdb_scalar_function_init_get_bind_data, duckdb_scalar_function_init_get_client_context,
+    duckdb_scalar_function_init_get_extra_info, duckdb_scalar_function_init_set_error,
+    duckdb_scalar_function_init_set_state, duckdb_scalar_function_set_bind_data,
 };
 use libduckdb_sys::{
     duckdb_function_info, duckdb_scalar_function_get_extra_info,
@@ -220,6 +221,20 @@ impl ScalarBindInfo {
         }
     }
 
+    /// Returns the client context for this callback.
+    ///
+    /// The returned [`ClientContext`][crate::client_context::ClientContext] provides
+    /// access to the connection's catalog, configuration, and connection ID.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be valid (requires DuckDB runtime).
+    pub unsafe fn get_client_context(&self) -> crate::client_context::ClientContext {
+        let mut ctx: duckdb_client_context = core::ptr::null_mut();
+        unsafe { duckdb_scalar_function_get_client_context(self.info, &raw mut ctx) };
+        unsafe { crate::client_context::ClientContext::from_raw(ctx) }
+    }
+
     /// Returns the raw `duckdb_bind_info` handle.
     #[must_use]
     #[inline]
@@ -310,6 +325,20 @@ impl ScalarInitInfo {
         unsafe {
             duckdb_scalar_function_init_set_error(self.info, c_msg.as_ptr());
         }
+    }
+
+    /// Returns the client context for this callback.
+    ///
+    /// The returned [`ClientContext`][crate::client_context::ClientContext] provides
+    /// access to the connection's catalog, configuration, and connection ID.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be valid (requires DuckDB runtime).
+    pub unsafe fn get_client_context(&self) -> crate::client_context::ClientContext {
+        let mut ctx: duckdb_client_context = core::ptr::null_mut();
+        unsafe { duckdb_scalar_function_init_get_client_context(self.info, &raw mut ctx) };
+        unsafe { crate::client_context::ClientContext::from_raw(ctx) }
     }
 
     /// Returns the raw `duckdb_init_info` handle.

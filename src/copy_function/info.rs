@@ -13,15 +13,18 @@ use std::ffi::{CStr, CString};
 use std::os::raw::c_void;
 
 use libduckdb_sys::{
-    duckdb_copy_function_bind_get_column_count, duckdb_copy_function_bind_get_column_type,
-    duckdb_copy_function_bind_get_extra_info, duckdb_copy_function_bind_info,
-    duckdb_copy_function_bind_set_bind_data, duckdb_copy_function_bind_set_error,
-    duckdb_copy_function_finalize_get_bind_data, duckdb_copy_function_finalize_get_extra_info,
+    duckdb_copy_function_bind_get_client_context, duckdb_copy_function_bind_get_column_count,
+    duckdb_copy_function_bind_get_column_type, duckdb_copy_function_bind_get_extra_info,
+    duckdb_copy_function_bind_info, duckdb_copy_function_bind_set_bind_data,
+    duckdb_copy_function_bind_set_error, duckdb_copy_function_finalize_get_bind_data,
+    duckdb_copy_function_finalize_get_client_context, duckdb_copy_function_finalize_get_extra_info,
     duckdb_copy_function_finalize_get_global_state, duckdb_copy_function_finalize_info,
     duckdb_copy_function_finalize_set_error, duckdb_copy_function_global_init_get_bind_data,
+    duckdb_copy_function_global_init_get_client_context,
     duckdb_copy_function_global_init_get_extra_info, duckdb_copy_function_global_init_get_file_path,
     duckdb_copy_function_global_init_info, duckdb_copy_function_global_init_set_error,
-    duckdb_copy_function_global_init_set_global_state, duckdb_copy_function_sink_get_bind_data,
+    duckdb_copy_function_global_init_set_global_state,
+    duckdb_copy_function_sink_get_client_context, duckdb_copy_function_sink_get_bind_data,
     duckdb_copy_function_sink_get_extra_info, duckdb_copy_function_sink_get_global_state,
     duckdb_copy_function_sink_info, duckdb_copy_function_sink_set_error, duckdb_delete_callback_t,
 };
@@ -105,6 +108,19 @@ impl CopyBindInfo {
         unsafe {
             duckdb_copy_function_bind_set_error(self.info, c_msg.as_ptr());
         }
+    }
+
+    /// Returns the client context for this callback.
+    ///
+    /// The returned [`ClientContext`][crate::client_context::ClientContext] provides
+    /// access to the connection's catalog, configuration, and connection ID.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be valid (requires DuckDB runtime).
+    pub unsafe fn get_client_context(&self) -> crate::client_context::ClientContext {
+        let ctx = unsafe { duckdb_copy_function_bind_get_client_context(self.info) };
+        unsafe { crate::client_context::ClientContext::from_raw(ctx) }
     }
 
     /// Returns the underlying raw handle.
@@ -212,6 +228,16 @@ impl CopyGlobalInitInfo {
         }
     }
 
+    /// Returns the client context for this callback.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be valid (requires DuckDB runtime).
+    pub unsafe fn get_client_context(&self) -> crate::client_context::ClientContext {
+        let ctx = unsafe { duckdb_copy_function_global_init_get_client_context(self.info) };
+        unsafe { crate::client_context::ClientContext::from_raw(ctx) }
+    }
+
     /// Returns the underlying raw handle.
     #[inline]
     #[must_use]
@@ -288,6 +314,16 @@ impl CopySinkInfo {
         }
     }
 
+    /// Returns the client context for this callback.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be valid (requires DuckDB runtime).
+    pub unsafe fn get_client_context(&self) -> crate::client_context::ClientContext {
+        let ctx = unsafe { duckdb_copy_function_sink_get_client_context(self.info) };
+        unsafe { crate::client_context::ClientContext::from_raw(ctx) }
+    }
+
     /// Returns the underlying raw handle.
     #[inline]
     #[must_use]
@@ -362,6 +398,16 @@ impl CopyFinalizeInfo {
         unsafe {
             duckdb_copy_function_finalize_set_error(self.info, c_msg.as_ptr());
         }
+    }
+
+    /// Returns the client context for this callback.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be valid (requires DuckDB runtime).
+    pub unsafe fn get_client_context(&self) -> crate::client_context::ClientContext {
+        let ctx = unsafe { duckdb_copy_function_finalize_get_client_context(self.info) };
+        unsafe { crate::client_context::ClientContext::from_raw(ctx) }
     }
 
     /// Returns the underlying raw handle.

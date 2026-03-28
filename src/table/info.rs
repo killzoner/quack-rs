@@ -12,6 +12,8 @@ use std::ffi::CString;
 
 use std::os::raw::c_void;
 
+#[cfg(feature = "duckdb-1-5")]
+use libduckdb_sys::{duckdb_client_context, duckdb_table_function_get_client_context};
 use libduckdb_sys::{
     duckdb_bind_add_result_column, duckdb_bind_get_extra_info, duckdb_bind_get_named_parameter,
     duckdb_bind_get_parameter, duckdb_bind_info, duckdb_bind_set_cardinality,
@@ -160,6 +162,21 @@ impl BindInfo {
     /// according to its original type.
     pub unsafe fn get_extra_info(&self) -> *mut c_void {
         unsafe { duckdb_bind_get_extra_info(self.info) }
+    }
+
+    /// Returns the client context for this callback.
+    ///
+    /// The returned [`ClientContext`][crate::client_context::ClientContext] provides
+    /// access to the connection's catalog, configuration, and connection ID.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be valid (requires DuckDB runtime).
+    #[cfg(feature = "duckdb-1-5")]
+    pub unsafe fn get_client_context(&self) -> crate::client_context::ClientContext {
+        let mut ctx: duckdb_client_context = core::ptr::null_mut();
+        unsafe { duckdb_table_function_get_client_context(self.info, &raw mut ctx) };
+        unsafe { crate::client_context::ClientContext::from_raw(ctx) }
     }
 
     /// Returns the raw `duckdb_bind_info` handle.

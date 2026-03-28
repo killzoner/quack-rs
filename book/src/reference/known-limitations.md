@@ -55,9 +55,8 @@ access bind data, etc.
 | **Copy function sink** | `CopySinkInfo` | `duckdb-1-5` |
 | **Copy function finalize** | `CopyFinalizeInfo` | `duckdb-1-5` |
 
-The only remaining unwrapped accessor is `get_client_context` on several
-callback types. Extension authors can call the underlying `libduckdb_sys`
-functions directly for this.
+All callback accessor functions are now wrapped, including `get_client_context`
+on all callback types (returns a [`ClientContext`][crate::client_context::ClientContext]).
 
 ## Complex type creation (resolved)
 
