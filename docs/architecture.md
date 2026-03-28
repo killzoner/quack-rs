@@ -91,13 +91,14 @@ quack_rs
 | `catalog` | `Catalog`, `CatalogEntry`, `CatalogEntryType` — catalog entry lookup (requires `duckdb-1-5`) | Yes |
 | `client_context` | `ClientContext` — access to connection catalog, config options, and connection ID (requires `duckdb-1-5`) | Yes |
 | `config_option` | `ConfigOptionBuilder` — register extension-defined `SET`/`RESET` configuration options (requires `duckdb-1-5`) | Yes |
-| `copy_function` | `CopyFunctionBuilder` — custom `COPY TO` handler registration (requires `duckdb-1-5`) | Yes |
+| `copy_function` | `CopyFunctionBuilder`, `CopyBindInfo`, `CopySinkInfo`, `CopyGlobalInitInfo`, `CopyFinalizeInfo` — custom `COPY TO` handler registration (requires `duckdb-1-5`) | Yes |
 | `table_description` | `TableDescription` — query table column count, names, and types at runtime (requires `duckdb-1-5`) | Yes |
 | `replacement_scan` | `ReplacementScanBuilder` — `SELECT * FROM 'file.xyz'` registration | Yes |
 | `vector::reader` | Typed reads with correct alignment and boolean semantics | Yes |
 | `vector::writer` | Typed writes with NULL flag support | Yes |
 | `vector::validity` | Bit-packed validity bitmap abstraction | Yes |
 | `vector::string` | Inline vs. pointer string format handling | Yes |
+| `vector::complex` | `StructVector`, `ListVector`, `MapVector`, `ArrayVector` — nested type access | Yes |
 | `types::type_id` | Enum mapping to `DUCKDB_TYPE_*` constants | No |
 | `types::logical_type` | RAII drop for `duckdb_logical_type` | Yes |
 | `config` | `DbConfig` — RAII wrapper for `duckdb_config` | Yes |

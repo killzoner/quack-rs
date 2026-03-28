@@ -45,6 +45,7 @@
 //! | Module | Purpose |
 //! |--------|---------|
 //! | [`entry_point`](mod@entry_point) | Helper for the correct `{name}_init_c_api` C entry point |
+//! | [`connection`] | `Connection` facade + `Registrar` trait for version-agnostic registration |
 //! | [`aggregate`] | Builders for aggregate function registration |
 //! | [`scalar`] | Builder for scalar function registration |
 //! | [`cast`] | Builder for custom type cast functions |
@@ -52,7 +53,7 @@
 //! | [`replacement_scan`] | `SELECT * FROM 'file.xyz'` replacement scan registration |
 //! | [`sql_macro`] | SQL macro registration (`CREATE MACRO`) — no FFI callbacks |
 //! | [`vector`] | Safe helpers for reading/writing `DuckDB` data vectors |
-//! | [`vector::complex`] | STRUCT / LIST / MAP vector access (child vectors, offsets) |
+//! | [`vector::complex`] | STRUCT / LIST / MAP / ARRAY vector access (child vectors, offsets) |
 //! | [`types`] | `DuckDB` type system wrappers (`TypeId`, `LogicalType`) |
 //! | [`interval`] | `INTERVAL` → microseconds conversion with overflow checking |
 //! | [`error`] | `ExtensionError` for FFI error propagation |
@@ -62,6 +63,11 @@
 //! | [`scaffold`] | Project generator for new extensions (no C++ glue needed) |
 //! | [`testing`] | Test harness for aggregate state logic |
 //! | [`prelude`] | Convenience re-exports of the most commonly used items |
+//! | [`catalog`] | Catalog entry lookup (`duckdb-1-5` feature) |
+//! | [`client_context`] | Client context access (`duckdb-1-5` feature) |
+//! | [`config_option`] | Extension-defined configuration options (`duckdb-1-5` feature) |
+//! | [`copy_function`] | Custom `COPY TO` handlers (`duckdb-1-5` feature) |
+//! | [`table_description`] | Table metadata queries (`duckdb-1-5` feature) |
 //!
 //! ## Safety
 //!
@@ -84,7 +90,7 @@
 //! ## Pitfalls
 //!
 //! See [`LESSONS.md`](https://github.com/tomtom215/quack-rs/blob/main/LESSONS.md)
-//! for all 15 known `DuckDB` Rust FFI pitfalls, including symptoms, root causes, and fixes.
+//! for all 16 known `DuckDB` Rust FFI pitfalls, including symptoms, root causes, and fixes.
 //!
 //! ## Pitfall L1: COMBINE must propagate config fields
 //!

@@ -29,9 +29,8 @@
 //! the dispatch table from the bundled `DuckDB` symbols before opening a connection
 //! (see Pitfall P9 in `LESSONS.md` for the full explanation).
 //!
-//! The dispatch table is **not** initialised for quack-rs's own FFI wrappers.
-//! Any direct `libduckdb-sys` call that is *not* mediated by `InMemoryDb` will
-//! still panic with:
+//! Without the `bundled-test` feature, the dispatch table is **not** initialised.
+//! Any direct `libduckdb-sys` call will panic with:
 //!
 //! ```text
 //! DuckDB API not initialized

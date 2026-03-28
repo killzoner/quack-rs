@@ -28,6 +28,7 @@ unsafe fn register(con: &Connection) -> Result<(), ExtensionError> {
         con.register_aggregate_set(/* AggregateFunctionSetBuilder */)?;
         con.register_sql_macro(/* SqlMacro */)?;
         con.register_replacement_scan(/* callback, data, destructor */);
+        // con.register_copy_function(/* CopyFunctionBuilder */)?;  // requires duckdb-1-5
     }
     Ok(())
 }

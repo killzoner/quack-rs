@@ -72,7 +72,7 @@ and eliminates every rough edge, so you write **zero lines of C or C++**.
 | FFI panics | Process abort or undefined behavior | `init_extension` never panics |
 | Table functions | ~100 lines of raw bind/init/scan callbacks | `TableFunctionBuilder` 5-method chain |
 | Replacement scans | Undocumented vtable + manual string allocation | `ReplacementScanBuilder` 4-method chain |
-| Complex types (STRUCT/LIST/MAP) | Manual offset arithmetic over child vectors | `StructVector`, `ListVector`, `MapVector` helpers |
+| Complex types (STRUCT/LIST/MAP/ARRAY) | Manual offset arithmetic over child vectors | `StructVector`, `ListVector`, `MapVector`, `ArrayVector` helpers |
 | Complex param/return types | Raw `duckdb_create_logical_type` + manual lifecycle | `param_logical(LogicalType)` / `returns_logical(LogicalType)` on all builders |
 | Extension naming | Rejected by DuckDB CI with no explanation | `validate_extension_name` catches issues before submission |
 | description.yml | No tooling to validate before submission | `validate_description_yml_str` validates the whole file |
@@ -82,7 +82,7 @@ and eliminates every rough edge, so you write **zero lines of C or C++**.
 
 ## What quack-rs Solves
 
-Building a DuckDB extension in Rust — from project setup to community submission — requires navigating undocumented C API contracts, FFI memory rules, and data-encoding specifics found only in DuckDB's source code, which surface as silent corruption, process aborts, or unexplained CI rejections rather than compiler errors. `quack-rs` eliminates these barriers systematically across the complete extension lifecycle — scaffolding, function registration, type-safe data access, aggregate testing, metadata validation, and community submission readiness — with every abstraction backed by a documented, reproducible pitfall in [`LESSONS.md`](./LESSONS.md), making correct behavior automatic and incorrect behavior a compile-time error wherever the type system permits. The result is that any Rust developer can build, test, and ship a production-quality DuckDB extension without prior knowledge of DuckDB internals, covering every extension type exposed by DuckDB's public C Extension API: scalar, aggregate, table, cast, replacement scan, and SQL macro functions.
+Building a DuckDB extension in Rust — from project setup to community submission — requires navigating undocumented C API contracts, FFI memory rules, and data-encoding specifics found only in DuckDB's source code, which surface as silent corruption, process aborts, or unexplained CI rejections rather than compiler errors. `quack-rs` eliminates these barriers systematically across the complete extension lifecycle — scaffolding, function registration, type-safe data access, aggregate testing, metadata validation, and community submission readiness — with every abstraction backed by a documented, reproducible pitfall in [`LESSONS.md`](./LESSONS.md), making correct behavior automatic and incorrect behavior a compile-time error wherever the type system permits. The result is that any Rust developer can build, test, and ship a production-quality DuckDB extension without prior knowledge of DuckDB internals, covering every extension type exposed by DuckDB's public C Extension API: scalar, aggregate, table, cast, copy, replacement scan, and SQL macro functions.
 
 `quack-rs` encapsulates **16 documented FFI pitfalls** — hard-won knowledge from building
 real DuckDB extensions in Rust:
@@ -283,16 +283,16 @@ append_metadata target/release/libmy_extension.so \
 |--------|---------|----------------------|
 | [`entry_point`] | Extension initialization entry point | `init_extension`, `init_extension_v2`, `entry_point!`, `entry_point_v2!` |
 | [`connection`] | Version-agnostic extension registration facade | `Connection`, `Registrar` |
-| [`aggregate`] | Aggregate function registration | `AggregateFunctionBuilder`, `AggregateFunctionSetBuilder` |
+| [`aggregate`] | Aggregate function registration | `AggregateFunctionBuilder`, `AggregateFunctionSetBuilder`, `AggregateFunctionInfo` |
 | [`aggregate::state`] | Generic FFI state management | `AggregateState`, `FfiState<T>` |
 | [`aggregate::callbacks`] | Callback type aliases | `UpdateFn`, `CombineFn`, `FinalizeFn`, … |
-| [`scalar`] | Scalar function registration | `ScalarFunctionBuilder`, `ScalarFunctionSetBuilder` |
+| [`scalar`] | Scalar function registration | `ScalarFunctionBuilder`, `ScalarFunctionSetBuilder`, `ScalarOverloadBuilder`, `ScalarFunctionInfo`, `ScalarBindInfo`¹, `ScalarInitInfo`¹ |
 | [`cast`] | Custom type cast functions | `CastFunctionBuilder`, `CastFunctionInfo`, `CastMode` |
 | [`table`] | Table function registration (bind/init/scan) | `TableFunctionBuilder`, `BindInfo`, `FfiBindData`, `FfiInitData` |
 | [`replacement_scan`] | `SELECT * FROM 'file.xyz'` replacement scans | `ReplacementScanBuilder` |
 | [`sql_macro`] | SQL macro registration (no FFI callbacks) | `SqlMacro`, `MacroBody` |
-| [`vector`] | Safe reading/writing of DuckDB vectors | `VectorReader`, `VectorWriter` |
-| [`vector::complex`] | STRUCT / LIST / MAP child vector access | `StructVector`, `ListVector`, `MapVector` |
+| [`vector`] | Safe reading/writing of DuckDB vectors | `VectorReader`, `VectorWriter`, `vector_size()` |
+| [`vector::complex`] | STRUCT / LIST / MAP / ARRAY child vector access | `StructVector`, `ListVector`, `MapVector`, `ArrayVector` |
 | [`vector::string`] | 16-byte DuckDB string format | `DuckStringView`, `read_duck_string` |
 | [`types`] | DuckDB type system wrappers | `TypeId`, `LogicalType`, `NullHandling` |
 | [`interval`] | INTERVAL ↔ microseconds conversion | `DuckInterval`, `interval_to_micros` |
@@ -312,7 +312,7 @@ append_metadata target/release/libmy_extension.so \
 | [`catalog`]¹ | Catalog entry lookup | `CatalogEntry`, `Catalog`, `CatalogEntryType` |
 | [`client_context`]¹ | Client context access (catalog, config, connection ID) | `ClientContext` |
 | [`config_option`]¹ | Extension-defined configuration options | `ConfigOptionBuilder`, `ConfigOptionScope` |
-| [`copy_function`]¹ | Custom `COPY TO` handlers | `CopyFunctionBuilder` |
+| [`copy_function`]¹ | Custom `COPY TO` handlers | `CopyFunctionBuilder`, `CopyBindInfo`, `CopyGlobalInitInfo`, `CopySinkInfo`, `CopyFinalizeInfo` |
 | [`table_description`]¹ | Table metadata (column count, names, types) | `TableDescription` |
 
 > ¹ Requires the `duckdb-1-5` feature flag (DuckDB 1.5.0+).
@@ -581,7 +581,7 @@ flowchart TB
     subgraph DATA ["Data layer"]
         direction LR
         VEC["**vector**<br/>VectorReader · VectorWriter<br/>ValidityBitmap · DuckStringView"]
-        CMP["**vector::complex**<br/>StructVector · ListVector · MapVector"]
+        CMP["**vector::complex**<br/>StructVector · ListVector · MapVector · ArrayVector"]
         TYP["**types**<br/>TypeId · LogicalType"]
         INT["**interval**<br/>DuckInterval · interval_to_micros"]
         CFG["**config_option**¹<br/>ConfigOptionBuilder"]
@@ -709,7 +709,7 @@ A comprehensive extension that exercises **every feature** in `quack-rs`: scalar
 table, cast, replacement scan, and SQL macro functions — plus complex types (STRUCT, LIST, MAP),
 `entry_point_v2!`/`Connection`/`Registrar`, aggregate sets, scalar sets with per-overload NULL
 handling, `DuckInterval`, `ValidityBitmap`, `named_param`, `local_init`, `implicit_cost`,
-`extra_info`, and all `VectorReader`/`VectorWriter` type variants. All 29 live SQL tests pass
+`extra_info`, and all `VectorReader`/`VectorWriter` type variants. All 39 live SQL tests pass
 against both DuckDB 1.4.4 and 1.5.0.
 
 ### Testing aggregate logic without DuckDB
@@ -758,6 +758,16 @@ does not exist in the C API.
 
 If DuckDB exposes the window function API in a future C API version, `quack-rs` will
 add wrappers in the relevant release.
+
+### VARIANT type (Iceberg v3)
+
+DuckDB v1.5.1 introduced the `VARIANT` type for Iceberg v3 support. This type is
+**not yet exposed** in the DuckDB C Extension API (`DUCKDB_TYPE_VARIANT` does not
+exist in `libduckdb-sys` 1.10501.0). `quack-rs` will add `TypeId::Variant` when the
+C API exposes it.
+
+> For the full list of resolved and open limitations, see the
+> [Known Limitations](https://quack-rs.com/reference/known-limitations.html) reference page.
 
 ---
 
