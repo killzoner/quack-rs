@@ -10,6 +10,31 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-03-28
+
+### Added
+
+- **`LogicalType::from_raw(ptr)`** — construct from raw handle
+- **Complex type constructors** — `decimal`, `array`, `array_from_logical`, `union_type`, `union_type_from_logical`, `enum_type`
+- **`_from_logical` variants** — `struct_type_from_logical`, `list_from_logical`, `map_from_logical` for nested complex types
+- **20 introspection methods** on `LogicalType` — `get_type_id`, `get_alias`, `set_alias`, decimal/enum/list/map/struct/union/array child access
+- **`TypeId::from_duckdb_type()`** — reverse conversion from raw C enum
+- **`extra_info`** on `ScalarFunctionBuilder`, `ScalarOverloadBuilder`, `AggregateFunctionBuilder`
+- **`param_logical` / `named_param_logical`** on `TableFunctionBuilder`
+- **`CastFunctionBuilder::new_logical()`** for complex source/target types
+- **Callback info wrappers** — `ScalarFunctionInfo`, `ScalarBindInfo` (`duckdb-1-5`), `ScalarInitInfo` (`duckdb-1-5`), `AggregateFunctionInfo`, `CopyBindInfo` (`duckdb-1-5`), `CopyGlobalInitInfo` (`duckdb-1-5`), `CopySinkInfo` (`duckdb-1-5`), `CopyFinalizeInfo` (`duckdb-1-5`)
+- **`get_client_context()`** on all callback info types
+- **`BindInfo`** — `get_parameter`, `get_named_parameter`, `get_extra_info`, `get_client_context`
+- **`InitInfo` / `FunctionInfo`** — `get_extra_info`
+- **`ArrayVector`** helper with `get_child()`
+- **`vector_size()`** and **`vector_get_column_type()`** utilities
+- **Prelude** — `StructVector`, `ListVector`, `MapVector`, `ArrayVector`, `ScalarFunctionInfo`, `AggregateFunctionInfo`
+
+### Changed
+
+- **Breaking:** `CastFunctionBuilder::source()` / `target()` return `Option<TypeId>` (was `TypeId`)
+- **Breaking:** `CastRecord::source` / `target` fields changed to `Option<TypeId>`
+
 ## [0.7.1] — 2026-03-27
 
 ### Added

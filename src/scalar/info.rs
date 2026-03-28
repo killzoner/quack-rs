@@ -20,8 +20,7 @@ use libduckdb_sys::{
     duckdb_scalar_function_init_set_state, duckdb_scalar_function_set_bind_data,
 };
 use libduckdb_sys::{
-    duckdb_function_info, duckdb_scalar_function_get_extra_info,
-    duckdb_scalar_function_set_error,
+    duckdb_function_info, duckdb_scalar_function_get_extra_info, duckdb_scalar_function_set_error,
 };
 
 /// Ergonomic wrapper around the `duckdb_function_info` handle provided to a

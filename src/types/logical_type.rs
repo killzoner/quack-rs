@@ -75,9 +75,16 @@ impl LogicalType {
     ///   after passing it to this function.
     /// - The handle must not be used after this call except through the returned
     ///   `LogicalType`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `ptr` is null.
     #[must_use]
     pub unsafe fn from_raw(ptr: duckdb_logical_type) -> Self {
-        assert!(!ptr.is_null(), "LogicalType::from_raw called with null pointer");
+        assert!(
+            !ptr.is_null(),
+            "LogicalType::from_raw called with null pointer"
+        );
         Self { inner: ptr }
     }
 
@@ -252,7 +259,7 @@ impl LogicalType {
     ///
     /// Panics if `duckdb_create_array_type` returns null.
     #[must_use]
-    pub fn array_from_logical(element: &LogicalType, size: u64) -> Self {
+    pub fn array_from_logical(element: &Self, size: u64) -> Self {
         let inner =
             unsafe { duckdb_create_array_type(element.as_raw(), size as libduckdb_sys::idx_t) };
         assert!(!inner.is_null(), "duckdb_create_array_type returned null");
@@ -314,7 +321,7 @@ impl LogicalType {
     /// Panics if any member name contains an interior null byte, or if
     /// `duckdb_create_union_type` returns null.
     #[must_use]
-    pub fn union_type_from_logical(members: &[(&str, LogicalType)]) -> Self {
+    pub fn union_type_from_logical(members: &[(&str, Self)]) -> Self {
         use std::ffi::CString;
 
         let c_names: Vec<CString> = members
@@ -383,7 +390,7 @@ impl LogicalType {
     ///
     /// Panics if `duckdb_create_list_type` returns null.
     #[must_use]
-    pub fn list_from_logical(element: &LogicalType) -> Self {
+    pub fn list_from_logical(element: &Self) -> Self {
         let inner = unsafe { duckdb_create_list_type(element.as_raw()) };
         assert!(!inner.is_null(), "duckdb_create_list_type returned null");
         Self { inner }
@@ -398,7 +405,7 @@ impl LogicalType {
     ///
     /// Panics if `duckdb_create_map_type` returns null.
     #[must_use]
-    pub fn map_from_logical(key: &LogicalType, value: &LogicalType) -> Self {
+    pub fn map_from_logical(key: &Self, value: &Self) -> Self {
         let inner = unsafe { duckdb_create_map_type(key.as_raw(), value.as_raw()) };
         assert!(!inner.is_null(), "duckdb_create_map_type returned null");
         Self { inner }
@@ -428,7 +435,7 @@ impl LogicalType {
     /// Panics if any field name contains an interior null byte, or if
     /// `duckdb_create_struct_type` returns null.
     #[must_use]
-    pub fn struct_type_from_logical(fields: &[(&str, LogicalType)]) -> Self {
+    pub fn struct_type_from_logical(fields: &[(&str, Self)]) -> Self {
         use std::ffi::CString;
 
         let c_names: Vec<CString> = fields
@@ -538,7 +545,7 @@ impl LogicalType {
     ///
     /// # Safety
     ///
-    /// The inner handle must be valid (requires DuckDB runtime).
+    /// The inner handle must be valid (requires `DuckDB` runtime).
     #[must_use]
     pub unsafe fn get_type_id(&self) -> TypeId {
         TypeId::from_duckdb_type(unsafe { duckdb_get_type_id(self.inner) })
@@ -548,7 +555,7 @@ impl LogicalType {
     ///
     /// # Safety
     ///
-    /// The inner handle must be valid (requires DuckDB runtime).
+    /// The inner handle must be valid (requires `DuckDB` runtime).
     #[must_use]
     pub unsafe fn get_alias(&self) -> Option<String> {
         let ptr = unsafe { duckdb_logical_type_get_alias(self.inner) };
@@ -566,10 +573,13 @@ impl LogicalType {
     ///
     /// # Safety
     ///
-    /// The inner handle must be valid (requires DuckDB runtime).
+    /// The inner handle must be valid (requires `DuckDB` runtime).
+    ///
+    /// # Panics
+    ///
+    /// Panics if `alias` contains an interior null byte.
     pub unsafe fn set_alias(&self, alias: &str) {
-        let c_alias =
-            std::ffi::CString::new(alias).expect("alias must not contain null bytes");
+        let c_alias = std::ffi::CString::new(alias).expect("alias must not contain null bytes");
         unsafe { duckdb_logical_type_set_alias(self.inner, c_alias.as_ptr()) };
     }
 
@@ -577,7 +587,7 @@ impl LogicalType {
     ///
     /// # Safety
     ///
-    /// The inner handle must be a `DECIMAL` logical type (requires DuckDB runtime).
+    /// The inner handle must be a `DECIMAL` logical type (requires `DuckDB` runtime).
     #[must_use]
     pub unsafe fn decimal_width(&self) -> u8 {
         unsafe { duckdb_decimal_width(self.inner) }
@@ -587,7 +597,7 @@ impl LogicalType {
     ///
     /// # Safety
     ///
-    /// The inner handle must be a `DECIMAL` logical type (requires DuckDB runtime).
+    /// The inner handle must be a `DECIMAL` logical type (requires `DuckDB` runtime).
     #[must_use]
     pub unsafe fn decimal_scale(&self) -> u8 {
         unsafe { duckdb_decimal_scale(self.inner) }
@@ -597,7 +607,7 @@ impl LogicalType {
     ///
     /// # Safety
     ///
-    /// The inner handle must be a `DECIMAL` logical type (requires DuckDB runtime).
+    /// The inner handle must be a `DECIMAL` logical type (requires `DuckDB` runtime).
     #[must_use]
     pub unsafe fn decimal_internal_type(&self) -> TypeId {
         TypeId::from_duckdb_type(unsafe { duckdb_decimal_internal_type(self.inner) })
@@ -607,7 +617,7 @@ impl LogicalType {
     ///
     /// # Safety
     ///
-    /// The inner handle must be an `ENUM` logical type (requires DuckDB runtime).
+    /// The inner handle must be an `ENUM` logical type (requires `DuckDB` runtime).
     #[must_use]
     pub unsafe fn enum_internal_type(&self) -> TypeId {
         TypeId::from_duckdb_type(unsafe { duckdb_enum_internal_type(self.inner) })
@@ -617,7 +627,7 @@ impl LogicalType {
     ///
     /// # Safety
     ///
-    /// The inner handle must be an `ENUM` logical type (requires DuckDB runtime).
+    /// The inner handle must be an `ENUM` logical type (requires `DuckDB` runtime).
     #[must_use]
     pub unsafe fn enum_dictionary_size(&self) -> u32 {
         unsafe { duckdb_enum_dictionary_size(self.inner) }
@@ -628,7 +638,11 @@ impl LogicalType {
     /// # Safety
     ///
     /// The inner handle must be an `ENUM` logical type and `index` must be
-    /// within bounds (requires DuckDB runtime).
+    /// within bounds (requires `DuckDB` runtime).
+    ///
+    /// # Panics
+    ///
+    /// Panics if `duckdb_enum_dictionary_value` returns a null pointer.
     #[must_use]
     pub unsafe fn enum_dictionary_value(&self, index: u64) -> String {
         let ptr =
@@ -645,37 +659,37 @@ impl LogicalType {
     ///
     /// # Safety
     ///
-    /// The inner handle must be a `LIST` logical type (requires DuckDB runtime).
+    /// The inner handle must be a `LIST` logical type (requires `DuckDB` runtime).
     #[must_use]
-    pub unsafe fn list_child_type(&self) -> LogicalType {
-        unsafe { LogicalType::from_raw(duckdb_list_type_child_type(self.inner)) }
+    pub unsafe fn list_child_type(&self) -> Self {
+        unsafe { Self::from_raw(duckdb_list_type_child_type(self.inner)) }
     }
 
     /// Returns the key type of a `MAP` type.
     ///
     /// # Safety
     ///
-    /// The inner handle must be a `MAP` logical type (requires DuckDB runtime).
+    /// The inner handle must be a `MAP` logical type (requires `DuckDB` runtime).
     #[must_use]
-    pub unsafe fn map_key_type(&self) -> LogicalType {
-        unsafe { LogicalType::from_raw(duckdb_map_type_key_type(self.inner)) }
+    pub unsafe fn map_key_type(&self) -> Self {
+        unsafe { Self::from_raw(duckdb_map_type_key_type(self.inner)) }
     }
 
     /// Returns the value type of a `MAP` type.
     ///
     /// # Safety
     ///
-    /// The inner handle must be a `MAP` logical type (requires DuckDB runtime).
+    /// The inner handle must be a `MAP` logical type (requires `DuckDB` runtime).
     #[must_use]
-    pub unsafe fn map_value_type(&self) -> LogicalType {
-        unsafe { LogicalType::from_raw(duckdb_map_type_value_type(self.inner)) }
+    pub unsafe fn map_value_type(&self) -> Self {
+        unsafe { Self::from_raw(duckdb_map_type_value_type(self.inner)) }
     }
 
     /// Returns the number of child fields in a `STRUCT` type.
     ///
     /// # Safety
     ///
-    /// The inner handle must be a `STRUCT` logical type (requires DuckDB runtime).
+    /// The inner handle must be a `STRUCT` logical type (requires `DuckDB` runtime).
     #[must_use]
     pub unsafe fn struct_child_count(&self) -> u64 {
         unsafe { duckdb_struct_type_child_count(self.inner) as u64 }
@@ -686,13 +700,19 @@ impl LogicalType {
     /// # Safety
     ///
     /// The inner handle must be a `STRUCT` logical type and `index` must be
-    /// within bounds (requires DuckDB runtime).
+    /// within bounds (requires `DuckDB` runtime).
+    ///
+    /// # Panics
+    ///
+    /// Panics if `duckdb_struct_type_child_name` returns a null pointer.
     #[must_use]
     pub unsafe fn struct_child_name(&self, index: u64) -> String {
         unsafe {
-            let ptr =
-                duckdb_struct_type_child_name(self.inner, index as libduckdb_sys::idx_t);
-            assert!(!ptr.is_null(), "duckdb_struct_type_child_name returned null");
+            let ptr = duckdb_struct_type_child_name(self.inner, index as libduckdb_sys::idx_t);
+            assert!(
+                !ptr.is_null(),
+                "duckdb_struct_type_child_name returned null"
+            );
             let s = std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned();
             duckdb_free(ptr.cast::<core::ffi::c_void>());
             s
@@ -704,11 +724,11 @@ impl LogicalType {
     /// # Safety
     ///
     /// The inner handle must be a `STRUCT` logical type and `index` must be
-    /// within bounds (requires DuckDB runtime).
+    /// within bounds (requires `DuckDB` runtime).
     #[must_use]
-    pub unsafe fn struct_child_type(&self, index: u64) -> LogicalType {
+    pub unsafe fn struct_child_type(&self, index: u64) -> Self {
         unsafe {
-            LogicalType::from_raw(duckdb_struct_type_child_type(
+            Self::from_raw(duckdb_struct_type_child_type(
                 self.inner,
                 index as libduckdb_sys::idx_t,
             ))
@@ -719,7 +739,7 @@ impl LogicalType {
     ///
     /// # Safety
     ///
-    /// The inner handle must be a `UNION` logical type (requires DuckDB runtime).
+    /// The inner handle must be a `UNION` logical type (requires `DuckDB` runtime).
     #[must_use]
     pub unsafe fn union_member_count(&self) -> u64 {
         unsafe { duckdb_union_type_member_count(self.inner) as u64 }
@@ -730,13 +750,19 @@ impl LogicalType {
     /// # Safety
     ///
     /// The inner handle must be a `UNION` logical type and `index` must be
-    /// within bounds (requires DuckDB runtime).
+    /// within bounds (requires `DuckDB` runtime).
+    ///
+    /// # Panics
+    ///
+    /// Panics if `duckdb_union_type_member_name` returns a null pointer.
     #[must_use]
     pub unsafe fn union_member_name(&self, index: u64) -> String {
         unsafe {
-            let ptr =
-                duckdb_union_type_member_name(self.inner, index as libduckdb_sys::idx_t);
-            assert!(!ptr.is_null(), "duckdb_union_type_member_name returned null");
+            let ptr = duckdb_union_type_member_name(self.inner, index as libduckdb_sys::idx_t);
+            assert!(
+                !ptr.is_null(),
+                "duckdb_union_type_member_name returned null"
+            );
             let s = std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned();
             duckdb_free(ptr.cast::<core::ffi::c_void>());
             s
@@ -748,11 +774,11 @@ impl LogicalType {
     /// # Safety
     ///
     /// The inner handle must be a `UNION` logical type and `index` must be
-    /// within bounds (requires DuckDB runtime).
+    /// within bounds (requires `DuckDB` runtime).
     #[must_use]
-    pub unsafe fn union_member_type(&self, index: u64) -> LogicalType {
+    pub unsafe fn union_member_type(&self, index: u64) -> Self {
         unsafe {
-            LogicalType::from_raw(duckdb_union_type_member_type(
+            Self::from_raw(duckdb_union_type_member_type(
                 self.inner,
                 index as libduckdb_sys::idx_t,
             ))
@@ -763,7 +789,7 @@ impl LogicalType {
     ///
     /// # Safety
     ///
-    /// The inner handle must be an `ARRAY` logical type (requires DuckDB runtime).
+    /// The inner handle must be an `ARRAY` logical type (requires `DuckDB` runtime).
     #[must_use]
     pub unsafe fn array_size(&self) -> u64 {
         unsafe { duckdb_array_type_array_size(self.inner) as u64 }
@@ -773,10 +799,10 @@ impl LogicalType {
     ///
     /// # Safety
     ///
-    /// The inner handle must be an `ARRAY` logical type (requires DuckDB runtime).
+    /// The inner handle must be an `ARRAY` logical type (requires `DuckDB` runtime).
     #[must_use]
-    pub unsafe fn array_child_type(&self) -> LogicalType {
-        unsafe { LogicalType::from_raw(duckdb_array_type_child_type(self.inner)) }
+    pub unsafe fn array_child_type(&self) -> Self {
+        unsafe { Self::from_raw(duckdb_array_type_child_type(self.inner)) }
     }
 
     /// Returns the underlying raw `duckdb_logical_type` handle.

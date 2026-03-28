@@ -1,6 +1,6 @@
 [package]
 name = "quack-rs"
-version = "0.7.1"
+version = "0.8.0"
 edition = "2021"
 rust-version = "1.84.1"
 authors = ["Tom F. <tomf@tomtomtech.net>"]

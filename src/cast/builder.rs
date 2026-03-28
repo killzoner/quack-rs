@@ -198,9 +198,10 @@ pub struct CastFunctionBuilder {
     extra_info: Option<(*mut c_void, duckdb_delete_callback_t)>,
 }
 
-// SAFETY: CastFunctionBuilder owns the extra_info pointer until registration.
-// The raw pointer is only sent across threads as part of the builder, which
-// extension authors typically use on a single thread.
+// SAFETY: CastFunctionBuilder owns the extra_info pointer and LogicalType handles
+// until registration. The raw pointers are only sent across threads as part of the
+// builder, which extension authors typically use on a single thread.
+#[allow(clippy::non_send_fields_in_send_ty)]
 unsafe impl Send for CastFunctionBuilder {}
 
 impl CastFunctionBuilder {
@@ -367,9 +368,7 @@ impl CastFunctionBuilder {
         if result == DuckDBSuccess {
             Ok(())
         } else {
-            Err(ExtensionError::new(
-                "duckdb_register_cast_function failed",
-            ))
+            Err(ExtensionError::new("duckdb_register_cast_function failed"))
         }
     }
 }

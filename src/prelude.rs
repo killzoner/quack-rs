@@ -112,16 +112,16 @@ pub use crate::aggregate::{
 };
 
 // Scalar functions
+#[cfg(feature = "duckdb-1-5")]
+pub use crate::scalar::{ScalarBindInfo, ScalarInitInfo};
 pub use crate::scalar::{
     ScalarFunctionBuilder, ScalarFunctionInfo, ScalarFunctionSetBuilder, ScalarOverloadBuilder,
 };
-#[cfg(feature = "duckdb-1-5")]
-pub use crate::scalar::{ScalarBindInfo, ScalarInitInfo};
 
 // Copy functions
 #[cfg(feature = "duckdb-1-5")]
 pub use crate::copy_function::{
-    CopyBindFn, CopyBindInfo, CopyFinalizeInfo, CopyFinalizeFn, CopyFunctionBuilder,
+    CopyBindFn, CopyBindInfo, CopyFinalizeFn, CopyFinalizeInfo, CopyFunctionBuilder,
     CopyGlobalInitFn, CopyGlobalInitInfo, CopySinkFn, CopySinkInfo,
 };
 

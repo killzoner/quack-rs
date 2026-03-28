@@ -12,8 +12,6 @@ use std::ffi::CString;
 
 use std::os::raw::c_void;
 
-#[cfg(feature = "duckdb-1-5")]
-use libduckdb_sys::{duckdb_client_context, duckdb_table_function_get_client_context};
 use libduckdb_sys::{
     duckdb_bind_add_result_column, duckdb_bind_get_extra_info, duckdb_bind_get_named_parameter,
     duckdb_bind_get_parameter, duckdb_bind_info, duckdb_bind_set_cardinality,
@@ -21,6 +19,8 @@ use libduckdb_sys::{
     duckdb_function_set_error, duckdb_init_get_extra_info, duckdb_init_info, duckdb_init_set_error,
     duckdb_value, idx_t,
 };
+#[cfg(feature = "duckdb-1-5")]
+use libduckdb_sys::{duckdb_client_context, duckdb_table_function_get_client_context};
 
 use crate::types::{LogicalType, TypeId};
 

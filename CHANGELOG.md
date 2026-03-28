@@ -7,6 +7,114 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-03-28
+
+### Added
+
+- **`LogicalType::from_raw(ptr)`** — construct a `LogicalType` from an existing
+  raw `duckdb_logical_type` handle, taking ownership.
+
+- **`LogicalType` complex type constructors** — `decimal(width, scale)`,
+  `array(element, size)`, `array_from_logical(element, size)`,
+  `union_type(members)`, `union_type_from_logical(members)`, `enum_type(members)`.
+
+- **`LogicalType` `_from_logical` variants** — `struct_type_from_logical`,
+  `list_from_logical`, `map_from_logical` accept `LogicalType` values for
+  nested complex types that cannot be expressed as simple `TypeId`.
+
+- **`LogicalType` introspection methods** (20 methods) — `get_type_id`,
+  `get_alias`, `set_alias`, `decimal_width`, `decimal_scale`,
+  `decimal_internal_type`, `enum_internal_type`, `enum_dictionary_size`,
+  `enum_dictionary_value`, `list_child_type`, `map_key_type`, `map_value_type`,
+  `struct_child_count`, `struct_child_name`, `struct_child_type`,
+  `union_member_count`, `union_member_name`, `union_member_type`,
+  `array_size`, `array_child_type`.
+
+- **`TypeId::from_duckdb_type(raw)`** — reverse conversion from raw
+  `DUCKDB_TYPE` C enum to `TypeId`.
+
+- **`ScalarFunctionBuilder::extra_info(data, destroy)`** — attach arbitrary
+  data to a scalar function, accessible via `duckdb_function_get_extra_info`
+  in callbacks.
+
+- **`ScalarOverloadBuilder::extra_info(data, destroy)`** — same for scalar
+  function set overloads.
+
+- **`AggregateFunctionBuilder::extra_info(data, destroy)`** — attach arbitrary
+  data to an aggregate function.
+
+- **`TableFunctionBuilder::param_logical(logical_type)`** — add a positional
+  parameter with a complex `LogicalType`.
+
+- **`TableFunctionBuilder::named_param_logical(name, logical_type)`** — add a
+  named parameter with a complex `LogicalType`.
+
+- **`CastFunctionBuilder::new_logical(source, target)`** — construct a cast
+  builder using `LogicalType` values for complex source/target types.
+
+- **`ScalarFunctionInfo`** — callback wrapper with `get_extra_info()`,
+  `set_error()`, and (`duckdb-1-5`) `get_bind_data()`, `get_state()`.
+
+- **`ScalarBindInfo`** (`duckdb-1-5`) — scalar bind callback wrapper with
+  `argument_count()`, `get_argument()`, `get_extra_info()`, `set_bind_data()`,
+  `set_error()`, `get_client_context()`.
+
+- **`ScalarInitInfo`** (`duckdb-1-5`) — scalar init callback wrapper with
+  `get_extra_info()`, `get_bind_data()`, `set_state()`, `set_error()`,
+  `get_client_context()`.
+
+- **`AggregateFunctionInfo`** — aggregate callback wrapper with
+  `get_extra_info()` and `set_error()`.
+
+- **`CopyBindInfo`** (`duckdb-1-5`) — copy bind callback wrapper with
+  `column_count()`, `column_type()`, `get_extra_info()`, `set_bind_data()`,
+  `set_error()`, `get_client_context()`.
+
+- **`CopyGlobalInitInfo`** (`duckdb-1-5`) — copy global init callback wrapper
+  with `get_bind_data()`, `get_extra_info()`, `get_file_path()`,
+  `set_global_state()`, `set_error()`, `get_client_context()`.
+
+- **`CopySinkInfo`** (`duckdb-1-5`) — copy sink callback wrapper with
+  `get_bind_data()`, `get_extra_info()`, `get_global_state()`, `set_error()`,
+  `get_client_context()`.
+
+- **`CopyFinalizeInfo`** (`duckdb-1-5`) — copy finalize callback wrapper with
+  `get_bind_data()`, `get_extra_info()`, `get_global_state()`, `set_error()`,
+  `get_client_context()`.
+
+- **`BindInfo::get_parameter(index)`** — retrieve positional parameter value
+  in table function bind callbacks.
+
+- **`BindInfo::get_named_parameter(name)`** — retrieve named parameter value
+  in table function bind callbacks.
+
+- **`BindInfo::get_extra_info()`**, **`InitInfo::get_extra_info()`**,
+  **`FunctionInfo::get_extra_info()`** — access extra info from table function
+  callbacks.
+
+- **`get_client_context()`** — available on `BindInfo` (table), `ScalarBindInfo`,
+  `ScalarInitInfo`, `CopyBindInfo`, `CopyGlobalInitInfo`, `CopySinkInfo`,
+  `CopyFinalizeInfo`. Returns a `ClientContext` RAII wrapper.
+
+- **`ArrayVector`** — helper for fixed-size array vectors with `get_child()`.
+
+- **`vector_size()`** — returns the default DuckDB vector size (typically 2048).
+
+- **`vector_get_column_type(vector)`** — returns the `LogicalType` of a vector.
+
+- **Prelude additions** — `StructVector`, `ListVector`, `MapVector`,
+  `ArrayVector`, `ScalarFunctionInfo`, `AggregateFunctionInfo` now re-exported
+  from `quack_rs::prelude`.
+
+### Changed
+
+- **`CastFunctionBuilder::source()` / `target()`** now return `Option<TypeId>`
+  instead of `TypeId`, returning `None` when the builder was created via
+  `new_logical()`. **This is a breaking change.**
+
+- **`CastRecord::source` / `target`** fields changed from `TypeId` to
+  `Option<TypeId>` to match the builder change.
+
 ## [0.7.1] - 2026-03-27
 
 ### Added

@@ -14,12 +14,12 @@ use libduckdb_sys::{
 use std::os::raw::c_void;
 
 use libduckdb_sys::{
-    duckdb_connection, duckdb_create_scalar_function, duckdb_data_chunk,
-    duckdb_delete_callback_t, duckdb_destroy_scalar_function, duckdb_function_info,
-    duckdb_register_scalar_function, duckdb_scalar_function_add_parameter,
-    duckdb_scalar_function_set_extra_info, duckdb_scalar_function_set_function,
-    duckdb_scalar_function_set_name, duckdb_scalar_function_set_return_type,
-    duckdb_scalar_function_set_special_handling, duckdb_vector, DuckDBSuccess,
+    duckdb_connection, duckdb_create_scalar_function, duckdb_data_chunk, duckdb_delete_callback_t,
+    duckdb_destroy_scalar_function, duckdb_function_info, duckdb_register_scalar_function,
+    duckdb_scalar_function_add_parameter, duckdb_scalar_function_set_extra_info,
+    duckdb_scalar_function_set_function, duckdb_scalar_function_set_name,
+    duckdb_scalar_function_set_return_type, duckdb_scalar_function_set_special_handling,
+    duckdb_vector, DuckDBSuccess,
 };
 
 use crate::error::ExtensionError;

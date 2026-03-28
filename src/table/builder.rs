@@ -92,8 +92,14 @@ pub type ExtraDestroyFn = unsafe extern "C" fn(data: *mut c_void);
 
 /// A named parameter specification: (name, type).
 enum NamedParam {
-    Simple { name: CString, type_id: TypeId },
-    Logical { name: CString, logical_type: LogicalType },
+    Simple {
+        name: CString,
+        type_id: TypeId,
+    },
+    Logical {
+        name: CString,
+        logical_type: LogicalType,
+    },
 }
 
 /// Builder for registering a `DuckDB` table function.
@@ -351,25 +357,16 @@ impl TableFunctionBuilder {
                 NamedParam::Simple { name, type_id } => {
                     let lt = LogicalType::new(*type_id);
                     unsafe {
-                        duckdb_table_function_add_named_parameter(
-                            func,
-                            name.as_ptr(),
-                            lt.as_raw(),
-                        );
+                        duckdb_table_function_add_named_parameter(func, name.as_ptr(), lt.as_raw());
                     }
                 }
-                NamedParam::Logical {
-                    name,
-                    logical_type,
-                } => {
-                    unsafe {
-                        duckdb_table_function_add_named_parameter(
-                            func,
-                            name.as_ptr(),
-                            logical_type.as_raw(),
-                        );
-                    }
-                }
+                NamedParam::Logical { name, logical_type } => unsafe {
+                    duckdb_table_function_add_named_parameter(
+                        func,
+                        name.as_ptr(),
+                        logical_type.as_raw(),
+                    );
+                },
             }
         }
 
@@ -452,11 +449,11 @@ mod tests {
         assert_eq!(b.named_params.len(), 2);
         match &b.named_params[0] {
             NamedParam::Simple { name, .. } => assert_eq!(name.to_str().unwrap(), "path"),
-            _ => panic!("expected Simple"),
+            NamedParam::Logical { .. } => panic!("expected Simple"),
         }
         match &b.named_params[1] {
             NamedParam::Simple { name, .. } => assert_eq!(name.to_str().unwrap(), "limit"),
-            _ => panic!("expected Simple"),
+            NamedParam::Logical { .. } => panic!("expected Simple"),
         }
     }
 
