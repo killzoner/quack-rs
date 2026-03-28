@@ -44,6 +44,9 @@
 //! | [`SqlMacro`] | `sql_macro` module |
 //! | [`VectorReader`] | `vector` module |
 //! | [`VectorWriter`] | `vector` module |
+//! | [`StructVector`] | `vector::complex` module |
+//! | [`ListVector`] | `vector::complex` module |
+//! | [`MapVector`] | `vector::complex` module |
 //! | [`TypeId`] | `types` module |
 //! | [`LogicalType`] | `types` module |
 //! | [`NullHandling`] | `types` module |
@@ -64,8 +67,8 @@
 //! - `scaffold::*` — project generation (use explicitly)
 //! - `testing::*` — test harness (typically imported only in `#[cfg(test)]`)
 //! - `interval::read_interval_at` — low-level; use [`VectorReader::read_interval`] instead
-//! - `vector::complex::*` — low-level; import explicitly when working with complex types
 //!
+
 //! # Example
 //!
 //! ```rust,no_run
@@ -119,6 +122,7 @@ pub use crate::replacement_scan::{ReplacementScanBuilder, ReplacementScanInfo};
 pub use crate::sql_macro::SqlMacro;
 
 // Vector I/O
+pub use crate::vector::complex::{ListVector, MapVector, StructVector};
 pub use crate::vector::{VectorReader, VectorWriter};
 
 // Types

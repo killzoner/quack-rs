@@ -11,10 +11,13 @@ use libduckdb_sys::{
     duckdb_scalar_function_set_init, duckdb_scalar_function_set_varargs,
     duckdb_scalar_function_set_volatile,
 };
+use std::os::raw::c_void;
+
 use libduckdb_sys::{
     duckdb_connection, duckdb_create_scalar_function, duckdb_data_chunk,
-    duckdb_destroy_scalar_function, duckdb_function_info, duckdb_register_scalar_function,
-    duckdb_scalar_function_add_parameter, duckdb_scalar_function_set_function,
+    duckdb_delete_callback_t, duckdb_destroy_scalar_function, duckdb_function_info,
+    duckdb_register_scalar_function, duckdb_scalar_function_add_parameter,
+    duckdb_scalar_function_set_extra_info, duckdb_scalar_function_set_function,
     duckdb_scalar_function_set_name, duckdb_scalar_function_set_return_type,
     duckdb_scalar_function_set_special_handling, duckdb_vector, DuckDBSuccess,
 };
@@ -86,6 +89,7 @@ pub struct ScalarFunctionBuilder {
     pub(super) return_logical: Option<LogicalType>,
     pub(super) function: Option<ScalarFn>,
     pub(super) null_handling: NullHandling,
+    pub(super) extra_info: Option<(*mut c_void, duckdb_delete_callback_t)>,
     #[cfg(feature = "duckdb-1-5")]
     pub(super) varargs: Option<LogicalType>,
     #[cfg(feature = "duckdb-1-5")]
@@ -111,6 +115,7 @@ impl ScalarFunctionBuilder {
             return_logical: None,
             function: None,
             null_handling: NullHandling::DefaultNullHandling,
+            extra_info: None,
             #[cfg(feature = "duckdb-1-5")]
             varargs: None,
             #[cfg(feature = "duckdb-1-5")]
@@ -143,6 +148,7 @@ impl ScalarFunctionBuilder {
             return_logical: None,
             function: None,
             null_handling: NullHandling::DefaultNullHandling,
+            extra_info: None,
             #[cfg(feature = "duckdb-1-5")]
             varargs: None,
             #[cfg(feature = "duckdb-1-5")]
@@ -277,6 +283,26 @@ impl ScalarFunctionBuilder {
         self
     }
 
+    /// Attaches arbitrary data to this scalar function.
+    ///
+    /// The data pointer is available inside the callback via
+    /// `duckdb_function_get_extra_info`. The `destroy` callback is called by
+    /// `DuckDB` when the function is dropped to free the data.
+    ///
+    /// # Safety
+    ///
+    /// `data` must point to valid memory that outlives the function registration,
+    /// or will be freed by `destroy`. The typical pattern
+    /// is to box your data: `Box::into_raw(Box::new(my_data)).cast()`.
+    pub unsafe fn extra_info(
+        mut self,
+        data: *mut c_void,
+        destroy: duckdb_delete_callback_t,
+    ) -> Self {
+        self.extra_info = Some((data, destroy));
+        self
+    }
+
     /// Registers the scalar function on the given connection.
     ///
     /// # Errors
@@ -350,6 +376,14 @@ impl ScalarFunctionBuilder {
         // SAFETY: function is a valid extern "C" fn pointer.
         unsafe {
             duckdb_scalar_function_set_function(func, Some(function));
+        }
+
+        // Set extra info if provided
+        if let Some((data, destroy)) = self.extra_info {
+            // SAFETY: func is valid; data and destroy are provided by caller.
+            unsafe {
+                duckdb_scalar_function_set_extra_info(func, data, destroy);
+            }
         }
 
         // Set bind callback if configured (`DuckDB` 1.5.0+)

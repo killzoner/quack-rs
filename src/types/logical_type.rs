@@ -53,6 +53,26 @@ pub struct LogicalType {
 }
 
 impl LogicalType {
+    /// Creates a `LogicalType` from an existing raw `duckdb_logical_type` handle.
+    ///
+    /// The returned `LogicalType` takes ownership of the handle and will call
+    /// `duckdb_destroy_logical_type` when dropped.
+    ///
+    /// # Safety
+    ///
+    /// - `ptr` must be a valid, non-null `duckdb_logical_type` handle returned by
+    ///   a `duckdb_create_*` function (e.g. `duckdb_create_logical_type`,
+    ///   `duckdb_create_list_type`, `duckdb_create_struct_type`, etc.).
+    /// - The caller must not call `duckdb_destroy_logical_type` on the handle
+    ///   after passing it to this function.
+    /// - The handle must not be used after this call except through the returned
+    ///   `LogicalType`.
+    #[must_use]
+    pub unsafe fn from_raw(ptr: duckdb_logical_type) -> Self {
+        assert!(!ptr.is_null(), "LogicalType::from_raw called with null pointer");
+        Self { inner: ptr }
+    }
+
     /// Creates a new `LogicalType` for the given `TypeId`.
     ///
     /// Calls `duckdb_create_logical_type` internally.
@@ -158,6 +178,84 @@ impl LogicalType {
             c_names.iter().map(|s| s.as_ptr()).collect();
 
         // SAFETY: type_ptrs and name_ptrs are valid for the duration of this call.
+        let inner = unsafe {
+            duckdb_create_struct_type(
+                type_ptrs.as_mut_ptr(),
+                name_ptrs.as_mut_ptr(),
+                fields.len() as libduckdb_sys::idx_t,
+            )
+        };
+        assert!(!inner.is_null(), "duckdb_create_struct_type returned null");
+        Self { inner }
+    }
+
+    /// Creates a `LIST<element>` logical type from an existing [`LogicalType`].
+    ///
+    /// Use this when the element type is itself a complex type (e.g.
+    /// `LIST(STRUCT(...))`) that cannot be expressed as a simple [`TypeId`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if `duckdb_create_list_type` returns null.
+    #[must_use]
+    pub fn list_from_logical(element: &LogicalType) -> Self {
+        let inner = unsafe { duckdb_create_list_type(element.as_raw()) };
+        assert!(!inner.is_null(), "duckdb_create_list_type returned null");
+        Self { inner }
+    }
+
+    /// Creates a `MAP<key, value>` logical type from existing [`LogicalType`]s.
+    ///
+    /// Use this when the key or value types are complex types that cannot be
+    /// expressed as simple [`TypeId`] values.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `duckdb_create_map_type` returns null.
+    #[must_use]
+    pub fn map_from_logical(key: &LogicalType, value: &LogicalType) -> Self {
+        let inner = unsafe { duckdb_create_map_type(key.as_raw(), value.as_raw()) };
+        assert!(!inner.is_null(), "duckdb_create_map_type returned null");
+        Self { inner }
+    }
+
+    /// Creates a `STRUCT` logical type from a slice of `(name, LogicalType)` fields.
+    ///
+    /// Use this when struct members have complex types (e.g.
+    /// `STRUCT(headers MAP(VARCHAR, VARCHAR), body VARCHAR)`) that cannot be
+    /// expressed as simple [`TypeId`] values.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use quack_rs::types::{LogicalType, TypeId};
+    ///
+    /// // STRUCT(status INTEGER, headers MAP(VARCHAR, VARCHAR), body VARCHAR)
+    /// let response = LogicalType::struct_type_from_logical(&[
+    ///     ("status", LogicalType::new(TypeId::Integer)),
+    ///     ("headers", LogicalType::map(TypeId::Varchar, TypeId::Varchar)),
+    ///     ("body", LogicalType::new(TypeId::Varchar)),
+    /// ]);
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if any field name contains an interior null byte, or if
+    /// `duckdb_create_struct_type` returns null.
+    #[must_use]
+    pub fn struct_type_from_logical(fields: &[(&str, LogicalType)]) -> Self {
+        use std::ffi::CString;
+
+        let c_names: Vec<CString> = fields
+            .iter()
+            .map(|&(n, _)| CString::new(n).expect("field name must not contain null bytes"))
+            .collect();
+
+        let mut type_ptrs: Vec<duckdb_logical_type> =
+            fields.iter().map(|(_, lt)| lt.as_raw()).collect();
+        let mut name_ptrs: Vec<*const std::os::raw::c_char> =
+            c_names.iter().map(|s| s.as_ptr()).collect();
+
         let inner = unsafe {
             duckdb_create_struct_type(
                 type_ptrs.as_mut_ptr(),
