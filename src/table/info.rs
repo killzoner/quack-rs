@@ -10,10 +10,14 @@
 
 use std::ffi::CString;
 
+use std::os::raw::c_void;
+
 use libduckdb_sys::{
-    duckdb_bind_add_result_column, duckdb_bind_info, duckdb_bind_set_cardinality,
-    duckdb_bind_set_error, duckdb_function_info, duckdb_function_set_error, duckdb_init_info,
-    duckdb_init_set_error, idx_t,
+    duckdb_bind_add_result_column, duckdb_bind_get_extra_info, duckdb_bind_get_named_parameter,
+    duckdb_bind_get_parameter, duckdb_bind_info, duckdb_bind_set_cardinality,
+    duckdb_bind_set_error, duckdb_function_get_extra_info, duckdb_function_info,
+    duckdb_function_set_error, duckdb_init_get_extra_info, duckdb_init_info, duckdb_init_set_error,
+    duckdb_value, idx_t,
 };
 
 use crate::types::{LogicalType, TypeId};
@@ -123,6 +127,41 @@ impl BindInfo {
             .unwrap_or(0)
     }
 
+    /// Returns the parameter value at the given positional index.
+    ///
+    /// # Safety
+    ///
+    /// - `index` must be less than [`parameter_count`][BindInfo::parameter_count].
+    /// - The caller is responsible for destroying the returned `duckdb_value`.
+    pub unsafe fn get_parameter(&self, index: u64) -> duckdb_value {
+        unsafe { duckdb_bind_get_parameter(self.info, index) }
+    }
+
+    /// Returns the parameter value for the given named parameter.
+    ///
+    /// # Safety
+    ///
+    /// - `name` must correspond to a named parameter declared for this function.
+    /// - The caller is responsible for destroying the returned `duckdb_value`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `name` contains an interior null byte.
+    pub unsafe fn get_named_parameter(&self, name: &str) -> duckdb_value {
+        let c_name = CString::new(name).expect("parameter name must not contain null bytes");
+        unsafe { duckdb_bind_get_named_parameter(self.info, c_name.as_ptr()) }
+    }
+
+    /// Returns the extra info pointer set on the table function.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure the returned pointer (if non-null) is used
+    /// according to its original type.
+    pub unsafe fn get_extra_info(&self) -> *mut c_void {
+        unsafe { duckdb_bind_get_extra_info(self.info) }
+    }
+
     /// Returns the raw `duckdb_bind_info` handle.
     #[must_use]
     #[inline]
@@ -191,6 +230,16 @@ impl InitInfo {
         unsafe { duckdb_init_set_error(self.info, c_msg.as_ptr()) };
     }
 
+    /// Returns the extra info pointer set on the table function.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure the returned pointer (if non-null) is used
+    /// according to its original type.
+    pub unsafe fn get_extra_info(&self) -> *mut c_void {
+        unsafe { duckdb_init_get_extra_info(self.info) }
+    }
+
     /// Returns the raw `duckdb_init_info` handle.
     #[must_use]
     #[inline]
@@ -227,6 +276,16 @@ impl FunctionInfo {
         let c_msg = CString::new(message).expect("error message must not contain null bytes");
         // SAFETY: self.info is valid.
         unsafe { duckdb_function_set_error(self.info, c_msg.as_ptr()) };
+    }
+
+    /// Returns the extra info pointer set on the table function.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure the returned pointer (if non-null) is used
+    /// according to its original type.
+    pub unsafe fn get_extra_info(&self) -> *mut c_void {
+        unsafe { duckdb_function_get_extra_info(self.info) }
     }
 
     /// Returns the raw `duckdb_function_info` handle.

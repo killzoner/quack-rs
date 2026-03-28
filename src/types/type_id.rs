@@ -213,6 +213,86 @@ impl TypeId {
         }
     }
 
+    /// Converts a raw `DUCKDB_TYPE` constant back into a [`TypeId`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value does not match any known `DUCKDB_TYPE` constant.
+    #[must_use]
+    pub const fn from_duckdb_type(raw: DUCKDB_TYPE) -> Self {
+        // Using if-else chain because match on non-primitive constants is not
+        // allowed in const context.
+        if raw == DUCKDB_TYPE_DUCKDB_TYPE_BOOLEAN {
+            Self::Boolean
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_TINYINT {
+            Self::TinyInt
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_SMALLINT {
+            Self::SmallInt
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_INTEGER {
+            Self::Integer
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_BIGINT {
+            Self::BigInt
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_UTINYINT {
+            Self::UTinyInt
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_USMALLINT {
+            Self::USmallInt
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_UINTEGER {
+            Self::UInteger
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_UBIGINT {
+            Self::UBigInt
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_HUGEINT {
+            Self::HugeInt
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_FLOAT {
+            Self::Float
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_DOUBLE {
+            Self::Double
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_TIMESTAMP {
+            Self::Timestamp
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_TIMESTAMP_TZ {
+            Self::TimestampTz
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_DATE {
+            Self::Date
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_TIME {
+            Self::Time
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_INTERVAL {
+            Self::Interval
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_VARCHAR {
+            Self::Varchar
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_BLOB {
+            Self::Blob
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_DECIMAL {
+            Self::Decimal
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_TIMESTAMP_S {
+            Self::TimestampS
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_TIMESTAMP_MS {
+            Self::TimestampMs
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_TIMESTAMP_NS {
+            Self::TimestampNs
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_ENUM {
+            Self::Enum
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_LIST {
+            Self::List
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_STRUCT {
+            Self::Struct
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_MAP {
+            Self::Map
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_UUID {
+            Self::Uuid
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_UNION {
+            Self::Union
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_BIT {
+            Self::Bit
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_TIME_TZ {
+            Self::TimeTz
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_UHUGEINT {
+            Self::UHugeInt
+        } else if raw == DUCKDB_TYPE_DUCKDB_TYPE_ARRAY {
+            Self::Array
+        } else {
+            panic!("unknown DUCKDB_TYPE value")
+        }
+    }
+
     /// Returns a human-readable SQL type name for this `TypeId`.
     ///
     /// # Example

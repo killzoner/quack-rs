@@ -26,6 +26,10 @@
 //! # Ok::<(), quack_rs::error::ExtensionError>(())
 //! ```
 
+pub mod info;
+
+pub use info::{CopyBindInfo, CopyFinalizeInfo, CopyGlobalInitInfo, CopySinkInfo};
+
 use std::ffi::CString;
 
 use libduckdb_sys::{

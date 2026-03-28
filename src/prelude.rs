@@ -111,6 +111,15 @@ pub use crate::aggregate::{
 pub use crate::scalar::{
     ScalarFunctionBuilder, ScalarFunctionInfo, ScalarFunctionSetBuilder, ScalarOverloadBuilder,
 };
+#[cfg(feature = "duckdb-1-5")]
+pub use crate::scalar::{ScalarBindInfo, ScalarInitInfo};
+
+// Copy functions
+#[cfg(feature = "duckdb-1-5")]
+pub use crate::copy_function::{
+    CopyBindFn, CopyBindInfo, CopyFinalizeInfo, CopyFinalizeFn, CopyFunctionBuilder,
+    CopyGlobalInitFn, CopyGlobalInitInfo, CopySinkFn, CopySinkInfo,
+};
 
 // Table functions
 pub use crate::table::{
@@ -125,7 +134,7 @@ pub use crate::replacement_scan::{ReplacementScanBuilder, ReplacementScanInfo};
 pub use crate::sql_macro::SqlMacro;
 
 // Vector I/O
-pub use crate::vector::complex::{ListVector, MapVector, StructVector};
+pub use crate::vector::complex::{ArrayVector, ListVector, MapVector, StructVector};
 pub use crate::vector::{VectorReader, VectorWriter};
 
 // Types

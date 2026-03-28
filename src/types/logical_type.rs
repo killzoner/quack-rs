@@ -13,10 +13,16 @@
 
 use crate::types::TypeId;
 use libduckdb_sys::{
-    duckdb_create_array_type, duckdb_create_decimal_type, duckdb_create_enum_type,
-    duckdb_create_list_type, duckdb_create_logical_type, duckdb_create_map_type,
-    duckdb_create_struct_type, duckdb_create_union_type, duckdb_destroy_logical_type,
-    duckdb_logical_type,
+    duckdb_array_type_array_size, duckdb_array_type_child_type, duckdb_create_array_type,
+    duckdb_create_decimal_type, duckdb_create_enum_type, duckdb_create_list_type,
+    duckdb_create_logical_type, duckdb_create_map_type, duckdb_create_struct_type,
+    duckdb_create_union_type, duckdb_decimal_internal_type, duckdb_decimal_scale,
+    duckdb_decimal_width, duckdb_destroy_logical_type, duckdb_enum_dictionary_size,
+    duckdb_enum_dictionary_value, duckdb_enum_internal_type, duckdb_free, duckdb_get_type_id,
+    duckdb_list_type_child_type, duckdb_logical_type, duckdb_logical_type_get_alias,
+    duckdb_logical_type_set_alias, duckdb_map_type_key_type, duckdb_map_type_value_type,
+    duckdb_struct_type_child_count, duckdb_struct_type_child_name, duckdb_struct_type_child_type,
+    duckdb_union_type_member_count, duckdb_union_type_member_name, duckdb_union_type_member_type,
 };
 use std::fmt;
 
@@ -522,6 +528,255 @@ impl LogicalType {
             });
         }
         Ok(Self { inner })
+    }
+
+    // ------------------------------------------------------------------
+    // Introspection methods
+    // ------------------------------------------------------------------
+
+    /// Returns the [`TypeId`] of this logical type.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be valid (requires DuckDB runtime).
+    #[must_use]
+    pub unsafe fn get_type_id(&self) -> TypeId {
+        TypeId::from_duckdb_type(unsafe { duckdb_get_type_id(self.inner) })
+    }
+
+    /// Returns the alias of this logical type, or `None` if no alias is set.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be valid (requires DuckDB runtime).
+    #[must_use]
+    pub unsafe fn get_alias(&self) -> Option<String> {
+        let ptr = unsafe { duckdb_logical_type_get_alias(self.inner) };
+        if ptr.is_null() {
+            return None;
+        }
+        let s = unsafe { std::ffi::CStr::from_ptr(ptr) }
+            .to_string_lossy()
+            .into_owned();
+        unsafe { duckdb_free(ptr.cast::<core::ffi::c_void>()) };
+        Some(s)
+    }
+
+    /// Sets an alias on this logical type.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be valid (requires DuckDB runtime).
+    pub unsafe fn set_alias(&self, alias: &str) {
+        let c_alias =
+            std::ffi::CString::new(alias).expect("alias must not contain null bytes");
+        unsafe { duckdb_logical_type_set_alias(self.inner, c_alias.as_ptr()) };
+    }
+
+    /// Returns the width (total digits) of a `DECIMAL` type.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be a `DECIMAL` logical type (requires DuckDB runtime).
+    #[must_use]
+    pub unsafe fn decimal_width(&self) -> u8 {
+        unsafe { duckdb_decimal_width(self.inner) }
+    }
+
+    /// Returns the scale (digits after decimal point) of a `DECIMAL` type.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be a `DECIMAL` logical type (requires DuckDB runtime).
+    #[must_use]
+    pub unsafe fn decimal_scale(&self) -> u8 {
+        unsafe { duckdb_decimal_scale(self.inner) }
+    }
+
+    /// Returns the internal storage type of a `DECIMAL` type.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be a `DECIMAL` logical type (requires DuckDB runtime).
+    #[must_use]
+    pub unsafe fn decimal_internal_type(&self) -> TypeId {
+        TypeId::from_duckdb_type(unsafe { duckdb_decimal_internal_type(self.inner) })
+    }
+
+    /// Returns the internal storage type of an `ENUM` type.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be an `ENUM` logical type (requires DuckDB runtime).
+    #[must_use]
+    pub unsafe fn enum_internal_type(&self) -> TypeId {
+        TypeId::from_duckdb_type(unsafe { duckdb_enum_internal_type(self.inner) })
+    }
+
+    /// Returns the number of members in an `ENUM` type.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be an `ENUM` logical type (requires DuckDB runtime).
+    #[must_use]
+    pub unsafe fn enum_dictionary_size(&self) -> u32 {
+        unsafe { duckdb_enum_dictionary_size(self.inner) }
+    }
+
+    /// Returns the name of the enum member at `index`.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be an `ENUM` logical type and `index` must be
+    /// within bounds (requires DuckDB runtime).
+    #[must_use]
+    pub unsafe fn enum_dictionary_value(&self, index: u64) -> String {
+        let ptr =
+            unsafe { duckdb_enum_dictionary_value(self.inner, index as libduckdb_sys::idx_t) };
+        assert!(!ptr.is_null(), "duckdb_enum_dictionary_value returned null");
+        let s = unsafe { std::ffi::CStr::from_ptr(ptr) }
+            .to_string_lossy()
+            .into_owned();
+        unsafe { duckdb_free(ptr.cast::<core::ffi::c_void>()) };
+        s
+    }
+
+    /// Returns the child (element) type of a `LIST` type.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be a `LIST` logical type (requires DuckDB runtime).
+    #[must_use]
+    pub unsafe fn list_child_type(&self) -> LogicalType {
+        unsafe { LogicalType::from_raw(duckdb_list_type_child_type(self.inner)) }
+    }
+
+    /// Returns the key type of a `MAP` type.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be a `MAP` logical type (requires DuckDB runtime).
+    #[must_use]
+    pub unsafe fn map_key_type(&self) -> LogicalType {
+        unsafe { LogicalType::from_raw(duckdb_map_type_key_type(self.inner)) }
+    }
+
+    /// Returns the value type of a `MAP` type.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be a `MAP` logical type (requires DuckDB runtime).
+    #[must_use]
+    pub unsafe fn map_value_type(&self) -> LogicalType {
+        unsafe { LogicalType::from_raw(duckdb_map_type_value_type(self.inner)) }
+    }
+
+    /// Returns the number of child fields in a `STRUCT` type.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be a `STRUCT` logical type (requires DuckDB runtime).
+    #[must_use]
+    pub unsafe fn struct_child_count(&self) -> u64 {
+        unsafe { duckdb_struct_type_child_count(self.inner) as u64 }
+    }
+
+    /// Returns the name of the struct field at `index`.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be a `STRUCT` logical type and `index` must be
+    /// within bounds (requires DuckDB runtime).
+    #[must_use]
+    pub unsafe fn struct_child_name(&self, index: u64) -> String {
+        unsafe {
+            let ptr =
+                duckdb_struct_type_child_name(self.inner, index as libduckdb_sys::idx_t);
+            assert!(!ptr.is_null(), "duckdb_struct_type_child_name returned null");
+            let s = std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned();
+            duckdb_free(ptr.cast::<core::ffi::c_void>());
+            s
+        }
+    }
+
+    /// Returns the type of the struct field at `index`.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be a `STRUCT` logical type and `index` must be
+    /// within bounds (requires DuckDB runtime).
+    #[must_use]
+    pub unsafe fn struct_child_type(&self, index: u64) -> LogicalType {
+        unsafe {
+            LogicalType::from_raw(duckdb_struct_type_child_type(
+                self.inner,
+                index as libduckdb_sys::idx_t,
+            ))
+        }
+    }
+
+    /// Returns the number of members in a `UNION` type.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be a `UNION` logical type (requires DuckDB runtime).
+    #[must_use]
+    pub unsafe fn union_member_count(&self) -> u64 {
+        unsafe { duckdb_union_type_member_count(self.inner) as u64 }
+    }
+
+    /// Returns the name of the union member at `index`.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be a `UNION` logical type and `index` must be
+    /// within bounds (requires DuckDB runtime).
+    #[must_use]
+    pub unsafe fn union_member_name(&self, index: u64) -> String {
+        unsafe {
+            let ptr =
+                duckdb_union_type_member_name(self.inner, index as libduckdb_sys::idx_t);
+            assert!(!ptr.is_null(), "duckdb_union_type_member_name returned null");
+            let s = std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned();
+            duckdb_free(ptr.cast::<core::ffi::c_void>());
+            s
+        }
+    }
+
+    /// Returns the type of the union member at `index`.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be a `UNION` logical type and `index` must be
+    /// within bounds (requires DuckDB runtime).
+    #[must_use]
+    pub unsafe fn union_member_type(&self, index: u64) -> LogicalType {
+        unsafe {
+            LogicalType::from_raw(duckdb_union_type_member_type(
+                self.inner,
+                index as libduckdb_sys::idx_t,
+            ))
+        }
+    }
+
+    /// Returns the fixed size of an `ARRAY` type.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be an `ARRAY` logical type (requires DuckDB runtime).
+    #[must_use]
+    pub unsafe fn array_size(&self) -> u64 {
+        unsafe { duckdb_array_type_array_size(self.inner) as u64 }
+    }
+
+    /// Returns the child (element) type of an `ARRAY` type.
+    ///
+    /// # Safety
+    ///
+    /// The inner handle must be an `ARRAY` logical type (requires DuckDB runtime).
+    #[must_use]
+    pub unsafe fn array_child_type(&self) -> LogicalType {
+        unsafe { LogicalType::from_raw(duckdb_array_type_child_type(self.inner)) }
     }
 
     /// Returns the underlying raw `duckdb_logical_type` handle.

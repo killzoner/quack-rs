@@ -45,3 +45,5 @@ pub mod info;
 
 pub use builder::{ScalarFunctionBuilder, ScalarFunctionSetBuilder, ScalarOverloadBuilder};
 pub use info::ScalarFunctionInfo;
+#[cfg(feature = "duckdb-1-5")]
+pub use info::{ScalarBindInfo, ScalarInitInfo};
