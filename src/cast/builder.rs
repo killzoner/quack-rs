@@ -22,6 +22,7 @@ use crate::error::ExtensionError;
 use crate::types::{LogicalType, TypeId};
 
 /// Converts a `&str` to `CString` without panicking.
+#[mutants::skip] // private FFI helper — tested in replacement_scan::tests
 fn str_to_cstring(s: &str) -> CString {
     CString::new(s).unwrap_or_else(|_| {
         let pos = s.bytes().position(|b| b == 0).unwrap_or(s.len());

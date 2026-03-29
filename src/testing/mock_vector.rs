@@ -1120,4 +1120,59 @@ mod tests {
         assert!(writer.is_null(2));
         assert_eq!(writer.try_get_i64(3), Some(-6));
     }
+
+    #[test]
+    fn writer_blob_round_trip() {
+        let mut w = MockVectorWriter::new(2);
+        w.write_blob(0, b"hello bytes");
+        w.set_null(1);
+        assert_eq!(w.try_get_blob(0), Some(b"hello bytes".as_slice()));
+        assert_eq!(w.try_get_blob(1), None);
+        // Wrong type returns None
+        assert_eq!(w.try_get_i64(0), None);
+    }
+
+    #[test]
+    fn writer_uuid_round_trip() {
+        let mut w = MockVectorWriter::new(1);
+        let uuid_val: i128 = 0x0123_4567_89ab_cdef_0123_4567_89ab_cdef;
+        w.write_uuid(0, uuid_val);
+        assert_eq!(w.try_get_uuid(0), Some(uuid_val));
+    }
+
+    #[test]
+    fn writer_date_round_trip() {
+        let mut w = MockVectorWriter::new(1);
+        w.write_date(0, 19815); // days since epoch
+        assert_eq!(w.try_get_i32(0), Some(19815));
+    }
+
+    #[test]
+    fn writer_timestamp_round_trip() {
+        let mut w = MockVectorWriter::new(1);
+        w.write_timestamp(0, 1_711_756_800_000_000); // micros since epoch
+        assert_eq!(w.try_get_i64(0), Some(1_711_756_800_000_000));
+    }
+
+    #[test]
+    fn writer_time_round_trip() {
+        let mut w = MockVectorWriter::new(1);
+        w.write_time(0, 43_200_000_000); // noon in micros
+        assert_eq!(w.try_get_i64(0), Some(43_200_000_000));
+    }
+
+    #[test]
+    fn reader_blob_round_trip() {
+        let r = MockVectorReader::from_blobs([Some(b"data".as_slice()), None]);
+        assert_eq!(r.try_get_blob(0), Some(b"data".as_slice()));
+        assert_eq!(r.try_get_blob(1), None);
+        assert!(!r.is_valid(1));
+    }
+
+    #[test]
+    fn reader_uuid_round_trip() {
+        let uuid_val: i128 = 0x0ead_beef_cafe_babe_1234_5678_9abc_def0;
+        let r = MockVectorReader::from_i128s([Some(uuid_val)]);
+        assert_eq!(r.try_get_uuid(0), Some(uuid_val));
+    }
 }

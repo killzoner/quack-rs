@@ -150,6 +150,7 @@ impl ReplacementScanInfo {
     /// Reports an error, causing `DuckDB` to abort this replacement scan attempt.
     ///
     /// If `message` contains an interior null byte it is truncated at that point.
+    #[mutants::skip] // FFI call requires DuckDB runtime
     pub fn set_error(&self, message: &str) {
         let c_msg = str_to_cstring(message);
         // SAFETY: self.info is valid.

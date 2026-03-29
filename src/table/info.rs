@@ -29,6 +29,7 @@ use crate::value::Value;
 ///
 /// If the string contains an interior null byte, it is truncated at that point.
 /// This is preferred over `.expect()` in FFI callback contexts where panics are UB.
+#[mutants::skip] // private FFI helper — tested in replacement_scan::tests
 fn str_to_cstring(s: &str) -> CString {
     CString::new(s).unwrap_or_else(|_| {
         let pos = s.bytes().position(|b| b == 0).unwrap_or(s.len());

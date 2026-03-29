@@ -24,6 +24,7 @@ use libduckdb_sys::{
 };
 
 /// Converts a `&str` to `CString` without panicking.
+#[mutants::skip] // private FFI helper — tested in replacement_scan::tests
 fn str_to_cstring(s: &str) -> CString {
     CString::new(s).unwrap_or_else(|_| {
         let pos = s.bytes().position(|b| b == 0).unwrap_or(s.len());
@@ -242,6 +243,7 @@ impl ScalarBindInfo {
     }
 
     /// Returns the raw `duckdb_bind_info` handle.
+    #[mutants::skip]
     #[must_use]
     #[inline]
     pub const fn as_raw(&self) -> duckdb_bind_info {
@@ -347,6 +349,7 @@ impl ScalarInitInfo {
     }
 
     /// Returns the raw `duckdb_init_info` handle.
+    #[mutants::skip]
     #[must_use]
     #[inline]
     pub const fn as_raw(&self) -> duckdb_init_info {

@@ -54,5 +54,4 @@ exclude_globs = [
 # or semantically unkillable patterns).
 exclude_re = [
     "^fmt::",                   # Display/Debug impls
-    "str_to_cstring",           # FFI null-byte truncation helper (private, tested in replacement_scan)
 ]
