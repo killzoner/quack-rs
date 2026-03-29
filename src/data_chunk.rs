@@ -31,8 +31,7 @@ use libduckdb_sys::{
 
 use crate::chunk_writer::ChunkWriter;
 use crate::vector::complex::StructVector;
-use crate::vector::StructWriter;
-use crate::vector::{VectorReader, VectorWriter};
+use crate::vector::{StructReader, StructWriter, VectorReader, VectorWriter};
 
 /// A non-owning wrapper around a `duckdb_data_chunk`.
 ///
@@ -122,6 +121,21 @@ impl DataChunk {
     pub unsafe fn reader(&self, col_idx: usize) -> VectorReader {
         // SAFETY: self.raw is valid; col_idx is in bounds per caller's contract.
         unsafe { VectorReader::new(self.raw, col_idx) }
+    }
+
+    /// Creates a [`StructReader`] for a STRUCT column at the given index.
+    ///
+    /// This is a convenience method that combines [`vector`][Self::vector] with
+    /// [`StructReader::new`].
+    ///
+    /// # Safety
+    ///
+    /// - `col_idx` must be less than [`column_count`][Self::column_count].
+    /// - The column at `col_idx` must have a STRUCT type with `field_count` fields.
+    pub unsafe fn struct_reader(&self, col_idx: usize, field_count: usize) -> StructReader {
+        let vec = unsafe { self.vector(col_idx) };
+        // SAFETY: vec is a valid STRUCT vector per caller's contract.
+        unsafe { StructReader::new(vec, field_count, self.size()) }
     }
 
     /// Creates a [`VectorReader`] for a field of a STRUCT column.

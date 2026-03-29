@@ -57,6 +57,7 @@
 //! | [`sql_macro`] | SQL macro registration (`CREATE MACRO`) — no FFI callbacks |
 //! | [`vector`] | Safe helpers for reading/writing `DuckDB` data vectors |
 //! | [`vector::complex`] | STRUCT / LIST / MAP / ARRAY vector access (child vectors, offsets) |
+//! | [`vector::struct_reader`] | Batched [`StructReader`][vector::StructReader] for STRUCT input vectors |
 //! | [`vector::struct_writer`] | Batched [`StructWriter`][vector::StructWriter] for STRUCT output vectors |
 //! | [`types`] | `DuckDB` type system wrappers (`TypeId`, `LogicalType`) |
 //! | [`interval`] | `INTERVAL` → microseconds conversion with overflow checking |

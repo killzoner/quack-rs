@@ -52,6 +52,7 @@
 //! | [`VectorWriter`] | `vector` module |
 //! | [`ValidityBitmap`] | `vector::validity` module |
 //! | [`ArrayVector`] | `vector::complex` module |
+//! | [`StructReader`] | `vector::struct_reader` module |
 //! | [`StructWriter`] | `vector::struct_writer` module |
 //! | [`StructVector`] | `vector::complex` module |
 //! | [`ListVector`] | `vector::complex` module |
@@ -153,7 +154,7 @@ pub use crate::value::Value;
 
 // Vector I/O
 pub use crate::vector::complex::{ArrayVector, ListVector, MapVector, StructVector};
-pub use crate::vector::{StructWriter, ValidityBitmap, VectorReader, VectorWriter};
+pub use crate::vector::{StructReader, StructWriter, ValidityBitmap, VectorReader, VectorWriter};
 
 // Types
 pub use crate::types::{LogicalType, NullHandling, TypeId};
