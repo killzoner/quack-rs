@@ -721,7 +721,10 @@ fn mock_vector_writer_u32_round_trip() {
 
     let mut w = MockVectorWriter::new(1);
     w.write_u32(0, 123_456);
-    assert!(matches!(w.get(0), Some(quack_rs::testing::MockDuckValue::U32(123_456))));
+    assert!(matches!(
+        w.get(0),
+        Some(quack_rs::testing::MockDuckValue::U32(123_456))
+    ));
 }
 
 #[test]
@@ -730,7 +733,10 @@ fn mock_vector_writer_u64_round_trip() {
 
     let mut w = MockVectorWriter::new(1);
     w.write_u64(0, 9_876_543_210);
-    assert!(matches!(w.get(0), Some(quack_rs::testing::MockDuckValue::U64(9_876_543_210))));
+    assert!(matches!(
+        w.get(0),
+        Some(quack_rs::testing::MockDuckValue::U64(9_876_543_210))
+    ));
 }
 
 #[test]
@@ -738,10 +744,10 @@ fn mock_vector_writer_f32_round_trip() {
     use quack_rs::testing::MockVectorWriter;
 
     let mut w = MockVectorWriter::new(1);
-    w.write_f32(0, 3.14);
+    w.write_f32(0, 2.5);
     match w.get(0) {
         Some(quack_rs::testing::MockDuckValue::F32(v)) => {
-            assert!((v - 3.14_f32).abs() < f32::EPSILON);
+            assert!((v - 2.5_f32).abs() < f32::EPSILON);
         }
         other => panic!("expected F32, got {other:?}"),
     }
