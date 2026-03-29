@@ -68,6 +68,16 @@ use libduckdb_sys::{
     duckdb_replacement_scan_set_function_name,
 };
 
+/// Converts a `&str` to `CString` without panicking.
+///
+/// If the string contains an interior null byte, it is truncated at that point.
+fn str_to_cstring(s: &str) -> CString {
+    CString::new(s).unwrap_or_else(|_| {
+        let pos = s.bytes().position(|b| b == 0).unwrap_or(s.len());
+        CString::new(&s.as_bytes()[..pos]).unwrap_or_default()
+    })
+}
+
 /// The replacement scan callback signature.
 ///
 /// - `info` — use to redirect the scan or report an error.
@@ -103,12 +113,9 @@ impl ReplacementScanInfo {
     /// Call this first to name the table function that will handle the scan,
     /// then use `add_varchar_parameter` or `add_parameter_raw` to pass arguments.
     ///
-    /// # Panics
-    ///
-    /// Panics if `function_name` contains an interior null byte.
+    /// If `function_name` contains an interior null byte it is truncated at that point.
     pub fn set_function(&self, function_name: &str) -> &Self {
-        let c_name =
-            CString::new(function_name).expect("function name must not contain null bytes");
+        let c_name = str_to_cstring(function_name);
         // SAFETY: self.info is valid per constructor's contract.
         unsafe {
             duckdb_replacement_scan_set_function_name(self.info, c_name.as_ptr());
@@ -141,11 +148,9 @@ impl ReplacementScanInfo {
 
     /// Reports an error, causing `DuckDB` to abort this replacement scan attempt.
     ///
-    /// # Panics
-    ///
-    /// Panics if `message` contains an interior null byte.
+    /// If `message` contains an interior null byte it is truncated at that point.
     pub fn set_error(&self, message: &str) {
-        let c_msg = CString::new(message).expect("error message must not contain null bytes");
+        let c_msg = str_to_cstring(message);
         // SAFETY: self.info is valid.
         unsafe {
             duckdb_replacement_scan_set_error(self.info, c_msg.as_ptr());
@@ -237,15 +242,11 @@ mod tests {
         let _info = unsafe { ReplacementScanInfo::new(std::ptr::null_mut()) };
     }
 
-    /// Verify that `set_error` rejects a message with an interior null byte.
-    ///
-    /// If the method body is mutated to `()` (a no-op), the panic never fires
-    /// and this `#[should_panic]` test fails — killing the mutant without
-    /// requiring a live `DuckDB` connection.
+    /// Verify that `str_to_cstring` truncates at interior null bytes instead
+    /// of panicking (FFI-safe behaviour).
     #[test]
-    #[should_panic(expected = "error message must not contain null bytes")]
-    fn set_error_panics_on_interior_null() {
-        let info = unsafe { ReplacementScanInfo::new(std::ptr::null_mut()) };
-        info.set_error("bad\0message");
+    fn str_to_cstring_truncates_at_null() {
+        let c = super::str_to_cstring("bad\0message");
+        assert_eq!(c.to_str().unwrap(), "bad");
     }
 }

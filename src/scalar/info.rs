@@ -23,6 +23,14 @@ use libduckdb_sys::{
     duckdb_function_info, duckdb_scalar_function_get_extra_info, duckdb_scalar_function_set_error,
 };
 
+/// Converts a `&str` to `CString` without panicking.
+fn str_to_cstring(s: &str) -> CString {
+    CString::new(s).unwrap_or_else(|_| {
+        let pos = s.bytes().position(|b| b == 0).unwrap_or(s.len());
+        CString::new(&s.as_bytes()[..pos]).unwrap_or_default()
+    })
+}
+
 /// Ergonomic wrapper around the `duckdb_function_info` handle provided to a
 /// scalar function callback.
 ///
@@ -80,12 +88,10 @@ impl ScalarFunctionInfo {
     /// Reports an error from the scalar function callback, causing `DuckDB`
     /// to abort the current query.
     ///
-    /// # Panics
-    ///
-    /// Panics if `message` contains an interior null byte.
+    /// If `message` contains an interior null byte it is truncated at that point.
     #[mutants::skip]
     pub fn set_error(&self, message: &str) {
-        let c_msg = CString::new(message).expect("error message must not contain null bytes");
+        let c_msg = str_to_cstring(message);
         // SAFETY: self.info is valid per constructor contract.
         unsafe {
             duckdb_scalar_function_set_error(self.info, c_msg.as_ptr());
@@ -211,12 +217,10 @@ impl ScalarBindInfo {
     /// Reports an error from the scalar function bind callback, causing
     /// `DuckDB` to abort the current query.
     ///
-    /// # Panics
-    ///
-    /// Panics if `message` contains an interior null byte.
+    /// If `message` contains an interior null byte it is truncated at that point.
     #[mutants::skip]
     pub fn set_error(&self, message: &str) {
-        let c_msg = CString::new(message).expect("error message must not contain null bytes");
+        let c_msg = str_to_cstring(message);
         // SAFETY: self.info is valid per constructor contract.
         unsafe {
             duckdb_scalar_function_bind_set_error(self.info, c_msg.as_ptr());
@@ -318,12 +322,10 @@ impl ScalarInitInfo {
     /// Reports an error from the scalar function init callback, causing
     /// `DuckDB` to abort the current query.
     ///
-    /// # Panics
-    ///
-    /// Panics if `message` contains an interior null byte.
+    /// If `message` contains an interior null byte it is truncated at that point.
     #[mutants::skip]
     pub fn set_error(&self, message: &str) {
-        let c_msg = CString::new(message).expect("error message must not contain null bytes");
+        let c_msg = str_to_cstring(message);
         // SAFETY: self.info is valid per constructor contract.
         unsafe {
             duckdb_scalar_function_init_set_error(self.info, c_msg.as_ptr());
