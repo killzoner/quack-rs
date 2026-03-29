@@ -1,7 +1,7 @@
 <div align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/logos/logo1-dark-elegant.svg">
-    <img src="assets/logos/logo2-light-docs.svg" alt="quack-rs — The Rust SDK for DuckDB extensions" width="600">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/tomtom215/quack-rs/main/assets/logos/logo1-dark-elegant.svg">
+    <img src="https://raw.githubusercontent.com/tomtom215/quack-rs/main/assets/logos/logo2-light-docs.svg" alt="quack-rs — The Rust SDK for DuckDB extensions" width="600">
   </picture>
   <p><em>/ˈkwækərz/ &nbsp;·&nbsp; rhymes with <em>crackers</em> &nbsp;·&nbsp; inspired by DuckDB</em></p>
   <p>
