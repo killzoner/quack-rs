@@ -1087,7 +1087,11 @@ mod tests {
 
     #[test]
     fn reader_from_intervals() {
-        let iv = DuckInterval { months: 1, days: 2, micros: 3 };
+        let iv = DuckInterval {
+            months: 1,
+            days: 2,
+            micros: 3,
+        };
         let r = MockVectorReader::from_intervals([Some(iv), None]);
         assert_eq!(r.try_get_interval(0), Some(iv));
         assert!(!r.is_valid(1));

@@ -10,6 +10,30 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-03-29
+
+### Added
+
+- **`StructWriter`** — batched typed writer for STRUCT output vectors; eliminates repeated `duckdb_struct_vector_get_child` calls
+- **`StructReader`** — batched typed reader for STRUCT input vectors; read-side counterpart to `StructWriter`
+- **`ChunkWriter`** — auto-sizing chunk writer for scan callbacks; calls `set_size` on `Drop`
+- **`scalar_callback!` / `table_scan_callback!`** macros — panic-safe `extern "C"` callback wrappers using `catch_unwind`
+- **`Value` integer extraction** — `as_i8()`, `as_i16()`, `as_u8()`, `as_u16()`, `as_u32()`, `as_u64()`, `as_i128()` + null-safe `_or(default)` variants for all types
+- **Temporal/binary vector methods** — `read_date/write_date`, `read_timestamp/write_timestamp`, `read_time/write_time`, `read_blob/write_blob`, `read_uuid/write_uuid` on `VectorReader`/`VectorWriter`/`StructReader`/`StructWriter`
+- **`DataChunk` bridges** — `struct_writer()`, `struct_reader()`, `struct_field_reader()`, `into_chunk_writer()`
+- **Mock type completeness** — 8 missing `try_get_*` methods, 10 missing `from_*` constructors, `Blob` variant, uuid/date/timestamp/time aliases
+- **Prelude** — `StructReader`, `StructWriter`, `ChunkWriter` re-exported
+
+### Changed
+
+- **`TableDescription::column_type()`** returns `Option<LogicalType>` (RAII) instead of raw handle
+- Version references updated to `"0.10"`
+
+### Fixed
+
+- 13 `expect()` calls in FFI callback contexts replaced with non-panicking `str_to_cstring()`
+- 9 non-idiomatic `&mut { expr }` patterns replaced with `&raw mut`
+
 ## [0.9.0] — 2026-03-29
 
 ### Added

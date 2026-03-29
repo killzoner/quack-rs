@@ -33,8 +33,8 @@ use std::os::raw::c_char;
 use libduckdb_sys::{
     duckdb_destroy_value, duckdb_free, duckdb_get_bool, duckdb_get_double, duckdb_get_float,
     duckdb_get_hugeint, duckdb_get_int16, duckdb_get_int32, duckdb_get_int64, duckdb_get_int8,
-    duckdb_get_uint16, duckdb_get_uint32, duckdb_get_uint64, duckdb_get_uint8,
-    duckdb_get_varchar, duckdb_value,
+    duckdb_get_uint16, duckdb_get_uint32, duckdb_get_uint64, duckdb_get_uint8, duckdb_get_varchar,
+    duckdb_value,
 };
 
 use crate::error::ExtensionError;
@@ -322,49 +322,77 @@ impl Value {
     #[inline]
     #[must_use]
     pub fn as_i8_or(&self, default: i8) -> i8 {
-        if self.is_null() { default } else { self.as_i8() }
+        if self.is_null() {
+            default
+        } else {
+            self.as_i8()
+        }
     }
 
     /// Extracts the value as an `i16`, returning `default` if the handle is null.
     #[inline]
     #[must_use]
     pub fn as_i16_or(&self, default: i16) -> i16 {
-        if self.is_null() { default } else { self.as_i16() }
+        if self.is_null() {
+            default
+        } else {
+            self.as_i16()
+        }
     }
 
     /// Extracts the value as a `u8`, returning `default` if the handle is null.
     #[inline]
     #[must_use]
     pub fn as_u8_or(&self, default: u8) -> u8 {
-        if self.is_null() { default } else { self.as_u8() }
+        if self.is_null() {
+            default
+        } else {
+            self.as_u8()
+        }
     }
 
     /// Extracts the value as a `u16`, returning `default` if the handle is null.
     #[inline]
     #[must_use]
     pub fn as_u16_or(&self, default: u16) -> u16 {
-        if self.is_null() { default } else { self.as_u16() }
+        if self.is_null() {
+            default
+        } else {
+            self.as_u16()
+        }
     }
 
     /// Extracts the value as a `u32`, returning `default` if the handle is null.
     #[inline]
     #[must_use]
     pub fn as_u32_or(&self, default: u32) -> u32 {
-        if self.is_null() { default } else { self.as_u32() }
+        if self.is_null() {
+            default
+        } else {
+            self.as_u32()
+        }
     }
 
     /// Extracts the value as a `u64`, returning `default` if the handle is null.
     #[inline]
     #[must_use]
     pub fn as_u64_or(&self, default: u64) -> u64 {
-        if self.is_null() { default } else { self.as_u64() }
+        if self.is_null() {
+            default
+        } else {
+            self.as_u64()
+        }
     }
 
     /// Extracts the value as an `i128`, returning `default` if the handle is null.
     #[inline]
     #[must_use]
     pub fn as_i128_or(&self, default: i128) -> i128 {
-        if self.is_null() { default } else { self.as_i128() }
+        if self.is_null() {
+            default
+        } else {
+            self.as_i128()
+        }
     }
 
     /// Returns `true` if the underlying handle is null.

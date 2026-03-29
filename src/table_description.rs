@@ -22,10 +22,10 @@
 use std::ffi::{CStr, CString};
 
 use libduckdb_sys::{
-    duckdb_connection, duckdb_table_description,
-    duckdb_table_description_create, duckdb_table_description_destroy,
-    duckdb_table_description_error, duckdb_table_description_get_column_count,
-    duckdb_table_description_get_column_name, duckdb_table_description_get_column_type, idx_t,
+    duckdb_connection, duckdb_table_description, duckdb_table_description_create,
+    duckdb_table_description_destroy, duckdb_table_description_error,
+    duckdb_table_description_get_column_count, duckdb_table_description_get_column_name,
+    duckdb_table_description_get_column_type, idx_t,
 };
 
 use crate::error::ExtensionError;

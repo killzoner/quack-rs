@@ -51,7 +51,7 @@ pub struct ChunkWriter {
 impl ChunkWriter {
     /// Creates a new `ChunkWriter` for the given output data chunk.
     ///
-    /// The capacity defaults to [`STANDARD_VECTOR_SIZE`] (2048).
+    /// The capacity defaults to 2048 (the standard `DuckDB` vector size).
     ///
     /// # Safety
     ///

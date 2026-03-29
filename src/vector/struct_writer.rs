@@ -309,12 +309,7 @@ impl StructWriter {
     ///
     /// See [`write_i8`][Self::write_i8].
     #[inline]
-    pub unsafe fn write_time(
-        &mut self,
-        row: usize,
-        field_idx: usize,
-        micros_since_midnight: i64,
-    ) {
+    pub unsafe fn write_time(&mut self, row: usize, field_idx: usize, micros_since_midnight: i64) {
         unsafe { self.write_i64(row, field_idx, micros_since_midnight) };
     }
 

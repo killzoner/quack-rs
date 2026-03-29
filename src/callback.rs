@@ -13,8 +13,8 @@
 //!
 //! # Macros
 //!
-//! - [`scalar_callback!`] — wraps a scalar function callback
-//! - [`table_scan_callback!`] — wraps a table function scan callback
+//! - `scalar_callback!` — wraps a scalar function callback
+//! - `table_scan_callback!` — wraps a table function scan callback
 //!
 //! # Estimated impact
 //!
@@ -109,10 +109,7 @@ macro_rules! scalar_callback {
                 // Report the error to DuckDB.
                 if let Ok(c_msg) = ::std::ffi::CString::new(msg) {
                     unsafe {
-                        ::libduckdb_sys::duckdb_scalar_function_set_error(
-                            $info,
-                            c_msg.as_ptr(),
-                        );
+                        ::libduckdb_sys::duckdb_scalar_function_set_error($info, c_msg.as_ptr());
                     }
                 }
             }

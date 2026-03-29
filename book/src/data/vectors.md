@@ -57,6 +57,13 @@ let f: f64 = unsafe { reader.read_f64(row) };
 let b: bool = unsafe { reader.read_bool(row) };   // safe: uses u8 != 0
 let s: &str = unsafe { reader.read_str(row) };    // handles inline + pointer format
 let iv = unsafe { reader.read_interval(row) };    // returns DuckInterval
+
+// Temporal and binary types (v0.10.0+):
+let d: i32 = unsafe { reader.read_date(row) };      // days since epoch
+let ts: i64 = unsafe { reader.read_timestamp(row) }; // microseconds since epoch
+let t: i64 = unsafe { reader.read_time(row) };       // microseconds since midnight
+let blob: &[u8] = unsafe { reader.read_blob(row) };  // binary data
+let uuid: i128 = unsafe { reader.read_uuid(row) };   // UUID as i128
 ```
 
 ---
@@ -90,6 +97,13 @@ unsafe { writer.write_bool(row, value) };
 unsafe { writer.write_varchar(row, s) };   // &str (also available as write_str)
 unsafe { writer.write_str(row, s) };       // alias for write_varchar
 unsafe { writer.write_interval(row, interval) };  // DuckInterval
+
+// Temporal and binary types (v0.10.0+):
+unsafe { writer.write_date(row, days_since_epoch) };
+unsafe { writer.write_timestamp(row, micros_since_epoch) };
+unsafe { writer.write_time(row, micros_since_midnight) };
+unsafe { writer.write_blob(row, &bytes) };
+unsafe { writer.write_uuid(row, uuid_i128) };
 ```
 
 ### Writing NULL
@@ -128,6 +142,55 @@ Methods:
 - `vector(col)` — raw `duckdb_vector` handle
 - `writer(col)` — `VectorWriter` for a column
 - `reader(col)` — `VectorReader` for a column
+- `struct_writer(col, field_count)` — `StructWriter` for a STRUCT output column
+- `struct_reader(col, field_count)` — `StructReader` for a STRUCT input column
+- `struct_field_reader(col, field)` — `VectorReader` for a specific STRUCT field
+- `into_chunk_writer()` — convert to `ChunkWriter` with auto `set_size` on drop
+
+---
+
+## `StructWriter` / `StructReader`
+
+For STRUCT columns with many fields, creating individual `VectorWriter`/`VectorReader`
+instances for each field is verbose. `StructWriter` and `StructReader` pre-create all
+field writers/readers at construction:
+
+```rust
+// Writing a 5-field STRUCT output:
+let mut sw = unsafe { chunk.struct_writer(0, 5) };
+unsafe {
+    sw.write_bool(row, 0, result.success);
+    sw.write_varchar(row, 1, &result.data);
+    sw.write_i64(row, 2, result.count);
+    sw.write_date(row, 3, result.day);
+    sw.write_blob(row, 4, &result.payload);
+}
+
+// Reading a 3-field STRUCT input:
+let sr = unsafe { chunk.struct_reader(0, 3) };
+for row in 0..chunk.size() {
+    let name = unsafe { sr.read_str(row, 0) };
+    let age = unsafe { sr.read_i32(row, 1) };
+    let active = unsafe { sr.read_bool(row, 2) };
+}
+```
+
+---
+
+## `ChunkWriter`
+
+`ChunkWriter` wraps an output `duckdb_data_chunk` and tracks rows. It automatically
+calls `set_size` on drop, preventing the common off-by-one bug:
+
+```rust
+let mut cw = unsafe { DataChunk::from_raw(output).into_chunk_writer() };
+while let Some(row) = cw.next_row() {
+    unsafe { cw.writer(0).write_varchar(row, &data[row].name) };
+    unsafe { cw.writer(1).write_i64(row, data[row].value) };
+    if cw.is_full() { break; }
+}
+// set_size called automatically when `cw` is dropped
+```
 
 ---
 
