@@ -39,6 +39,10 @@ features = ["duckdb-1-5"]
 # Thin re-export modules and test-only code produce unproductive mutants.
 exclude_globs = [
     "src/prelude.rs",           # pure re-exports
+    "src/callback.rs",          # macro-generated FFI wrappers (untestable without DuckDB runtime)
+    "src/chunk_writer.rs",      # Drop calls FFI; row tracking tested via unit tests
+    "src/vector/struct_writer.rs", # thin delegation to VectorWriter (requires DuckDB runtime)
+    "src/vector/struct_reader.rs", # thin delegation to VectorReader (requires DuckDB runtime)
     "src/testing/harness.rs",   # test harness infrastructure (FFI wiring)
     "src/testing/in_memory_db.rs", # thin wrapper around DuckDB C API
     "src/testing/mock_vector.rs",  # test-only vector stub

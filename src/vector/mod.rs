@@ -22,11 +22,15 @@
 pub mod complex;
 pub mod reader;
 pub mod string;
+pub mod struct_reader;
+pub mod struct_writer;
 pub mod validity;
 pub mod writer;
 
 pub use reader::VectorReader;
 pub use string::{read_duck_string, DuckStringView};
+pub use struct_reader::StructReader;
+pub use struct_writer::StructWriter;
 pub use validity::ValidityBitmap;
 pub use writer::VectorWriter;
 

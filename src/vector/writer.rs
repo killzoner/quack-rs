@@ -253,6 +253,51 @@ impl VectorWriter {
         }
     }
 
+    /// Writes a `DATE` value at row `idx` as days since the Unix epoch.
+    ///
+    /// `DuckDB` stores DATE as a 4-byte `i32`. This is a semantic alias for
+    /// [`write_i32`][Self::write_i32].
+    ///
+    /// # Safety
+    ///
+    /// - `idx` must be within the vector's capacity.
+    /// - The vector must have `DATE` type.
+    #[inline]
+    pub const unsafe fn write_date(&mut self, idx: usize, days_since_epoch: i32) {
+        // SAFETY: DATE is stored as i32.
+        unsafe { self.write_i32(idx, days_since_epoch) };
+    }
+
+    /// Writes a `TIMESTAMP` value at row `idx` as microseconds since the Unix epoch.
+    ///
+    /// `DuckDB` stores TIMESTAMP as an 8-byte `i64`. This is a semantic alias for
+    /// [`write_i64`][Self::write_i64].
+    ///
+    /// # Safety
+    ///
+    /// - `idx` must be within the vector's capacity.
+    /// - The vector must have `TIMESTAMP` type.
+    #[inline]
+    pub const unsafe fn write_timestamp(&mut self, idx: usize, micros_since_epoch: i64) {
+        // SAFETY: TIMESTAMP is stored as i64.
+        unsafe { self.write_i64(idx, micros_since_epoch) };
+    }
+
+    /// Writes a `TIME` value at row `idx` as microseconds since midnight.
+    ///
+    /// `DuckDB` stores TIME as an 8-byte `i64`. This is a semantic alias for
+    /// [`write_i64`][Self::write_i64].
+    ///
+    /// # Safety
+    ///
+    /// - `idx` must be within the vector's capacity.
+    /// - The vector must have `TIME` type.
+    #[inline]
+    pub const unsafe fn write_time(&mut self, idx: usize, micros_since_midnight: i64) {
+        // SAFETY: TIME is stored as i64.
+        unsafe { self.write_i64(idx, micros_since_midnight) };
+    }
+
     /// Writes an INTERVAL value at row `idx`.
     ///
     /// `DuckDB` stores INTERVAL as `{ months: i32, days: i32, micros: i64 }` in a
@@ -275,6 +320,42 @@ impl VectorWriter {
             core::ptr::write_unaligned(base.add(4).cast::<i32>(), value.days);
             core::ptr::write_unaligned(base.add(8).cast::<i64>(), value.micros);
         }
+    }
+
+    /// Writes a `BLOB` (binary) value at row `idx`.
+    ///
+    /// This uses the same underlying storage as VARCHAR — `DuckDB` stores BLOBs
+    /// using `duckdb_vector_assign_string_element_len`, which copies the data.
+    ///
+    /// # Safety
+    ///
+    /// - `idx` must be within the vector's capacity.
+    /// - The vector must have `BLOB` type.
+    pub unsafe fn write_blob(&mut self, idx: usize, value: &[u8]) {
+        // SAFETY: BLOB uses the same storage as VARCHAR.
+        unsafe {
+            duckdb_vector_assign_string_element_len(
+                self.vector,
+                idx as idx_t,
+                value.as_ptr().cast::<std::os::raw::c_char>(),
+                idx_t::try_from(value.len()).unwrap_or(idx_t::MAX),
+            );
+        }
+    }
+
+    /// Writes a `UUID` value at row `idx`.
+    ///
+    /// `DuckDB` stores UUID as a HUGEINT (128-bit integer). This is a semantic
+    /// alias for [`write_i128`][Self::write_i128].
+    ///
+    /// # Safety
+    ///
+    /// - `idx` must be within the vector's capacity.
+    /// - The vector must have `UUID` type.
+    #[inline]
+    pub const unsafe fn write_uuid(&mut self, idx: usize, value: i128) {
+        // SAFETY: UUID is stored as HUGEINT (i128).
+        unsafe { self.write_i128(idx, value) };
     }
 
     /// Writes a VARCHAR string value at row `idx`.

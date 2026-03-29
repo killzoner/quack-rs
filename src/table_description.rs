@@ -22,13 +22,14 @@
 use std::ffi::{CStr, CString};
 
 use libduckdb_sys::{
-    duckdb_connection, duckdb_logical_type, duckdb_table_description,
-    duckdb_table_description_create, duckdb_table_description_destroy,
-    duckdb_table_description_error, duckdb_table_description_get_column_count,
-    duckdb_table_description_get_column_name, duckdb_table_description_get_column_type, idx_t,
+    duckdb_connection, duckdb_table_description, duckdb_table_description_create,
+    duckdb_table_description_destroy, duckdb_table_description_error,
+    duckdb_table_description_get_column_count, duckdb_table_description_get_column_name,
+    duckdb_table_description_get_column_type, idx_t,
 };
 
 use crate::error::ExtensionError;
+use crate::types::LogicalType;
 
 /// RAII wrapper for a `duckdb_table_description`.
 ///
@@ -118,16 +119,17 @@ impl TableDescription {
 
     /// Returns the logical type of the column at the given index.
     ///
-    /// Returns `None` if the index is out of bounds. The returned handle must be
-    /// destroyed by the caller (it is a raw `duckdb_logical_type`).
+    /// Returns `None` if the index is out of bounds. The returned [`LogicalType`]
+    /// is RAII-managed and will be destroyed automatically on drop.
     #[must_use]
-    pub fn column_type(&self, index: idx_t) -> Option<duckdb_logical_type> {
+    pub fn column_type(&self, index: idx_t) -> Option<LogicalType> {
         // SAFETY: self.desc is valid.
         let lt = unsafe { duckdb_table_description_get_column_type(self.desc, index) };
         if lt.is_null() {
             None
         } else {
-            Some(lt)
+            // SAFETY: lt is a freshly created handle from duckdb_table_description_get_column_type.
+            Some(unsafe { LogicalType::from_raw(lt) })
         }
     }
 }
@@ -210,11 +212,8 @@ mod tests {
         // Column types should be non-null.
         let lt0 = desc.column_type(0);
         assert!(lt0.is_some(), "column_type(0) should be Some");
-        // Clean up the logical type handle.
-        if let Some(mut lt) = lt0 {
-            // SAFETY: lt was returned by duckdb_table_description_get_column_type.
-            unsafe { libduckdb_sys::duckdb_destroy_logical_type(&raw mut lt) };
-        }
+        // LogicalType is RAII — automatically destroyed on drop.
+        drop(lt0);
 
         // Out-of-bounds column type should return None.
         assert!(desc.column_type(99).is_none());

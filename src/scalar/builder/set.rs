@@ -154,7 +154,7 @@ impl ScalarFunctionSetBuilder {
         }
 
         // SAFETY: Creates a new scalar function set handle.
-        let set = unsafe { duckdb_create_scalar_function_set(self.name.as_ptr()) };
+        let mut set = unsafe { duckdb_create_scalar_function_set(self.name.as_ptr()) };
 
         let mut register_error: Option<ExtensionError> = None;
 
@@ -178,7 +178,7 @@ impl ScalarFunctionSetBuilder {
             };
 
             // SAFETY: Creates a new scalar function handle for this overload.
-            let func = unsafe { duckdb_create_scalar_function() };
+            let mut func = unsafe { duckdb_create_scalar_function() };
 
             // PITFALL L6: Must call this on EACH function, not just the set.
             unsafe {
@@ -245,7 +245,7 @@ impl ScalarFunctionSetBuilder {
 
             // Destroy individual function (ownership transferred to set)
             unsafe {
-                duckdb_destroy_scalar_function(&mut { func });
+                duckdb_destroy_scalar_function(&raw mut func);
             }
         }
 
@@ -261,7 +261,7 @@ impl ScalarFunctionSetBuilder {
 
         // SAFETY: set was created above and must be destroyed.
         unsafe {
-            duckdb_destroy_scalar_function_set(&mut { set });
+            duckdb_destroy_scalar_function_set(&raw mut set);
         }
 
         register_error.map_or(Ok(()), Err)
@@ -307,6 +307,7 @@ impl ScalarOverloadBuilder {
     ///
     /// Use this for parameterized types that [`TypeId`] cannot express, such as
     /// `LIST(BIGINT)`, `MAP(VARCHAR, INTEGER)`, or `STRUCT(...)`.
+    #[mutants::skip] // position arithmetic tested via E2E
     pub fn param_logical(mut self, logical_type: LogicalType) -> Self {
         let position = self.params.len() + self.logical_params.len();
         self.logical_params.push((position, logical_type));
@@ -329,6 +330,7 @@ impl ScalarOverloadBuilder {
     ///
     /// If both `returns` and `returns_logical` are called, the logical type takes
     /// precedence.
+    #[mutants::skip] // tested via E2E
     pub fn returns_logical(mut self, logical_type: LogicalType) -> Self {
         self.return_logical = Some(logical_type);
         self

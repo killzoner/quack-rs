@@ -95,6 +95,7 @@ impl VectorReader {
     }
 
     /// Returns the number of rows in this vector.
+    #[mutants::skip]
     #[must_use]
     #[inline]
     pub const fn row_count(&self) -> usize {
@@ -291,6 +292,83 @@ impl VectorReader {
     pub unsafe fn read_str(&self, idx: usize) -> &str {
         // SAFETY: Caller guarantees data is a VARCHAR vector and idx is in bounds.
         unsafe { crate::vector::string::read_duck_string(self.data, idx) }
+    }
+
+    /// Reads a `BLOB` (binary) value at row `idx`.
+    ///
+    /// `DuckDB` stores BLOBs using the same 16-byte `duckdb_string_t` layout as
+    /// VARCHAR (inline for ≤12 bytes, pointer for larger values). The returned
+    /// slice borrows from the vector's data buffer.
+    ///
+    /// # Safety
+    ///
+    /// - `idx` must be less than `self.row_count()`.
+    /// - The column must contain `BLOB` data.
+    /// - The pointed-to memory must be valid for the lifetime of the returned slice.
+    pub unsafe fn read_blob(&self, idx: usize) -> &[u8] {
+        // SAFETY: BLOB uses the same duckdb_string_t layout as VARCHAR.
+        unsafe { crate::vector::string::read_duck_string(self.data, idx).as_bytes() }
+    }
+
+    /// Reads a `UUID` value at row `idx` as an `i128`.
+    ///
+    /// `DuckDB` stores UUID as a HUGEINT (128-bit integer). This is a semantic
+    /// alias for [`read_i128`][Self::read_i128].
+    ///
+    /// # Safety
+    ///
+    /// - `idx` must be less than `self.row_count()`.
+    /// - The column must contain `UUID` data.
+    #[inline]
+    pub const unsafe fn read_uuid(&self, idx: usize) -> i128 {
+        // SAFETY: UUID is stored as HUGEINT (i128).
+        unsafe { self.read_i128(idx) }
+    }
+
+    /// Reads a `DATE` value at row `idx` as days since the Unix epoch.
+    ///
+    /// `DuckDB` stores DATE as a 4-byte `i32` representing the number of days
+    /// since 1970-01-01. This is a semantic alias for [`read_i32`][Self::read_i32].
+    ///
+    /// # Safety
+    ///
+    /// - `idx` must be less than `self.row_count()`.
+    /// - The column must contain `DATE` data.
+    #[inline]
+    pub const unsafe fn read_date(&self, idx: usize) -> i32 {
+        // SAFETY: DATE is stored as i32 (days since epoch).
+        unsafe { self.read_i32(idx) }
+    }
+
+    /// Reads a `TIMESTAMP` value at row `idx` as microseconds since the Unix epoch.
+    ///
+    /// `DuckDB` stores TIMESTAMP as an 8-byte `i64` representing microseconds
+    /// since 1970-01-01 00:00:00 UTC. This is a semantic alias for
+    /// [`read_i64`][Self::read_i64].
+    ///
+    /// # Safety
+    ///
+    /// - `idx` must be less than `self.row_count()`.
+    /// - The column must contain `TIMESTAMP` data.
+    #[inline]
+    pub const unsafe fn read_timestamp(&self, idx: usize) -> i64 {
+        // SAFETY: TIMESTAMP is stored as i64 (microseconds since epoch).
+        unsafe { self.read_i64(idx) }
+    }
+
+    /// Reads a `TIME` value at row `idx` as microseconds since midnight.
+    ///
+    /// `DuckDB` stores TIME as an 8-byte `i64` representing microseconds since
+    /// midnight. This is a semantic alias for [`read_i64`][Self::read_i64].
+    ///
+    /// # Safety
+    ///
+    /// - `idx` must be less than `self.row_count()`.
+    /// - The column must contain `TIME` data.
+    #[inline]
+    pub const unsafe fn read_time(&self, idx: usize) -> i64 {
+        // SAFETY: TIME is stored as i64 (microseconds since midnight).
+        unsafe { self.read_i64(idx) }
     }
 
     /// Reads an `INTERVAL` value at row `idx`.

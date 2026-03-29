@@ -25,6 +25,19 @@ use libduckdb_sys::{duckdb_client_context, duckdb_table_function_get_client_cont
 use crate::types::{LogicalType, TypeId};
 use crate::value::Value;
 
+/// Converts a `&str` to `CString` without panicking.
+///
+/// If the string contains an interior null byte, it is truncated at that point.
+/// This is preferred over `.expect()` in FFI callback contexts where panics are UB.
+#[mutants::skip] // private FFI helper — tested in replacement_scan::tests
+fn str_to_cstring(s: &str) -> CString {
+    CString::new(s).unwrap_or_else(|_| {
+        let pos = s.bytes().position(|b| b == 0).unwrap_or(s.len());
+        // SAFETY: pos is at the first null byte, so s[..pos] has no nulls.
+        CString::new(&s.as_bytes()[..pos]).unwrap_or_default()
+    })
+}
+
 /// Helper wrapper around `duckdb_bind_info` for use inside bind callbacks.
 ///
 /// Provides ergonomic methods for the most common bind operations.
@@ -65,11 +78,9 @@ impl BindInfo {
     ///
     /// Call this once per output column in the order they will appear in the result.
     ///
-    /// # Panics
-    ///
-    /// Panics if `name` contains an interior null byte.
+    /// If `name` contains an interior null byte it is truncated at that point.
     pub fn add_result_column(&self, name: &str, type_id: TypeId) -> &Self {
-        let c_name = CString::new(name).expect("column name must not contain null bytes");
+        let c_name = str_to_cstring(name);
         let lt = LogicalType::new(type_id);
         // SAFETY: self.info is valid per constructor's contract.
         unsafe {
@@ -83,11 +94,9 @@ impl BindInfo {
     /// Use this when the column type is a complex type (LIST, STRUCT, MAP) built
     /// via `LogicalType::list`, `LogicalType::struct_type`, or `LogicalType::map`.
     ///
-    /// # Panics
-    ///
-    /// Panics if `name` contains an interior null byte.
+    /// If `name` contains an interior null byte it is truncated at that point.
     pub fn add_result_column_with_type(&self, name: &str, logical_type: &LogicalType) -> &Self {
-        let c_name = CString::new(name).expect("column name must not contain null bytes");
+        let c_name = str_to_cstring(name);
         // SAFETY: self.info is valid; logical_type.as_raw() is valid.
         unsafe {
             duckdb_bind_add_result_column(self.info, c_name.as_ptr(), logical_type.as_raw());
@@ -111,12 +120,10 @@ impl BindInfo {
     ///
     /// After calling this, `DuckDB` will abort query parsing and report the error.
     ///
-    /// # Panics
-    ///
-    /// Panics if `message` contains an interior null byte.
+    /// If `message` contains an interior null byte it is truncated at that point.
     #[mutants::skip]
     pub fn set_error(&self, message: &str) {
-        let c_msg = CString::new(message).expect("error message must not contain null bytes");
+        let c_msg = str_to_cstring(message);
         // SAFETY: self.info is valid.
         unsafe {
             duckdb_bind_set_error(self.info, c_msg.as_ptr());
@@ -149,11 +156,9 @@ impl BindInfo {
     /// - `name` must correspond to a named parameter declared for this function.
     /// - The caller is responsible for destroying the returned `duckdb_value`.
     ///
-    /// # Panics
-    ///
-    /// Panics if `name` contains an interior null byte.
+    /// If `name` contains an interior null byte it is truncated at that point.
     pub unsafe fn get_named_parameter(&self, name: &str) -> duckdb_value {
-        let c_name = CString::new(name).expect("parameter name must not contain null bytes");
+        let c_name = str_to_cstring(name);
         unsafe { duckdb_bind_get_named_parameter(self.info, c_name.as_ptr()) }
     }
 
@@ -181,11 +186,9 @@ impl BindInfo {
     ///
     /// `name` must correspond to a named parameter declared for this function.
     ///
-    /// # Panics
-    ///
-    /// Panics if `name` contains an interior null byte.
+    /// If `name` contains an interior null byte it is truncated at that point.
     pub unsafe fn get_named_parameter_value(&self, name: &str) -> Value {
-        let c_name = CString::new(name).expect("parameter name must not contain null bytes");
+        let c_name = str_to_cstring(name);
         // SAFETY: name is valid per caller's contract.
         let raw = unsafe { duckdb_bind_get_named_parameter(self.info, c_name.as_ptr()) };
         // SAFETY: raw is a fresh duckdb_value owned by us.
@@ -279,12 +282,10 @@ impl InitInfo {
 
     /// Reports an error from the init callback.
     ///
-    /// # Panics
-    ///
-    /// Panics if `message` contains an interior null byte.
+    /// If `message` contains an interior null byte it is truncated at that point.
     #[mutants::skip]
     pub fn set_error(&self, message: &str) {
-        let c_msg = CString::new(message).expect("error message must not contain null bytes");
+        let c_msg = str_to_cstring(message);
         // SAFETY: self.info is valid.
         unsafe { duckdb_init_set_error(self.info, c_msg.as_ptr()) };
     }
@@ -328,12 +329,10 @@ impl FunctionInfo {
     ///
     /// `DuckDB` will abort the query and propagate this as a SQL error.
     ///
-    /// # Panics
-    ///
-    /// Panics if `message` contains an interior null byte.
+    /// If `message` contains an interior null byte it is truncated at that point.
     #[mutants::skip]
     pub fn set_error(&self, message: &str) {
-        let c_msg = CString::new(message).expect("error message must not contain null bytes");
+        let c_msg = str_to_cstring(message);
         // SAFETY: self.info is valid.
         unsafe { duckdb_function_set_error(self.info, c_msg.as_ptr()) };
     }

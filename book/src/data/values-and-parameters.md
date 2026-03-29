@@ -43,14 +43,32 @@ unsafe extern "C" fn my_bind(info: duckdb_bind_info) {
 | Method | DuckDB type | Rust type |
 |--------|-------------|-----------|
 | `as_str()` | VARCHAR | `Result<String, ExtensionError>` |
+| `as_i8()` | TINYINT | `i8` |
+| `as_i16()` | SMALLINT | `i16` |
 | `as_i32()` | INTEGER | `i32` |
 | `as_i64()` | BIGINT | `i64` |
+| `as_i128()` | HUGEINT | `i128` |
+| `as_u8()` | UTINYINT | `u8` |
+| `as_u16()` | USMALLINT | `u16` |
+| `as_u32()` | UINTEGER | `u32` |
+| `as_u64()` | UBIGINT | `u64` |
 | `as_f32()` | FLOAT | `f32` |
 | `as_f64()` | DOUBLE | `f64` |
 | `as_bool()` | BOOLEAN | `bool` |
 
 DuckDB will attempt to cast the value to the requested type. If the cast fails,
 numeric methods return `0` / `0.0` / `false`; `as_str()` returns an error.
+
+### Null-safe convenience variants
+
+Every extraction method has an `_or(default)` variant that returns `default`
+when the value handle is null:
+
+```rust
+let timeout = val.as_i64_or(30);       // default 30 if NULL
+let host = val.as_str_or("localhost");  // default "localhost" if NULL
+let port = val.as_u16_or(5432);        // default 5432 if NULL
+```
 
 ## Checking for NULL
 

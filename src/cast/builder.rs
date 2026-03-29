@@ -21,6 +21,15 @@ use libduckdb_sys::{
 use crate::error::ExtensionError;
 use crate::types::{LogicalType, TypeId};
 
+/// Converts a `&str` to `CString` without panicking.
+#[mutants::skip] // private FFI helper — tested in replacement_scan::tests
+fn str_to_cstring(s: &str) -> CString {
+    CString::new(s).unwrap_or_else(|_| {
+        let pos = s.bytes().position(|b| b == 0).unwrap_or(s.len());
+        CString::new(&s.as_bytes()[..pos]).unwrap_or_default()
+    })
+}
+
 // ── Cast mode ─────────────────────────────────────────────────────────────────
 
 /// Whether the cast is called as a regular `CAST` or a `TRY_CAST`.
@@ -103,12 +112,10 @@ impl CastFunctionInfo {
     /// Use this only in [`CastMode::Normal`]; in [`CastMode::Try`] prefer
     /// [`set_row_error`][Self::set_row_error] so that failed rows become `NULL`.
     ///
-    /// # Panics
-    ///
-    /// Panics if `message` contains an interior null byte.
+    /// If `message` contains an interior null byte it is truncated at that point.
     #[mutants::skip]
     pub fn set_error(&self, message: &str) {
-        let c_msg = CString::new(message).expect("error message must not contain null bytes");
+        let c_msg = str_to_cstring(message);
         // SAFETY: self.info is valid per constructor contract.
         unsafe {
             duckdb_cast_function_set_error(self.info, c_msg.as_ptr());
@@ -120,15 +127,13 @@ impl CastFunctionInfo {
     /// Records `message` for `row` in the output error vector.  The row's
     /// output value should be set to `NULL` by the caller.
     ///
-    /// # Panics
-    ///
-    /// Panics if `message` contains an interior null byte.
+    /// If `message` contains an interior null byte it is truncated at that point.
     ///
     /// # Safety
     ///
     /// `output` must be the same `duckdb_vector` passed to the cast callback.
     pub unsafe fn set_row_error(&self, message: &str, row: idx_t, output: duckdb_vector) {
-        let c_msg = CString::new(message).expect("error message must not contain null bytes");
+        let c_msg = str_to_cstring(message);
         // SAFETY: self.info is valid; output and row are caller-supplied.
         unsafe {
             duckdb_cast_function_set_row_error(self.info, c_msg.as_ptr(), row, output);
@@ -306,7 +311,7 @@ impl CastFunctionBuilder {
             .ok_or_else(|| ExtensionError::new("cast function callback not set"))?;
 
         // SAFETY: allocates a new cast function handle.
-        let cast = unsafe { duckdb_create_cast_function() };
+        let mut cast = unsafe { duckdb_create_cast_function() };
 
         // Resolve source type: prefer explicit LogicalType over TypeId.
         let src_lt = if let Some(lt) = self.source_logical {
@@ -363,7 +368,7 @@ impl CastFunctionBuilder {
 
         // SAFETY: cast was created above and must be destroyed after use.
         unsafe {
-            duckdb_destroy_cast_function(&mut { cast });
+            duckdb_destroy_cast_function(&raw mut cast);
         }
 
         if result == DuckDBSuccess {

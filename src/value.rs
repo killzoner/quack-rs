@@ -32,7 +32,9 @@ use std::os::raw::c_char;
 
 use libduckdb_sys::{
     duckdb_destroy_value, duckdb_free, duckdb_get_bool, duckdb_get_double, duckdb_get_float,
-    duckdb_get_int32, duckdb_get_int64, duckdb_get_varchar, duckdb_value,
+    duckdb_get_hugeint, duckdb_get_int16, duckdb_get_int32, duckdb_get_int64, duckdb_get_int8,
+    duckdb_get_uint16, duckdb_get_uint32, duckdb_get_uint64, duckdb_get_uint8, duckdb_get_varchar,
+    duckdb_value,
 };
 
 use crate::error::ExtensionError;
@@ -163,6 +165,236 @@ impl Value {
         unsafe { duckdb_get_bool(self.raw) }
     }
 
+    /// Extracts the value as an `i8` (TINYINT).
+    ///
+    /// `DuckDB` will attempt to cast the value to TINYINT. If the value is not
+    /// numeric, this returns 0.
+    #[inline]
+    #[must_use]
+    pub fn as_i8(&self) -> i8 {
+        // SAFETY: self.raw is valid per constructor contract.
+        unsafe { duckdb_get_int8(self.raw) }
+    }
+
+    /// Extracts the value as an `i16` (SMALLINT).
+    ///
+    /// `DuckDB` will attempt to cast the value to SMALLINT. If the value is not
+    /// numeric, this returns 0.
+    #[inline]
+    #[must_use]
+    pub fn as_i16(&self) -> i16 {
+        // SAFETY: self.raw is valid per constructor contract.
+        unsafe { duckdb_get_int16(self.raw) }
+    }
+
+    /// Extracts the value as a `u8` (UTINYINT).
+    ///
+    /// `DuckDB` will attempt to cast the value to UTINYINT. If the value is not
+    /// numeric, this returns 0.
+    #[inline]
+    #[must_use]
+    pub fn as_u8(&self) -> u8 {
+        // SAFETY: self.raw is valid per constructor contract.
+        unsafe { duckdb_get_uint8(self.raw) }
+    }
+
+    /// Extracts the value as a `u16` (USMALLINT).
+    ///
+    /// `DuckDB` will attempt to cast the value to USMALLINT. If the value is not
+    /// numeric, this returns 0.
+    #[inline]
+    #[must_use]
+    pub fn as_u16(&self) -> u16 {
+        // SAFETY: self.raw is valid per constructor contract.
+        unsafe { duckdb_get_uint16(self.raw) }
+    }
+
+    /// Extracts the value as a `u32` (UINTEGER).
+    ///
+    /// `DuckDB` will attempt to cast the value to UINTEGER. If the value is not
+    /// numeric, this returns 0.
+    #[inline]
+    #[must_use]
+    pub fn as_u32(&self) -> u32 {
+        // SAFETY: self.raw is valid per constructor contract.
+        unsafe { duckdb_get_uint32(self.raw) }
+    }
+
+    /// Extracts the value as a `u64` (UBIGINT).
+    ///
+    /// `DuckDB` will attempt to cast the value to UBIGINT. If the value is not
+    /// numeric, this returns 0.
+    #[inline]
+    #[must_use]
+    pub fn as_u64(&self) -> u64 {
+        // SAFETY: self.raw is valid per constructor contract.
+        unsafe { duckdb_get_uint64(self.raw) }
+    }
+
+    /// Extracts the value as an `i128` (HUGEINT).
+    ///
+    /// `DuckDB` returns HUGEINT as `{ lower: u64, upper: i64 }`. This method
+    /// reconstructs the full `i128` value.
+    #[inline]
+    #[must_use]
+    pub fn as_i128(&self) -> i128 {
+        // SAFETY: self.raw is valid per constructor contract.
+        let h = unsafe { duckdb_get_hugeint(self.raw) };
+        #[allow(clippy::cast_lossless)]
+        let result = (h.upper as i128) << 64 | (h.lower as i128);
+        result
+    }
+
+    /// Extracts the value as a `String`, returning `default` on failure.
+    ///
+    /// Convenience for `val.as_str().unwrap_or_else(|_| default.to_owned())`.
+    #[inline]
+    #[must_use]
+    pub fn as_str_or(&self, default: &str) -> String {
+        self.as_str().unwrap_or_else(|_| default.to_owned())
+    }
+
+    /// Extracts the value as a `String`, returning an empty string on failure.
+    ///
+    /// Convenience for `val.as_str().unwrap_or_default()`.
+    #[inline]
+    #[must_use]
+    pub fn as_str_or_default(&self) -> String {
+        self.as_str().unwrap_or_default()
+    }
+
+    /// Extracts the value as an `i32`, returning `default` if the handle is null.
+    #[inline]
+    #[must_use]
+    pub fn as_i32_or(&self, default: i32) -> i32 {
+        if self.is_null() {
+            default
+        } else {
+            self.as_i32()
+        }
+    }
+
+    /// Extracts the value as an `i64`, returning `default` if the handle is null.
+    #[inline]
+    #[must_use]
+    pub fn as_i64_or(&self, default: i64) -> i64 {
+        if self.is_null() {
+            default
+        } else {
+            self.as_i64()
+        }
+    }
+
+    /// Extracts the value as an `f32`, returning `default` if the handle is null.
+    #[inline]
+    #[must_use]
+    pub fn as_f32_or(&self, default: f32) -> f32 {
+        if self.is_null() {
+            default
+        } else {
+            self.as_f32()
+        }
+    }
+
+    /// Extracts the value as an `f64`, returning `default` if the handle is null.
+    #[inline]
+    #[must_use]
+    pub fn as_f64_or(&self, default: f64) -> f64 {
+        if self.is_null() {
+            default
+        } else {
+            self.as_f64()
+        }
+    }
+
+    /// Extracts the value as a `bool`, returning `default` if the handle is null.
+    #[inline]
+    #[must_use]
+    pub fn as_bool_or(&self, default: bool) -> bool {
+        if self.is_null() {
+            default
+        } else {
+            self.as_bool()
+        }
+    }
+
+    /// Extracts the value as an `i8`, returning `default` if the handle is null.
+    #[inline]
+    #[must_use]
+    pub fn as_i8_or(&self, default: i8) -> i8 {
+        if self.is_null() {
+            default
+        } else {
+            self.as_i8()
+        }
+    }
+
+    /// Extracts the value as an `i16`, returning `default` if the handle is null.
+    #[inline]
+    #[must_use]
+    pub fn as_i16_or(&self, default: i16) -> i16 {
+        if self.is_null() {
+            default
+        } else {
+            self.as_i16()
+        }
+    }
+
+    /// Extracts the value as a `u8`, returning `default` if the handle is null.
+    #[inline]
+    #[must_use]
+    pub fn as_u8_or(&self, default: u8) -> u8 {
+        if self.is_null() {
+            default
+        } else {
+            self.as_u8()
+        }
+    }
+
+    /// Extracts the value as a `u16`, returning `default` if the handle is null.
+    #[inline]
+    #[must_use]
+    pub fn as_u16_or(&self, default: u16) -> u16 {
+        if self.is_null() {
+            default
+        } else {
+            self.as_u16()
+        }
+    }
+
+    /// Extracts the value as a `u32`, returning `default` if the handle is null.
+    #[inline]
+    #[must_use]
+    pub fn as_u32_or(&self, default: u32) -> u32 {
+        if self.is_null() {
+            default
+        } else {
+            self.as_u32()
+        }
+    }
+
+    /// Extracts the value as a `u64`, returning `default` if the handle is null.
+    #[inline]
+    #[must_use]
+    pub fn as_u64_or(&self, default: u64) -> u64 {
+        if self.is_null() {
+            default
+        } else {
+            self.as_u64()
+        }
+    }
+
+    /// Extracts the value as an `i128`, returning `default` if the handle is null.
+    #[inline]
+    #[must_use]
+    pub fn as_i128_or(&self, default: i128) -> i128 {
+        if self.is_null() {
+            default
+        } else {
+            self.as_i128()
+        }
+    }
+
     /// Returns `true` if the underlying handle is null.
     #[inline]
     #[must_use]
@@ -228,5 +460,48 @@ mod tests {
     #[test]
     fn size_of_value() {
         assert_eq!(std::mem::size_of::<Value>(), std::mem::size_of::<usize>());
+    }
+
+    #[test]
+    fn as_str_or_returns_default_for_null() {
+        let val = unsafe { Value::from_raw(std::ptr::null_mut()) };
+        assert_eq!(val.as_str_or("fallback"), "fallback");
+    }
+
+    #[test]
+    fn as_str_or_default_returns_empty_for_null() {
+        let val = unsafe { Value::from_raw(std::ptr::null_mut()) };
+        assert_eq!(val.as_str_or_default(), "");
+    }
+
+    #[test]
+    fn as_i64_or_returns_default_for_null() {
+        let val = unsafe { Value::from_raw(std::ptr::null_mut()) };
+        assert_eq!(val.as_i64_or(99), 99);
+    }
+
+    #[test]
+    fn as_i32_or_returns_default_for_null() {
+        let val = unsafe { Value::from_raw(std::ptr::null_mut()) };
+        assert_eq!(val.as_i32_or(42), 42);
+    }
+
+    #[test]
+    fn as_bool_or_returns_default_for_null() {
+        let val = unsafe { Value::from_raw(std::ptr::null_mut()) };
+        assert!(val.as_bool_or(true));
+        assert!(!val.as_bool_or(false));
+    }
+
+    #[test]
+    fn as_f64_or_returns_default_for_null() {
+        let val = unsafe { Value::from_raw(std::ptr::null_mut()) };
+        assert!((val.as_f64_or(2.72) - 2.72).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn as_f32_or_returns_default_for_null() {
+        let val = unsafe { Value::from_raw(std::ptr::null_mut()) };
+        assert!((val.as_f32_or(2.5) - 2.5).abs() < f32::EPSILON);
     }
 }

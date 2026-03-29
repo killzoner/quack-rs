@@ -7,6 +7,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-03-29
+
+### Added
+
+- **`StructWriter`** (`vector::struct_writer` module) — batched, typed writer for
+  STRUCT output vectors. Pre-creates `VectorWriter`s for all fields at construction,
+  then exposes `write_bool`, `write_varchar`, `write_i64`, `write_date`,
+  `write_timestamp`, `write_time`, `write_blob`, `write_uuid`, `set_null`, etc.
+  Eliminates ~120 raw `duckdb_struct_vector_get_child` calls across typical extensions.
+
+- **`StructReader`** (`vector::struct_reader` module) — batched, typed reader for
+  STRUCT input vectors. Read-side counterpart to `StructWriter` with `read_bool`,
+  `read_str`, `read_i64`, `read_date`, `read_timestamp`, `read_blob`, `read_uuid`,
+  `is_valid`, etc.
+
+- **`ChunkWriter`** (`chunk_writer` module) — auto-sizing chunk writer for table
+  function scan callbacks. Tracks rows via `next_row()` and automatically calls
+  `duckdb_data_chunk_set_size` on `Drop`, preventing forgotten-set-size bugs.
+
+- **`scalar_callback!`** / **`table_scan_callback!`** macros (`callback` module) —
+  wrap `unsafe extern "C"` callbacks with `std::panic::catch_unwind`, preventing
+  undefined behaviour from panics unwinding across the FFI boundary. Scalar errors
+  are reported via `duckdb_scalar_function_set_error`; table scan panics set chunk
+  size to 0 (end of stream).
+
+- **`Value` extraction methods** — `as_i8()`, `as_i16()`, `as_u8()`, `as_u16()`,
+  `as_u32()`, `as_u64()`, `as_i128()` covering every DuckDB integer type via
+  `duckdb_get_int8/int16/uint8/uint16/uint32/uint64/hugeint`. Plus `as_str_or()`,
+  `as_str_or_default()`, and `_or(default)` null-safe variants for all types.
+
+- **`VectorReader`** — `read_date()`, `read_timestamp()`, `read_time()`,
+  `read_blob()`, `read_uuid()` semantic methods for DATE, TIMESTAMP, TIME,
+  BLOB, and UUID column types.
+
+- **`VectorWriter`** — `write_date()`, `write_timestamp()`, `write_time()`,
+  `write_blob()`, `write_uuid()` semantic methods matching reader additions.
+
+- **`DataChunk` convenience methods** — `struct_writer(col, fields)`,
+  `struct_reader(col, fields)`, `struct_field_reader(col, field)`,
+  `into_chunk_writer()` bridging to the new `StructWriter`, `StructReader`,
+  and `ChunkWriter` types.
+
+- **`ChunkWriter::struct_writer(col, fields)`** — convenience bridge to
+  `StructWriter` from within a `ChunkWriter`.
+
+- **`MockVectorWriter`** — `write_blob()`, `write_date()`, `write_timestamp()`,
+  `write_time()`, `write_uuid()` matching real `VectorWriter` additions.
+
+- **`MockVectorWriter` / `MockVectorReader`** — `try_get_i8()`, `try_get_i16()`,
+  `try_get_u8()`, `try_get_u16()`, `try_get_u32()`, `try_get_u64()`,
+  `try_get_f32()`, `try_get_i128()`, `try_get_blob()`, `try_get_uuid()` closing
+  the type coverage asymmetry between mock and real vector types.
+
+- **`MockVectorReader` constructors** — `from_i8s()`, `from_i16s()`, `from_u8s()`,
+  `from_u16s()`, `from_u32s()`, `from_u64s()`, `from_f32s()`, `from_i128s()`,
+  `from_intervals()`, `from_blobs()` for every `MockDuckValue` variant.
+
+- **`MockDuckValue::Blob(Vec<u8>)`** — new variant for BLOB testing.
+
+- **Prelude additions** — `StructReader`, `StructWriter`, `ChunkWriter` re-exported.
+
+### Changed
+
+- **`TableDescription::column_type()`** now returns `Option<LogicalType>` (RAII)
+  instead of raw `duckdb_logical_type`, eliminating manual destroy calls by callers.
+
+- **Version references updated** — all documentation, examples, scaffold templates,
+  and book pages now reference `quack-rs = "0.10"` (was `"0.9"`).
+
+### Fixed
+
+- **FFI callback panic safety** — replaced 13 `CString::new(...).expect(...)` calls
+  in FFI callback contexts (table/info, scalar/info, cast/builder, aggregate/info,
+  copy_function/info, replacement_scan) with non-panicking `str_to_cstring()` that
+  truncates at interior null bytes. Fully honours the "no panics across FFI" design
+  principle (Pitfall L3).
+
+- **Non-idiomatic `&mut { expr }` syntax** — replaced 8 instances in builder
+  `register()` methods and 1 in replacement scan with idiomatic `&raw mut`.
+
 ## [0.9.0] - 2026-03-29
 
 ### Added

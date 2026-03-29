@@ -196,6 +196,7 @@ impl TableFunctionBuilder {
     ///
     /// Use this for parameterized types that [`TypeId`] cannot express, such as
     /// `LIST(BIGINT)`, `MAP(VARCHAR, INTEGER)`, or `STRUCT(...)`.
+    #[mutants::skip] // position arithmetic tested via E2E (requires DuckDB runtime)
     pub fn param_logical(mut self, logical_type: LogicalType) -> Self {
         let position = self.params.len() + self.logical_params.len();
         self.logical_params.push((position, logical_type));
@@ -317,7 +318,7 @@ impl TableFunctionBuilder {
             .ok_or_else(|| ExtensionError::new("scan callback not set"))?;
 
         // SAFETY: creates a new table function handle.
-        let func = unsafe { duckdb_create_table_function() };
+        let mut func = unsafe { duckdb_create_table_function() };
 
         // SAFETY: func is a valid newly created handle.
         unsafe {
@@ -407,7 +408,7 @@ impl TableFunctionBuilder {
         // Always destroy the function handle; ownership transferred to DuckDB on success.
         // SAFETY: func was created above.
         unsafe {
-            duckdb_destroy_table_function(&mut { func });
+            duckdb_destroy_table_function(&raw mut func);
         }
 
         if result == DuckDBSuccess {

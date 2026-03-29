@@ -1,7 +1,7 @@
 <div align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/logos/logo1-dark-elegant.svg">
-    <img src="assets/logos/logo2-light-docs.svg" alt="quack-rs — The Rust SDK for DuckDB extensions" width="600">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/tomtom215/quack-rs/main/assets/logos/logo1-dark-elegant.svg">
+    <img src="https://raw.githubusercontent.com/tomtom215/quack-rs/main/assets/logos/logo2-light-docs.svg" alt="quack-rs — The Rust SDK for DuckDB extensions" width="600">
   </picture>
   <p><em>/ˈkwækərz/ &nbsp;·&nbsp; rhymes with <em>crackers</em> &nbsp;·&nbsp; inspired by DuckDB</em></p>
   <p>
@@ -69,7 +69,7 @@ and eliminates every rough edge, so you write **zero lines of C or C++**.
 | NULL output | Silent corruption if `ensure_validity_writable` skipped | `VectorWriter::set_null` calls it automatically |
 | LogicalType memory | Leak if not freed | `LogicalType` implements `Drop` |
 | Aggregate combine | Config fields lost on segment-tree merges | Testable with `AggregateTestHarness` |
-| FFI panics | Process abort or undefined behavior | `init_extension` never panics |
+| FFI panics | Process abort or undefined behavior | `init_extension` never panics; `scalar_callback!` / `table_scan_callback!` catch panics |
 | Table functions | ~100 lines of raw bind/init/scan callbacks | `TableFunctionBuilder` 5-method chain |
 | Replacement scans | Undocumented vtable + manual string allocation | `ReplacementScanBuilder` 4-method chain |
 | Complex types (STRUCT/LIST/MAP/ARRAY) | Manual offset arithmetic over child vectors | `StructVector`, `ListVector`, `MapVector`, `ArrayVector` helpers |
@@ -117,7 +117,7 @@ See [`LESSONS.md`](./LESSONS.md) for full analysis of each pitfall.
 
 ```toml
 [dependencies]
-quack-rs = "0.9"
+quack-rs = "0.10"
 libduckdb-sys = { version = ">=1.4.4, <2", features = ["loadable-extension"] }
 ```
 
@@ -283,6 +283,7 @@ append_metadata target/release/libmy_extension.so \
 |--------|---------|----------------------|
 | [`entry_point`] | Extension initialization entry point | `init_extension`, `init_extension_v2`, `entry_point!`, `entry_point_v2!` |
 | [`connection`] | Version-agnostic extension registration facade | `Connection`, `Registrar` |
+| [`callback`] | Safe `extern "C"` callback wrapper macros | `scalar_callback!`, `table_scan_callback!` |
 | [`aggregate`] | Aggregate function registration | `AggregateFunctionBuilder`, `AggregateFunctionSetBuilder`, `AggregateFunctionInfo` |
 | [`aggregate::state`] | Generic FFI state management | `AggregateState`, `FfiState<T>` |
 | [`aggregate::callbacks`] | Callback type aliases | `UpdateFn`, `CombineFn`, `FinalizeFn`, … |
@@ -292,9 +293,12 @@ append_metadata target/release/libmy_extension.so \
 | [`replacement_scan`] | `SELECT * FROM 'file.xyz'` replacement scans | `ReplacementScanBuilder` |
 | [`sql_macro`] | SQL macro registration (no FFI callbacks) | `SqlMacro`, `MacroBody` |
 | [`data_chunk`] | Ergonomic wrapper for DuckDB data chunks | `DataChunk` |
+| [`chunk_writer`] | Auto-sizing chunk writer for scan callbacks | `ChunkWriter` |
 | [`value`] | RAII wrapper for DuckDB values with typed extraction | `Value` |
 | [`vector`] | Safe reading/writing of DuckDB vectors | `VectorReader`, `VectorWriter`, `ValidityBitmap`, `vector_size()` |
 | [`vector::complex`] | STRUCT / LIST / MAP / ARRAY child vector access | `StructVector`, `ListVector`, `MapVector`, `ArrayVector` |
+| [`vector::struct_writer`] | Batched typed writer for STRUCT output vectors | `StructWriter` |
+| [`vector::struct_reader`] | Batched typed reader for STRUCT input vectors | `StructReader` |
 | [`vector::string`] | 16-byte DuckDB string format | `DuckStringView`, `read_duck_string` |
 | [`types`] | DuckDB type system wrappers | `TypeId`, `LogicalType`, `NullHandling` |
 | [`interval`] | INTERVAL ↔ microseconds conversion | `DuckInterval`, `interval_to_micros` |
@@ -309,7 +313,7 @@ append_metadata target/release/libmy_extension.so \
 | [`validate::platform`] | DuckDB build targets | `validate_platform`, `DUCKDB_PLATFORMS` |
 | [`validate::release_profile`] | Cargo release profile | `validate_release_profile` |
 | [`scaffold`] | Project generator | `generate_scaffold`, `ScaffoldConfig` |
-| [`testing`] | Pure-Rust aggregate test harness | `AggregateTestHarness<S>` |
+| [`testing`] | Mock vectors, aggregate harness, and registrar | `AggregateTestHarness<S>`, `MockVectorWriter`, `MockVectorReader`, `MockRegistrar` |
 | [`prelude`] | Common re-exports | `use quack_rs::prelude::*` |
 | [`catalog`]¹ | Catalog entry lookup | `CatalogEntry`, `Catalog`, `CatalogEntryType` |
 | [`client_context`]¹ | Client context access (catalog, config, connection ID) | `ClientContext` |
@@ -319,8 +323,12 @@ append_metadata target/release/libmy_extension.so \
 
 > ¹ Requires the `duckdb-1-5` feature flag (DuckDB 1.5.0+).
 
+[`callback`]: https://docs.rs/quack-rs/latest/quack_rs/callback/index.html
+[`chunk_writer`]: https://docs.rs/quack-rs/latest/quack_rs/chunk_writer/index.html
 [`data_chunk`]: https://docs.rs/quack-rs/latest/quack_rs/data_chunk/index.html
 [`value`]: https://docs.rs/quack-rs/latest/quack_rs/value/index.html
+[`vector::struct_writer`]: https://docs.rs/quack-rs/latest/quack_rs/vector/struct_writer/index.html
+[`vector::struct_reader`]: https://docs.rs/quack-rs/latest/quack_rs/vector/struct_reader/index.html
 [`entry_point`]: https://docs.rs/quack-rs/latest/quack_rs/entry_point/index.html
 [`connection`]: https://docs.rs/quack-rs/latest/quack_rs/connection/index.html
 [`aggregate`]: https://docs.rs/quack-rs/latest/quack_rs/aggregate/index.html
@@ -369,7 +377,7 @@ it. The full analysis — including symptoms, root cause, and minimal reproducti
 |----|------|---------|-------------------|
 | **L1** | COMBINE config propagation | Aggregate returns wrong results under parallelism | Testable with `AggregateTestHarness` |
 | **L2** | Double-free in destroy | Heap corruption / SIGABRT | `FfiState<T>::destroy_callback` nulls pointer after free |
-| **L3** | Panic across FFI | Process abort / UB | `init_extension` propagates `Result`, never panics |
+| **L3** | Panic across FFI | Process abort / UB | `init_extension` propagates `Result`; `scalar_callback!` / `table_scan_callback!` catch panics with `catch_unwind` |
 | **L4** | Missing `ensure_validity_writable` | Segfault / silent NULL corruption | `VectorWriter::set_null` calls it automatically |
 | **L5** | Boolean undefined behavior | Non-deterministic bool semantics | `VectorReader::read_bool` reads `u8 != 0` |
 | **L6** | Function set name on each member | Silent registration failure | `AggregateFunctionSetBuilder` and `ScalarFunctionSetBuilder` set name on every member |

@@ -87,6 +87,8 @@ pub enum MockDuckValue {
     I128(i128),
     /// `VARCHAR`
     Varchar(String),
+    /// `BLOB`
+    Blob(Vec<u8>),
     /// `INTERVAL`
     Interval(DuckInterval),
 }
@@ -257,6 +259,40 @@ impl MockVectorWriter {
         self.rows[idx] = Some(MockDuckValue::Interval(value));
     }
 
+    /// Writes a `BLOB` value at row `idx`.
+    pub fn write_blob(&mut self, idx: usize, value: &[u8]) {
+        self.ensure_capacity(idx);
+        self.rows[idx] = Some(MockDuckValue::Blob(value.to_vec()));
+    }
+
+    /// Writes a `DATE` value (days since epoch) at row `idx`.
+    ///
+    /// Semantic alias for [`write_i32`][Self::write_i32].
+    pub fn write_date(&mut self, idx: usize, days_since_epoch: i32) {
+        self.write_i32(idx, days_since_epoch);
+    }
+
+    /// Writes a `TIMESTAMP` value (microseconds since epoch) at row `idx`.
+    ///
+    /// Semantic alias for [`write_i64`][Self::write_i64].
+    pub fn write_timestamp(&mut self, idx: usize, micros_since_epoch: i64) {
+        self.write_i64(idx, micros_since_epoch);
+    }
+
+    /// Writes a `TIME` value (microseconds since midnight) at row `idx`.
+    ///
+    /// Semantic alias for [`write_i64`][Self::write_i64].
+    pub fn write_time(&mut self, idx: usize, micros_since_midnight: i64) {
+        self.write_i64(idx, micros_since_midnight);
+    }
+
+    /// Writes a `UUID` value (as i128) at row `idx`.
+    ///
+    /// Semantic alias for [`write_i128`][Self::write_i128].
+    pub fn write_uuid(&mut self, idx: usize, value: i128) {
+        self.write_i128(idx, value);
+    }
+
     // ── Typed getters ───────────────────────────────────────────────────────
 
     /// Returns the `BIGINT` value at row `idx`, or `None` if NULL or wrong type.
@@ -311,6 +347,95 @@ impl MockVectorWriter {
             Some(MockDuckValue::Interval(v)) => Some(*v),
             _ => None,
         }
+    }
+
+    /// Returns the `TINYINT` value at row `idx`, or `None` if NULL or wrong type.
+    #[must_use]
+    pub fn try_get_i8(&self, idx: usize) -> Option<i8> {
+        match self.get(idx) {
+            Some(MockDuckValue::I8(v)) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns the `SMALLINT` value at row `idx`, or `None` if NULL or wrong type.
+    #[must_use]
+    pub fn try_get_i16(&self, idx: usize) -> Option<i16> {
+        match self.get(idx) {
+            Some(MockDuckValue::I16(v)) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns the `UTINYINT` value at row `idx`, or `None` if NULL or wrong type.
+    #[must_use]
+    pub fn try_get_u8(&self, idx: usize) -> Option<u8> {
+        match self.get(idx) {
+            Some(MockDuckValue::U8(v)) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns the `USMALLINT` value at row `idx`, or `None` if NULL or wrong type.
+    #[must_use]
+    pub fn try_get_u16(&self, idx: usize) -> Option<u16> {
+        match self.get(idx) {
+            Some(MockDuckValue::U16(v)) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns the `UINTEGER` value at row `idx`, or `None` if NULL or wrong type.
+    #[must_use]
+    pub fn try_get_u32(&self, idx: usize) -> Option<u32> {
+        match self.get(idx) {
+            Some(MockDuckValue::U32(v)) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns the `UBIGINT` value at row `idx`, or `None` if NULL or wrong type.
+    #[must_use]
+    pub fn try_get_u64(&self, idx: usize) -> Option<u64> {
+        match self.get(idx) {
+            Some(MockDuckValue::U64(v)) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns the `FLOAT` value at row `idx`, or `None` if NULL or wrong type.
+    #[must_use]
+    pub fn try_get_f32(&self, idx: usize) -> Option<f32> {
+        match self.get(idx) {
+            Some(MockDuckValue::F32(v)) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns the `HUGEINT` value at row `idx`, or `None` if NULL or wrong type.
+    #[must_use]
+    pub fn try_get_i128(&self, idx: usize) -> Option<i128> {
+        match self.get(idx) {
+            Some(MockDuckValue::I128(v)) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns the `BLOB` value at row `idx`, or `None` if NULL or wrong type.
+    #[must_use]
+    pub fn try_get_blob(&self, idx: usize) -> Option<&[u8]> {
+        match self.get(idx) {
+            Some(MockDuckValue::Blob(v)) => Some(v.as_slice()),
+            _ => None,
+        }
+    }
+
+    /// Returns the `UUID` value (as i128) at row `idx`, or `None` if NULL or wrong type.
+    ///
+    /// Semantic alias for [`try_get_i128`][Self::try_get_i128].
+    #[must_use]
+    pub fn try_get_uuid(&self, idx: usize) -> Option<i128> {
+        self.try_get_i128(idx)
     }
 }
 
@@ -379,6 +504,90 @@ impl MockVectorReader {
     #[must_use]
     pub fn from_bools(values: impl IntoIterator<Item = Option<bool>>) -> Self {
         Self::new(values.into_iter().map(|v| v.map(MockDuckValue::Bool)))
+    }
+
+    /// Creates a reader from a sequence of `Option<i8>` values.
+    ///
+    /// Convenience constructor for `TINYINT` columns.
+    #[must_use]
+    pub fn from_i8s(values: impl IntoIterator<Item = Option<i8>>) -> Self {
+        Self::new(values.into_iter().map(|v| v.map(MockDuckValue::I8)))
+    }
+
+    /// Creates a reader from a sequence of `Option<i16>` values.
+    ///
+    /// Convenience constructor for `SMALLINT` columns.
+    #[must_use]
+    pub fn from_i16s(values: impl IntoIterator<Item = Option<i16>>) -> Self {
+        Self::new(values.into_iter().map(|v| v.map(MockDuckValue::I16)))
+    }
+
+    /// Creates a reader from a sequence of `Option<u8>` values.
+    ///
+    /// Convenience constructor for `UTINYINT` columns.
+    #[must_use]
+    pub fn from_u8s(values: impl IntoIterator<Item = Option<u8>>) -> Self {
+        Self::new(values.into_iter().map(|v| v.map(MockDuckValue::U8)))
+    }
+
+    /// Creates a reader from a sequence of `Option<u16>` values.
+    ///
+    /// Convenience constructor for `USMALLINT` columns.
+    #[must_use]
+    pub fn from_u16s(values: impl IntoIterator<Item = Option<u16>>) -> Self {
+        Self::new(values.into_iter().map(|v| v.map(MockDuckValue::U16)))
+    }
+
+    /// Creates a reader from a sequence of `Option<u32>` values.
+    ///
+    /// Convenience constructor for `UINTEGER` columns.
+    #[must_use]
+    pub fn from_u32s(values: impl IntoIterator<Item = Option<u32>>) -> Self {
+        Self::new(values.into_iter().map(|v| v.map(MockDuckValue::U32)))
+    }
+
+    /// Creates a reader from a sequence of `Option<u64>` values.
+    ///
+    /// Convenience constructor for `UBIGINT` columns.
+    #[must_use]
+    pub fn from_u64s(values: impl IntoIterator<Item = Option<u64>>) -> Self {
+        Self::new(values.into_iter().map(|v| v.map(MockDuckValue::U64)))
+    }
+
+    /// Creates a reader from a sequence of `Option<f32>` values.
+    ///
+    /// Convenience constructor for `FLOAT` columns.
+    #[must_use]
+    pub fn from_f32s(values: impl IntoIterator<Item = Option<f32>>) -> Self {
+        Self::new(values.into_iter().map(|v| v.map(MockDuckValue::F32)))
+    }
+
+    /// Creates a reader from a sequence of `Option<i128>` values.
+    ///
+    /// Convenience constructor for `HUGEINT` columns.
+    #[must_use]
+    pub fn from_i128s(values: impl IntoIterator<Item = Option<i128>>) -> Self {
+        Self::new(values.into_iter().map(|v| v.map(MockDuckValue::I128)))
+    }
+
+    /// Creates a reader from a sequence of `Option<DuckInterval>` values.
+    ///
+    /// Convenience constructor for `INTERVAL` columns.
+    #[must_use]
+    pub fn from_intervals(values: impl IntoIterator<Item = Option<DuckInterval>>) -> Self {
+        Self::new(values.into_iter().map(|v| v.map(MockDuckValue::Interval)))
+    }
+
+    /// Creates a reader from a sequence of `Option<&[u8]>` values.
+    ///
+    /// Convenience constructor for `BLOB` columns.
+    #[must_use]
+    pub fn from_blobs<'a>(values: impl IntoIterator<Item = Option<&'a [u8]>>) -> Self {
+        Self::new(
+            values
+                .into_iter()
+                .map(|v| v.map(|b| MockDuckValue::Blob(b.to_vec()))),
+        )
     }
 
     /// Creates a reader from a sequence of `Option<&str>` values.
@@ -467,6 +676,95 @@ impl MockVectorReader {
             Some(MockDuckValue::Interval(v)) => Some(*v),
             _ => None,
         }
+    }
+
+    /// Returns the `TINYINT` value at row `idx`, or `None` if NULL or wrong type.
+    #[must_use]
+    pub fn try_get_i8(&self, idx: usize) -> Option<i8> {
+        match self.get(idx) {
+            Some(MockDuckValue::I8(v)) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns the `SMALLINT` value at row `idx`, or `None` if NULL or wrong type.
+    #[must_use]
+    pub fn try_get_i16(&self, idx: usize) -> Option<i16> {
+        match self.get(idx) {
+            Some(MockDuckValue::I16(v)) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns the `UTINYINT` value at row `idx`, or `None` if NULL or wrong type.
+    #[must_use]
+    pub fn try_get_u8(&self, idx: usize) -> Option<u8> {
+        match self.get(idx) {
+            Some(MockDuckValue::U8(v)) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns the `USMALLINT` value at row `idx`, or `None` if NULL or wrong type.
+    #[must_use]
+    pub fn try_get_u16(&self, idx: usize) -> Option<u16> {
+        match self.get(idx) {
+            Some(MockDuckValue::U16(v)) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns the `UINTEGER` value at row `idx`, or `None` if NULL or wrong type.
+    #[must_use]
+    pub fn try_get_u32(&self, idx: usize) -> Option<u32> {
+        match self.get(idx) {
+            Some(MockDuckValue::U32(v)) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns the `UBIGINT` value at row `idx`, or `None` if NULL or wrong type.
+    #[must_use]
+    pub fn try_get_u64(&self, idx: usize) -> Option<u64> {
+        match self.get(idx) {
+            Some(MockDuckValue::U64(v)) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns the `FLOAT` value at row `idx`, or `None` if NULL or wrong type.
+    #[must_use]
+    pub fn try_get_f32(&self, idx: usize) -> Option<f32> {
+        match self.get(idx) {
+            Some(MockDuckValue::F32(v)) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns the `HUGEINT` value at row `idx`, or `None` if NULL or wrong type.
+    #[must_use]
+    pub fn try_get_i128(&self, idx: usize) -> Option<i128> {
+        match self.get(idx) {
+            Some(MockDuckValue::I128(v)) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns the `BLOB` value at row `idx`, or `None` if NULL or wrong type.
+    #[must_use]
+    pub fn try_get_blob(&self, idx: usize) -> Option<&[u8]> {
+        match self.get(idx) {
+            Some(MockDuckValue::Blob(v)) => Some(v.as_slice()),
+            _ => None,
+        }
+    }
+
+    /// Returns the `UUID` value (as i128) at row `idx`, or `None` if NULL or wrong type.
+    ///
+    /// Semantic alias for [`try_get_i128`][Self::try_get_i128].
+    #[must_use]
+    pub fn try_get_uuid(&self, idx: usize) -> Option<i128> {
+        self.try_get_i128(idx)
     }
 }
 
@@ -679,6 +977,127 @@ mod tests {
     }
 
     #[test]
+    fn writer_try_get_i8_round_trip() {
+        let mut w = MockVectorWriter::new(1);
+        w.write_i8(0, -42);
+        assert_eq!(w.try_get_i8(0), Some(-42));
+    }
+
+    #[test]
+    fn writer_try_get_i16_round_trip() {
+        let mut w = MockVectorWriter::new(1);
+        w.write_i16(0, 1234);
+        assert_eq!(w.try_get_i16(0), Some(1234));
+    }
+
+    #[test]
+    fn writer_try_get_u8_round_trip() {
+        let mut w = MockVectorWriter::new(1);
+        w.write_u8(0, 255);
+        assert_eq!(w.try_get_u8(0), Some(255));
+    }
+
+    #[test]
+    fn writer_try_get_u16_round_trip() {
+        let mut w = MockVectorWriter::new(1);
+        w.write_u16(0, 60000);
+        assert_eq!(w.try_get_u16(0), Some(60000));
+    }
+
+    #[test]
+    fn writer_try_get_u32_round_trip() {
+        let mut w = MockVectorWriter::new(1);
+        w.write_u32(0, 123_456);
+        assert_eq!(w.try_get_u32(0), Some(123_456));
+    }
+
+    #[test]
+    fn writer_try_get_u64_round_trip() {
+        let mut w = MockVectorWriter::new(1);
+        w.write_u64(0, u64::MAX);
+        assert_eq!(w.try_get_u64(0), Some(u64::MAX));
+    }
+
+    #[test]
+    fn writer_try_get_f32_round_trip() {
+        let mut w = MockVectorWriter::new(1);
+        w.write_f32(0, 2.5);
+        assert_eq!(w.try_get_f32(0), Some(2.5));
+    }
+
+    #[test]
+    fn writer_try_get_i128_round_trip() {
+        let mut w = MockVectorWriter::new(1);
+        w.write_i128(0, i128::MIN);
+        assert_eq!(w.try_get_i128(0), Some(i128::MIN));
+    }
+
+    #[test]
+    fn reader_from_i8s() {
+        let r = MockVectorReader::from_i8s([Some(1), None, Some(-1)]);
+        assert_eq!(r.row_count(), 3);
+        assert_eq!(r.try_get_i8(0), Some(1));
+        assert!(!r.is_valid(1));
+        assert_eq!(r.try_get_i8(2), Some(-1));
+    }
+
+    #[test]
+    fn reader_from_i16s() {
+        let r = MockVectorReader::from_i16s([Some(100), None]);
+        assert_eq!(r.try_get_i16(0), Some(100));
+        assert!(!r.is_valid(1));
+    }
+
+    #[test]
+    fn reader_from_u8s() {
+        let r = MockVectorReader::from_u8s([Some(255), None]);
+        assert_eq!(r.try_get_u8(0), Some(255));
+    }
+
+    #[test]
+    fn reader_from_u16s() {
+        let r = MockVectorReader::from_u16s([Some(60000)]);
+        assert_eq!(r.try_get_u16(0), Some(60000));
+    }
+
+    #[test]
+    fn reader_from_u32s() {
+        let r = MockVectorReader::from_u32s([Some(999_999)]);
+        assert_eq!(r.try_get_u32(0), Some(999_999));
+    }
+
+    #[test]
+    fn reader_from_u64s() {
+        let r = MockVectorReader::from_u64s([Some(u64::MAX), None]);
+        assert_eq!(r.try_get_u64(0), Some(u64::MAX));
+        assert!(!r.is_valid(1));
+    }
+
+    #[test]
+    fn reader_from_f32s() {
+        let r = MockVectorReader::from_f32s([Some(1.5), None]);
+        assert_eq!(r.try_get_f32(0), Some(1.5));
+    }
+
+    #[test]
+    fn reader_from_i128s() {
+        let r = MockVectorReader::from_i128s([Some(i128::MAX), None]);
+        assert_eq!(r.try_get_i128(0), Some(i128::MAX));
+    }
+
+    #[test]
+    fn reader_from_intervals() {
+        let iv = DuckInterval {
+            months: 1,
+            days: 2,
+            micros: 3,
+        };
+        let r = MockVectorReader::from_intervals([Some(iv), None]);
+        assert_eq!(r.try_get_interval(0), Some(iv));
+        assert!(!r.is_valid(1));
+    }
+
+    #[test]
     fn mock_double_pattern() {
         // Demonstrates extracting callback logic into a testable pure-Rust function.
         fn double_values(reader: &MockVectorReader, writer: &mut MockVectorWriter) {
@@ -700,5 +1119,60 @@ mod tests {
         assert_eq!(writer.try_get_i64(1), Some(10));
         assert!(writer.is_null(2));
         assert_eq!(writer.try_get_i64(3), Some(-6));
+    }
+
+    #[test]
+    fn writer_blob_round_trip() {
+        let mut w = MockVectorWriter::new(2);
+        w.write_blob(0, b"hello bytes");
+        w.set_null(1);
+        assert_eq!(w.try_get_blob(0), Some(b"hello bytes".as_slice()));
+        assert_eq!(w.try_get_blob(1), None);
+        // Wrong type returns None
+        assert_eq!(w.try_get_i64(0), None);
+    }
+
+    #[test]
+    fn writer_uuid_round_trip() {
+        let mut w = MockVectorWriter::new(1);
+        let uuid_val: i128 = 0x0123_4567_89ab_cdef_0123_4567_89ab_cdef;
+        w.write_uuid(0, uuid_val);
+        assert_eq!(w.try_get_uuid(0), Some(uuid_val));
+    }
+
+    #[test]
+    fn writer_date_round_trip() {
+        let mut w = MockVectorWriter::new(1);
+        w.write_date(0, 19815); // days since epoch
+        assert_eq!(w.try_get_i32(0), Some(19815));
+    }
+
+    #[test]
+    fn writer_timestamp_round_trip() {
+        let mut w = MockVectorWriter::new(1);
+        w.write_timestamp(0, 1_711_756_800_000_000); // micros since epoch
+        assert_eq!(w.try_get_i64(0), Some(1_711_756_800_000_000));
+    }
+
+    #[test]
+    fn writer_time_round_trip() {
+        let mut w = MockVectorWriter::new(1);
+        w.write_time(0, 43_200_000_000); // noon in micros
+        assert_eq!(w.try_get_i64(0), Some(43_200_000_000));
+    }
+
+    #[test]
+    fn reader_blob_round_trip() {
+        let r = MockVectorReader::from_blobs([Some(b"data".as_slice()), None]);
+        assert_eq!(r.try_get_blob(0), Some(b"data".as_slice()));
+        assert_eq!(r.try_get_blob(1), None);
+        assert!(!r.is_valid(1));
+    }
+
+    #[test]
+    fn reader_uuid_round_trip() {
+        let uuid_val: i128 = 0x0ead_beef_cafe_babe_1234_5678_9abc_def0;
+        let r = MockVectorReader::from_i128s([Some(uuid_val)]);
+        assert_eq!(r.try_get_uuid(0), Some(uuid_val));
     }
 }

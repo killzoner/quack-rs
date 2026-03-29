@@ -29,7 +29,9 @@ use libduckdb_sys::{
     duckdb_data_chunk_get_vector, duckdb_data_chunk_set_size, duckdb_vector, idx_t,
 };
 
-use crate::vector::{VectorReader, VectorWriter};
+use crate::chunk_writer::ChunkWriter;
+use crate::vector::complex::StructVector;
+use crate::vector::{StructReader, StructWriter, VectorReader, VectorWriter};
 
 /// A non-owning wrapper around a `duckdb_data_chunk`.
 ///
@@ -119,6 +121,66 @@ impl DataChunk {
     pub unsafe fn reader(&self, col_idx: usize) -> VectorReader {
         // SAFETY: self.raw is valid; col_idx is in bounds per caller's contract.
         unsafe { VectorReader::new(self.raw, col_idx) }
+    }
+
+    /// Creates a [`StructReader`] for a STRUCT column at the given index.
+    ///
+    /// This is a convenience method that combines [`vector`][Self::vector] with
+    /// [`StructReader::new`].
+    ///
+    /// # Safety
+    ///
+    /// - `col_idx` must be less than [`column_count`][Self::column_count].
+    /// - The column at `col_idx` must have a STRUCT type with `field_count` fields.
+    pub unsafe fn struct_reader(&self, col_idx: usize, field_count: usize) -> StructReader {
+        let vec = unsafe { self.vector(col_idx) };
+        // SAFETY: vec is a valid STRUCT vector per caller's contract.
+        unsafe { StructReader::new(vec, field_count, self.size()) }
+    }
+
+    /// Creates a [`VectorReader`] for a field of a STRUCT column.
+    ///
+    /// Convenience for accessing a specific field in a STRUCT input column.
+    ///
+    /// # Safety
+    ///
+    /// - `col_idx` must be less than [`column_count`][Self::column_count].
+    /// - The column at `col_idx` must have a STRUCT type.
+    /// - `field_idx` must be a valid field index within the STRUCT.
+    pub unsafe fn struct_field_reader(&self, col_idx: usize, field_idx: usize) -> VectorReader {
+        let vec = unsafe { self.vector(col_idx) };
+        // SAFETY: vec is a valid STRUCT vector per caller's contract.
+        unsafe { StructVector::field_reader(vec, field_idx, self.size()) }
+    }
+
+    /// Creates a [`StructWriter`] for a STRUCT column at the given index.
+    ///
+    /// This is a convenience method that combines [`vector`][Self::vector] with
+    /// [`StructWriter::new`].
+    ///
+    /// # Safety
+    ///
+    /// - `col_idx` must be less than [`column_count`][Self::column_count].
+    /// - The column at `col_idx` must have a STRUCT type with `field_count` fields.
+    /// - The chunk must be a writable output chunk.
+    pub unsafe fn struct_writer(&self, col_idx: usize, field_count: usize) -> StructWriter {
+        let vec = unsafe { self.vector(col_idx) };
+        // SAFETY: vec is a valid STRUCT vector per caller's contract.
+        unsafe { StructWriter::new(vec, field_count) }
+    }
+
+    /// Creates a [`ChunkWriter`] for this output data chunk.
+    ///
+    /// The [`ChunkWriter`] tracks rows via [`next_row()`][ChunkWriter::next_row]
+    /// and automatically calls `set_size` on drop.
+    ///
+    /// # Safety
+    ///
+    /// This chunk must be a valid, writable output chunk from a table function
+    /// scan callback.
+    pub const unsafe fn into_chunk_writer(self) -> ChunkWriter {
+        // SAFETY: self.raw is valid per constructor's contract.
+        unsafe { ChunkWriter::new(self.raw) }
     }
 
     /// Returns the raw `duckdb_data_chunk` handle.

@@ -45,12 +45,15 @@
 //! | [`ReplacementScanBuilder`] | `replacement_scan` module |
 //! | [`ReplacementScanInfo`] | `replacement_scan` module |
 //! | [`SqlMacro`] | `sql_macro` module |
+//! | [`ChunkWriter`] | `chunk_writer` module |
 //! | [`DataChunk`] | `data_chunk` module |
 //! | [`Value`] | `value` module |
 //! | [`VectorReader`] | `vector` module |
 //! | [`VectorWriter`] | `vector` module |
 //! | [`ValidityBitmap`] | `vector::validity` module |
 //! | [`ArrayVector`] | `vector::complex` module |
+//! | [`StructReader`] | `vector::struct_reader` module |
+//! | [`StructWriter`] | `vector::struct_writer` module |
 //! | [`StructVector`] | `vector::complex` module |
 //! | [`ListVector`] | `vector::complex` module |
 //! | [`MapVector`] | `vector::complex` module |
@@ -140,6 +143,9 @@ pub use crate::replacement_scan::{ReplacementScanBuilder, ReplacementScanInfo};
 // SQL macros
 pub use crate::sql_macro::SqlMacro;
 
+// Chunk writer
+pub use crate::chunk_writer::ChunkWriter;
+
 // Data chunks
 pub use crate::data_chunk::DataChunk;
 
@@ -148,7 +154,7 @@ pub use crate::value::Value;
 
 // Vector I/O
 pub use crate::vector::complex::{ArrayVector, ListVector, MapVector, StructVector};
-pub use crate::vector::{ValidityBitmap, VectorReader, VectorWriter};
+pub use crate::vector::{StructReader, StructWriter, ValidityBitmap, VectorReader, VectorWriter};
 
 // Types
 pub use crate::types::{LogicalType, NullHandling, TypeId};
