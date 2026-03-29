@@ -293,6 +293,37 @@ impl VectorReader {
         unsafe { crate::vector::string::read_duck_string(self.data, idx) }
     }
 
+    /// Reads a `BLOB` (binary) value at row `idx`.
+    ///
+    /// `DuckDB` stores BLOBs using the same 16-byte `duckdb_string_t` layout as
+    /// VARCHAR (inline for ≤12 bytes, pointer for larger values). The returned
+    /// slice borrows from the vector's data buffer.
+    ///
+    /// # Safety
+    ///
+    /// - `idx` must be less than `self.row_count()`.
+    /// - The column must contain `BLOB` data.
+    /// - The pointed-to memory must be valid for the lifetime of the returned slice.
+    pub unsafe fn read_blob(&self, idx: usize) -> &[u8] {
+        // SAFETY: BLOB uses the same duckdb_string_t layout as VARCHAR.
+        unsafe { crate::vector::string::read_duck_string(self.data, idx).as_bytes() }
+    }
+
+    /// Reads a `UUID` value at row `idx` as an `i128`.
+    ///
+    /// `DuckDB` stores UUID as a HUGEINT (128-bit integer). This is a semantic
+    /// alias for [`read_i128`][Self::read_i128].
+    ///
+    /// # Safety
+    ///
+    /// - `idx` must be less than `self.row_count()`.
+    /// - The column must contain `UUID` data.
+    #[inline]
+    pub const unsafe fn read_uuid(&self, idx: usize) -> i128 {
+        // SAFETY: UUID is stored as HUGEINT (i128).
+        unsafe { self.read_i128(idx) }
+    }
+
     /// Reads a `DATE` value at row `idx` as days since the Unix epoch.
     ///
     /// `DuckDB` stores DATE as a 4-byte `i32` representing the number of days

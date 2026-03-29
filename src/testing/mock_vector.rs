@@ -87,6 +87,8 @@ pub enum MockDuckValue {
     I128(i128),
     /// `VARCHAR`
     Varchar(String),
+    /// `BLOB`
+    Blob(Vec<u8>),
     /// `INTERVAL`
     Interval(DuckInterval),
 }
@@ -257,6 +259,33 @@ impl MockVectorWriter {
         self.rows[idx] = Some(MockDuckValue::Interval(value));
     }
 
+    /// Writes a `BLOB` value at row `idx`.
+    pub fn write_blob(&mut self, idx: usize, value: &[u8]) {
+        self.ensure_capacity(idx);
+        self.rows[idx] = Some(MockDuckValue::Blob(value.to_vec()));
+    }
+
+    /// Writes a `DATE` value (days since epoch) at row `idx`.
+    ///
+    /// Semantic alias for [`write_i32`][Self::write_i32].
+    pub fn write_date(&mut self, idx: usize, days_since_epoch: i32) {
+        self.write_i32(idx, days_since_epoch);
+    }
+
+    /// Writes a `TIMESTAMP` value (microseconds since epoch) at row `idx`.
+    ///
+    /// Semantic alias for [`write_i64`][Self::write_i64].
+    pub fn write_timestamp(&mut self, idx: usize, micros_since_epoch: i64) {
+        self.write_i64(idx, micros_since_epoch);
+    }
+
+    /// Writes a `TIME` value (microseconds since midnight) at row `idx`.
+    ///
+    /// Semantic alias for [`write_i64`][Self::write_i64].
+    pub fn write_time(&mut self, idx: usize, micros_since_midnight: i64) {
+        self.write_i64(idx, micros_since_midnight);
+    }
+
     // ── Typed getters ───────────────────────────────────────────────────────
 
     /// Returns the `BIGINT` value at row `idx`, or `None` if NULL or wrong type.
@@ -381,6 +410,15 @@ impl MockVectorWriter {
     pub fn try_get_i128(&self, idx: usize) -> Option<i128> {
         match self.get(idx) {
             Some(MockDuckValue::I128(v)) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns the `BLOB` value at row `idx`, or `None` if NULL or wrong type.
+    #[must_use]
+    pub fn try_get_blob(&self, idx: usize) -> Option<&[u8]> {
+        match self.get(idx) {
+            Some(MockDuckValue::Blob(v)) => Some(v.as_slice()),
             _ => None,
         }
     }
@@ -523,6 +561,18 @@ impl MockVectorReader {
     #[must_use]
     pub fn from_intervals(values: impl IntoIterator<Item = Option<DuckInterval>>) -> Self {
         Self::new(values.into_iter().map(|v| v.map(MockDuckValue::Interval)))
+    }
+
+    /// Creates a reader from a sequence of `Option<&[u8]>` values.
+    ///
+    /// Convenience constructor for `BLOB` columns.
+    #[must_use]
+    pub fn from_blobs<'a>(values: impl IntoIterator<Item = Option<&'a [u8]>>) -> Self {
+        Self::new(
+            values
+                .into_iter()
+                .map(|v| v.map(|b| MockDuckValue::Blob(b.to_vec()))),
+        )
     }
 
     /// Creates a reader from a sequence of `Option<&str>` values.
@@ -681,6 +731,15 @@ impl MockVectorReader {
     pub fn try_get_i128(&self, idx: usize) -> Option<i128> {
         match self.get(idx) {
             Some(MockDuckValue::I128(v)) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns the `BLOB` value at row `idx`, or `None` if NULL or wrong type.
+    #[must_use]
+    pub fn try_get_blob(&self, idx: usize) -> Option<&[u8]> {
+        match self.get(idx) {
+            Some(MockDuckValue::Blob(v)) => Some(v.as_slice()),
             _ => None,
         }
     }

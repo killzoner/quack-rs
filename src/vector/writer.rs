@@ -322,6 +322,42 @@ impl VectorWriter {
         }
     }
 
+    /// Writes a `BLOB` (binary) value at row `idx`.
+    ///
+    /// This uses the same underlying storage as VARCHAR — `DuckDB` stores BLOBs
+    /// using `duckdb_vector_assign_string_element_len`, which copies the data.
+    ///
+    /// # Safety
+    ///
+    /// - `idx` must be within the vector's capacity.
+    /// - The vector must have `BLOB` type.
+    pub unsafe fn write_blob(&mut self, idx: usize, value: &[u8]) {
+        // SAFETY: BLOB uses the same storage as VARCHAR.
+        unsafe {
+            duckdb_vector_assign_string_element_len(
+                self.vector,
+                idx as idx_t,
+                value.as_ptr().cast::<std::os::raw::c_char>(),
+                idx_t::try_from(value.len()).unwrap_or(idx_t::MAX),
+            );
+        }
+    }
+
+    /// Writes a `UUID` value at row `idx`.
+    ///
+    /// `DuckDB` stores UUID as a HUGEINT (128-bit integer). This is a semantic
+    /// alias for [`write_i128`][Self::write_i128].
+    ///
+    /// # Safety
+    ///
+    /// - `idx` must be within the vector's capacity.
+    /// - The vector must have `UUID` type.
+    #[inline]
+    pub const unsafe fn write_uuid(&mut self, idx: usize, value: i128) {
+        // SAFETY: UUID is stored as HUGEINT (i128).
+        unsafe { self.write_i128(idx, value) };
+    }
+
     /// Writes a VARCHAR string value at row `idx`.
     ///
     /// This is an alias for [`write_varchar`][VectorWriter::write_varchar] provided

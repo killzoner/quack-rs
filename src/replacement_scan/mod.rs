@@ -140,8 +140,9 @@ impl ReplacementScanInfo {
             duckdb_replacement_scan_add_parameter(self.info, duckdb_val);
         }
         // SAFETY: duckdb_val was just created; must be destroyed after passing.
+        let mut val = duckdb_val;
         unsafe {
-            duckdb_destroy_value(&mut { duckdb_val });
+            duckdb_destroy_value(&raw mut val);
         }
         self
     }

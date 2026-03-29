@@ -240,6 +240,64 @@ impl StructWriter {
         unsafe { self.fields[field_idx].write_interval(row, value) };
     }
 
+    /// Writes a VARCHAR string value to field `field_idx` at row `row`.
+    ///
+    /// Alias for [`write_varchar`][Self::write_varchar].
+    ///
+    /// # Safety
+    ///
+    /// See [`write_varchar`][Self::write_varchar].
+    #[inline]
+    pub unsafe fn write_str(&mut self, row: usize, field_idx: usize, value: &str) {
+        unsafe { self.write_varchar(row, field_idx, value) };
+    }
+
+    /// Writes a `DATE` value (days since epoch) to field `field_idx` at row `row`.
+    ///
+    /// Semantic alias for [`write_i32`][Self::write_i32].
+    ///
+    /// # Safety
+    ///
+    /// See [`write_i8`][Self::write_i8].
+    #[inline]
+    pub unsafe fn write_date(&mut self, row: usize, field_idx: usize, days_since_epoch: i32) {
+        unsafe { self.write_i32(row, field_idx, days_since_epoch) };
+    }
+
+    /// Writes a `TIMESTAMP` value (microseconds since epoch) to field `field_idx` at row `row`.
+    ///
+    /// Semantic alias for [`write_i64`][Self::write_i64].
+    ///
+    /// # Safety
+    ///
+    /// See [`write_i8`][Self::write_i8].
+    #[inline]
+    pub unsafe fn write_timestamp(
+        &mut self,
+        row: usize,
+        field_idx: usize,
+        micros_since_epoch: i64,
+    ) {
+        unsafe { self.write_i64(row, field_idx, micros_since_epoch) };
+    }
+
+    /// Writes a `TIME` value (microseconds since midnight) to field `field_idx` at row `row`.
+    ///
+    /// Semantic alias for [`write_i64`][Self::write_i64].
+    ///
+    /// # Safety
+    ///
+    /// See [`write_i8`][Self::write_i8].
+    #[inline]
+    pub unsafe fn write_time(
+        &mut self,
+        row: usize,
+        field_idx: usize,
+        micros_since_midnight: i64,
+    ) {
+        unsafe { self.write_i64(row, field_idx, micros_since_midnight) };
+    }
+
     /// Marks field `field_idx` at row `row` as NULL.
     ///
     /// # Safety

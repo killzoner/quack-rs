@@ -33,7 +33,7 @@
 
 use libduckdb_sys::{duckdb_data_chunk, duckdb_data_chunk_set_size, idx_t};
 
-use crate::vector::VectorWriter;
+use crate::vector::{StructWriter, VectorWriter};
 
 /// The default maximum number of rows per chunk in `DuckDB`.
 const STANDARD_VECTOR_SIZE: usize = 2048;
@@ -128,6 +128,18 @@ impl ChunkWriter {
             unsafe { libduckdb_sys::duckdb_data_chunk_get_vector(self.raw, col_idx as idx_t) };
         // SAFETY: vec is a valid writable vector from the output chunk.
         unsafe { VectorWriter::from_vector(vec) }
+    }
+
+    /// Creates a [`StructWriter`] for a STRUCT column at the given index.
+    ///
+    /// # Safety
+    ///
+    /// - `col_idx` must be less than the chunk's column count.
+    /// - The column at `col_idx` must have a STRUCT type with `field_count` fields.
+    pub unsafe fn struct_writer(&self, col_idx: usize, field_count: usize) -> StructWriter {
+        let vec =
+            unsafe { libduckdb_sys::duckdb_data_chunk_get_vector(self.raw, col_idx as idx_t) };
+        unsafe { StructWriter::new(vec, field_count) }
     }
 
     /// Returns the raw `duckdb_data_chunk` handle.
