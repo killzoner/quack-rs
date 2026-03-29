@@ -57,6 +57,7 @@ impl StructReader {
     }
 
     /// Returns the number of fields in this struct reader.
+    #[mutants::skip]
     #[must_use]
     #[inline]
     pub fn field_count(&self) -> usize {

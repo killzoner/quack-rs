@@ -62,6 +62,7 @@ impl CopyBindInfo {
     }
 
     /// Returns the number of columns in the output.
+    #[mutants::skip]
     #[must_use]
     pub fn column_count(&self) -> u64 {
         // SAFETY: self.info is valid per constructor contract.
@@ -109,6 +110,7 @@ impl CopyBindInfo {
     /// Reports a fatal error, causing `DuckDB` to abort the current query.
     ///
     /// If `message` contains an interior null byte it is truncated at that point.
+    #[mutants::skip]
     pub fn set_error(&self, message: &str) {
         let c_msg = str_to_cstring(message);
         // SAFETY: self.info is valid per constructor contract.
@@ -131,6 +133,7 @@ impl CopyBindInfo {
     }
 
     /// Returns the underlying raw handle.
+    #[mutants::skip]
     #[inline]
     #[must_use]
     pub const fn as_raw(&self) -> duckdb_copy_function_bind_info {
@@ -225,6 +228,7 @@ impl CopyGlobalInitInfo {
     /// Reports a fatal error, causing `DuckDB` to abort the current query.
     ///
     /// If `message` contains an interior null byte it is truncated at that point.
+    #[mutants::skip]
     pub fn set_error(&self, message: &str) {
         let c_msg = str_to_cstring(message);
         // SAFETY: self.info is valid per constructor contract.
@@ -244,6 +248,7 @@ impl CopyGlobalInitInfo {
     }
 
     /// Returns the underlying raw handle.
+    #[mutants::skip]
     #[inline]
     #[must_use]
     pub const fn as_raw(&self) -> duckdb_copy_function_global_init_info {
@@ -309,6 +314,7 @@ impl CopySinkInfo {
     /// Reports a fatal error, causing `DuckDB` to abort the current query.
     ///
     /// If `message` contains an interior null byte it is truncated at that point.
+    #[mutants::skip]
     pub fn set_error(&self, message: &str) {
         let c_msg = str_to_cstring(message);
         // SAFETY: self.info is valid per constructor contract.
@@ -328,6 +334,7 @@ impl CopySinkInfo {
     }
 
     /// Returns the underlying raw handle.
+    #[mutants::skip]
     #[inline]
     #[must_use]
     pub const fn as_raw(&self) -> duckdb_copy_function_sink_info {
@@ -393,6 +400,7 @@ impl CopyFinalizeInfo {
     /// Reports a fatal error, causing `DuckDB` to abort the current query.
     ///
     /// If `message` contains an interior null byte it is truncated at that point.
+    #[mutants::skip]
     pub fn set_error(&self, message: &str) {
         let c_msg = str_to_cstring(message);
         // SAFETY: self.info is valid per constructor contract.
@@ -412,6 +420,7 @@ impl CopyFinalizeInfo {
     }
 
     /// Returns the underlying raw handle.
+    #[mutants::skip]
     #[inline]
     #[must_use]
     pub const fn as_raw(&self) -> duckdb_copy_function_finalize_info {

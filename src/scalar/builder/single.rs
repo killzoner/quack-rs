@@ -183,6 +183,7 @@ impl ScalarFunctionBuilder {
     ///
     /// The parameter position is determined by the total number of `param` and
     /// `param_logical` calls made so far.
+    #[mutants::skip] // position arithmetic tested via E2E
     pub fn param_logical(mut self, logical_type: LogicalType) -> Self {
         let position = self.params.len() + self.logical_params.len();
         self.logical_params.push((position, logical_type));
@@ -220,6 +221,7 @@ impl ScalarFunctionBuilder {
     ///
     /// After the fixed positional parameters, `DuckDB` will accept any number of
     /// additional arguments that match the given type. Requires `duckdb-1-5`.
+    #[mutants::skip] // DuckDB 1.5+ feature, tested via E2E
     #[cfg(feature = "duckdb-1-5")]
     pub fn varargs(mut self, type_id: TypeId) -> Self {
         self.varargs = Some(LogicalType::new(type_id));
@@ -230,6 +232,7 @@ impl ScalarFunctionBuilder {
     ///
     /// Identical to [`varargs`][Self::varargs] but accepts a [`LogicalType`]
     /// for parameterized types. Requires `duckdb-1-5`.
+    #[mutants::skip] // DuckDB 1.5+ feature, tested via E2E
     #[cfg(feature = "duckdb-1-5")]
     pub fn varargs_logical(mut self, logical_type: LogicalType) -> Self {
         self.varargs = Some(logical_type);
@@ -243,6 +246,7 @@ impl ScalarFunctionBuilder {
     /// optimized by `DuckDB` to only execute once for constant arguments.
     /// Requires `duckdb-1-5`.
     #[cfg(feature = "duckdb-1-5")]
+    #[mutants::skip] // DuckDB 1.5+ feature, tested via E2E
     pub const fn volatile(mut self) -> Self {
         self.volatile = true;
         self
@@ -255,6 +259,7 @@ impl ScalarFunctionBuilder {
     /// `duckdb_scalar_function_bind_set_bind_data`. This data can later be
     /// retrieved during execution via `duckdb_scalar_function_get_bind_data`.
     #[cfg(feature = "duckdb-1-5")]
+    #[mutants::skip] // DuckDB 1.5+ feature, tested via E2E
     pub fn bind(mut self, f: ScalarBindFn) -> Self {
         self.bind = Some(f);
         self
@@ -267,6 +272,7 @@ impl ScalarFunctionBuilder {
     /// `duckdb_scalar_function_init_set_state`. The state pointer can later be
     /// retrieved during execution via `duckdb_scalar_function_get_state`.
     #[cfg(feature = "duckdb-1-5")]
+    #[mutants::skip] // DuckDB 1.5+ feature, tested via E2E
     pub fn init(mut self, f: ScalarInitFn) -> Self {
         self.init = Some(f);
         self

@@ -416,6 +416,7 @@ impl OverloadBuilder {
     ///
     /// Use this for parameterized types that [`TypeId`] cannot express, such as
     /// `LIST(BIGINT)`, `MAP(VARCHAR, INTEGER)`, or `STRUCT(...)`.
+    #[mutants::skip] // position arithmetic tested via E2E
     pub fn param_logical(mut self, logical_type: LogicalType) -> Self {
         let position = self.params.len() + self.logical_params.len();
         self.logical_params.push((position, logical_type));
