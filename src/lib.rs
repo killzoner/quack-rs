@@ -44,6 +44,7 @@
 //!
 //! | Module | Purpose |
 //! |--------|---------|
+//! | [`data_chunk`] | Ergonomic wrapper for `DuckDB` data chunks |
 //! | [`entry_point`](mod@entry_point) | Helper for the correct `{name}_init_c_api` C entry point |
 //! | [`connection`] | `Connection` facade + `Registrar` trait for version-agnostic registration |
 //! | [`aggregate`] | Builders for aggregate function registration |
@@ -58,6 +59,7 @@
 //! | [`interval`] | `INTERVAL` → microseconds conversion with overflow checking |
 //! | [`error`] | `ExtensionError` for FFI error propagation |
 //! | [`config`] | RAII wrapper for `DuckDB` database configuration |
+//! | [`value`] | RAII wrapper for `DuckDB` values with typed extraction |
 //! | [`validate`] | Community extension compliance validators |
 //! | [`validate::description_yml`] | Parse and validate `description.yml` metadata |
 //! | [`scaffold`] | Project generator for new extensions (no C++ glue needed) |
@@ -113,6 +115,7 @@ pub mod aggregate;
 pub mod cast;
 pub mod config;
 pub mod connection;
+pub mod data_chunk;
 pub mod entry_point;
 pub mod error;
 pub mod interval;
@@ -125,6 +128,7 @@ pub mod table;
 pub mod testing;
 pub mod types;
 pub mod validate;
+pub mod value;
 pub mod vector;
 
 // DuckDB 1.5.0+ modules — gated behind the `duckdb-1-5` feature flag.

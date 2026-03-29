@@ -10,6 +10,22 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-03-29
+
+### Added
+
+- **`Value` RAII wrapper** — owned wrapper around `duckdb_value` with `as_str()`, `as_i64()`, `as_i32()`, `as_f64()`, `as_f32()`, `as_bool()` and automatic `Drop` cleanup
+- **`DataChunk` wrapper** — ergonomic wrapper around `duckdb_data_chunk` with `reader(col)`, `writer(col)`, `size()`, `set_size(n)`, `column_count()`, `vector(col)`
+- **`VectorWriter::write_str()`** — alias for `write_varchar` for discoverability
+- **`BindInfo::get_parameter_value()`** / **`get_named_parameter_value()`** — return owned `Value` instead of raw `duckdb_value`
+- **`MapVector` reader/writer helpers** — `key_writer()`, `value_writer()`, `key_reader()`, `value_reader()`
+- **`MockVectorWriter::write_str()`** — alias matching `VectorWriter` API
+- **Prelude additions** — `Value`, `DataChunk`, `ValidityBitmap`
+
+### Changed
+
+- Version references updated across all docs to `"0.9"`
+
 ## [0.8.0] — 2026-03-28
 
 ### Added

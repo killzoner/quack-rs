@@ -34,6 +34,7 @@
 # Working with Data
 
 - [Reading & Writing Vectors](data/vectors.md)
+- [Values & Parameter Extraction](data/values-and-parameters.md)
 - [Complex Types (STRUCT, LIST, MAP)](data/complex-types.md)
 - [NULL Handling & Strings](data/nulls-and-strings.md)
 - [INTERVAL Type](data/intervals.md)

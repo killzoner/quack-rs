@@ -244,6 +244,13 @@ impl MockVectorWriter {
         self.rows[idx] = Some(MockDuckValue::Varchar(value.to_owned()));
     }
 
+    /// Writes a `VARCHAR` value at row `idx`.
+    ///
+    /// Alias for [`write_varchar`][MockVectorWriter::write_varchar].
+    pub fn write_str(&mut self, idx: usize, value: &str) {
+        self.write_varchar(idx, value);
+    }
+
     /// Writes an `INTERVAL` value at row `idx`.
     pub fn write_interval(&mut self, idx: usize, value: DuckInterval) {
         self.ensure_capacity(idx);

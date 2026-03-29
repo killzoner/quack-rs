@@ -23,6 +23,7 @@ use libduckdb_sys::{
 use libduckdb_sys::{duckdb_client_context, duckdb_table_function_get_client_context};
 
 use crate::types::{LogicalType, TypeId};
+use crate::value::Value;
 
 /// Helper wrapper around `duckdb_bind_info` for use inside bind callbacks.
 ///
@@ -154,6 +155,41 @@ impl BindInfo {
     pub unsafe fn get_named_parameter(&self, name: &str) -> duckdb_value {
         let c_name = CString::new(name).expect("parameter name must not contain null bytes");
         unsafe { duckdb_bind_get_named_parameter(self.info, c_name.as_ptr()) }
+    }
+
+    /// Returns the positional parameter at `index` as an owned [`Value`].
+    ///
+    /// The returned `Value` is RAII-managed — it will call `duckdb_destroy_value`
+    /// on drop, so the caller does not need to manually free it.
+    ///
+    /// # Safety
+    ///
+    /// `index` must be less than [`parameter_count`][BindInfo::parameter_count].
+    pub unsafe fn get_parameter_value(&self, index: u64) -> Value {
+        // SAFETY: index is valid per caller's contract.
+        let raw = unsafe { duckdb_bind_get_parameter(self.info, index) };
+        // SAFETY: raw is a fresh duckdb_value owned by us.
+        unsafe { Value::from_raw(raw) }
+    }
+
+    /// Returns the named parameter as an owned [`Value`].
+    ///
+    /// The returned `Value` is RAII-managed — it will call `duckdb_destroy_value`
+    /// on drop.
+    ///
+    /// # Safety
+    ///
+    /// `name` must correspond to a named parameter declared for this function.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `name` contains an interior null byte.
+    pub unsafe fn get_named_parameter_value(&self, name: &str) -> Value {
+        let c_name = CString::new(name).expect("parameter name must not contain null bytes");
+        // SAFETY: name is valid per caller's contract.
+        let raw = unsafe { duckdb_bind_get_named_parameter(self.info, c_name.as_ptr()) };
+        // SAFETY: raw is a fresh duckdb_value owned by us.
+        unsafe { Value::from_raw(raw) }
     }
 
     /// Returns the extra info pointer set on the table function.

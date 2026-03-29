@@ -37,7 +37,7 @@ use std::os::raw::{c_char, c_void};
 
 use libduckdb_sys::{
     duckdb_aggregate_state, duckdb_bind_info, duckdb_data_chunk, duckdb_data_chunk_get_vector,
-    duckdb_data_chunk_set_size, duckdb_function_info, duckdb_init_info, duckdb_vector,
+    duckdb_function_info, duckdb_init_info, duckdb_vector,
     duckdb_vector_size, idx_t,
 };
 use quack_rs::aggregate::{AggregateFunctionBuilder, AggregateFunctionSetBuilder, AggregateState, FfiState};
@@ -52,6 +52,7 @@ use quack_rs::table::{BindInfo, FfiBindData, FfiInitData, FfiLocalInitData, Init
 use quack_rs::types::{LogicalType, NullHandling, TypeId};
 use quack_rs::vector::complex::{ListVector, MapVector, StructVector};
 use quack_rs::vector::validity::ValidityBitmap;
+use quack_rs::data_chunk::DataChunk;
 use quack_rs::vector::{VectorReader, VectorWriter};
 
 // ============================================================================
@@ -262,11 +263,11 @@ struct GenerateSeriesState {
 
 unsafe extern "C" fn gs_bind(info: duckdb_bind_info) {
     unsafe {
-        let param = libduckdb_sys::duckdb_bind_get_parameter(info, 0);
-        let n     = libduckdb_sys::duckdb_get_int64(param);
-        libduckdb_sys::duckdb_destroy_value(&mut { param });
+        let bind_info = BindInfo::new(info);
+        // Value is RAII — automatically destroyed when dropped.
+        let n = bind_info.get_parameter_value(0).as_i64();
         let total = n.max(0);
-        BindInfo::new(info)
+        bind_info
             .add_result_column("value", TypeId::BigInt)
             .set_cardinality(total as u64, true);
         FfiBindData::<i64>::set(info, total);
@@ -285,24 +286,24 @@ unsafe extern "C" fn gs_init(info: duckdb_init_info) {
 
 unsafe extern "C" fn gs_scan(info: duckdb_function_info, output: duckdb_data_chunk) {
     unsafe {
+        let chunk = DataChunk::from_raw(output);
         let Some(state) = FfiInitData::<GenerateSeriesState>::get_mut(info) else {
-            duckdb_data_chunk_set_size(output, 0);
+            chunk.set_size(0);
             return;
         };
         if state.current >= state.total {
-            duckdb_data_chunk_set_size(output, 0);
+            chunk.set_size(0);
             return;
         }
         let vector_size = duckdb_vector_size() as i64;
         let remaining   = state.total - state.current;
         let batch_size  = remaining.min(vector_size) as usize;
-        let vec = duckdb_data_chunk_get_vector(output, 0);
-        let mut writer = VectorWriter::from_vector(vec);
+        let mut writer = chunk.writer(0);
         for i in 0..batch_size {
             writer.write_i64(i, state.current + i as i64);
         }
         state.current += batch_size as i64;
-        duckdb_data_chunk_set_size(output, batch_size as idx_t);
+        chunk.set_size(batch_size);
     }
 }
 
@@ -332,23 +333,17 @@ struct GsV2LocalState {
 
 unsafe extern "C" fn gs_v2_bind(info: duckdb_bind_info) {
     unsafe {
-        let param = libduckdb_sys::duckdb_bind_get_parameter(info, 0);
-        let n = libduckdb_sys::duckdb_get_int64(param);
-        libduckdb_sys::duckdb_destroy_value(&mut { param });
+        let bind_info = BindInfo::new(info);
+        // Value is RAII — automatically destroyed when dropped.
+        let n = bind_info.get_parameter_value(0).as_i64();
 
         // Read named param "step" if provided, default to 1.
-        // DuckDB provides named params via duckdb_bind_get_named_parameter.
-        let bind_info = BindInfo::new(info);
-        let step = {
-            let step_name = std::ffi::CString::new("step").unwrap();
-            let step_val = libduckdb_sys::duckdb_bind_get_named_parameter(info, step_name.as_ptr());
-            if step_val.is_null() {
-                1i64
-            } else {
-                let s = libduckdb_sys::duckdb_get_int64(step_val);
-                libduckdb_sys::duckdb_destroy_value(&mut { step_val });
-                if s == 0 { 1 } else { s }
-            }
+        let step_val = bind_info.get_named_parameter_value("step");
+        let step = if step_val.is_null() {
+            1i64
+        } else {
+            let s = step_val.as_i64();
+            if s == 0 { 1 } else { s }
         };
 
         let total = n.max(0);
@@ -391,15 +386,16 @@ unsafe extern "C" fn gs_v2_local_init(info: duckdb_init_info) {
 
 unsafe extern "C" fn gs_v2_scan(info: duckdb_function_info, output: duckdb_data_chunk) {
     unsafe {
+        let chunk = DataChunk::from_raw(output);
         let Some(global) = FfiInitData::<GsV2GlobalState>::get_mut(info) else {
-            duckdb_data_chunk_set_size(output, 0);
+            chunk.set_size(0);
             return;
         };
 
         let vector_size = duckdb_vector_size() as i64;
         let remaining = global.total - global.next_offset;
         if remaining <= 0 {
-            duckdb_data_chunk_set_size(output, 0);
+            chunk.set_size(0);
             return;
         }
         let batch_size = remaining.min(vector_size) as usize;
@@ -414,15 +410,13 @@ unsafe extern "C" fn gs_v2_scan(info: duckdb_function_info, output: duckdb_data_
             local.emitted += batch_size as i64;
         }
 
-        let vec0 = duckdb_data_chunk_get_vector(output, 0);
-        let vec1 = duckdb_data_chunk_get_vector(output, 1);
-        let mut writer0 = VectorWriter::from_vector(vec0);
-        let mut writer1 = VectorWriter::from_vector(vec1);
+        let mut writer0 = chunk.writer(0);
+        let mut writer1 = chunk.writer(1);
         for i in 0..batch_size {
             writer0.write_i64(i, (start + i as i64) * step);
             writer1.write_i64(i, step);
         }
-        duckdb_data_chunk_set_size(output, batch_size as idx_t);
+        chunk.set_size(batch_size);
     }
 }
 
@@ -799,20 +793,13 @@ unsafe extern "C" fn hello_replacement_scan(
 // read_hello(path) — table function that returns one row with the greeting
 unsafe extern "C" fn read_hello_bind(info: duckdb_bind_info) {
     unsafe {
-        let param = libduckdb_sys::duckdb_bind_get_parameter(info, 0);
-        // Get string value via duckdb_get_varchar
-        let str_ptr = libduckdb_sys::duckdb_get_varchar(param);
-        let greeting = if str_ptr.is_null() {
-            String::new()
-        } else {
-            let s = std::ffi::CStr::from_ptr(str_ptr).to_string_lossy().into_owned();
-            libduckdb_sys::duckdb_free(str_ptr.cast::<c_void>());
-            s
-        };
-        libduckdb_sys::duckdb_destroy_value(&mut { param });
+        let bind_info = BindInfo::new(info);
+        // Value is RAII — as_str() handles duckdb_get_varchar + duckdb_free automatically.
+        let greeting = bind_info.get_parameter_value(0)
+            .as_str()
+            .unwrap_or_default();
 
-        BindInfo::new(info)
-            .add_result_column("greeting", TypeId::Varchar);
+        bind_info.add_result_column("greeting", TypeId::Varchar);
         FfiBindData::<String>::set(info, greeting);
     }
 }
@@ -825,12 +812,13 @@ unsafe extern "C" fn read_hello_init(info: duckdb_init_info) {
 
 unsafe extern "C" fn read_hello_scan(info: duckdb_function_info, output: duckdb_data_chunk) {
     unsafe {
+        let chunk = DataChunk::from_raw(output);
         let Some(emitted) = FfiInitData::<bool>::get_mut(info) else {
-            duckdb_data_chunk_set_size(output, 0);
+            chunk.set_size(0);
             return;
         };
         if *emitted {
-            duckdb_data_chunk_set_size(output, 0);
+            chunk.set_size(0);
             return;
         }
         *emitted = true;
@@ -839,11 +827,10 @@ unsafe extern "C" fn read_hello_scan(info: duckdb_function_info, output: duckdb_
             .map(|s| s.as_str())
             .unwrap_or("world");
 
-        let vec = duckdb_data_chunk_get_vector(output, 0);
-        let mut writer = VectorWriter::from_vector(vec);
+        let mut writer = chunk.writer(0);
         let msg = format!("Hello, {greeting}!");
-        writer.write_varchar(0, &msg);
-        duckdb_data_chunk_set_size(output, 1);
+        writer.write_str(0, &msg);
+        chunk.set_size(1);
     }
 }
 

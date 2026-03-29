@@ -544,7 +544,7 @@ fn scaffold_generated_code_compiles() {
     let tmp = tmp.path().to_path_buf();
     fs::create_dir_all(tmp.join("src")).unwrap();
 
-    // The scaffold Cargo.toml references `quack-rs = "0.7"` from crates.io.
+    // The scaffold Cargo.toml references `quack-rs = "0.9"` from crates.io.
     // Replace it with a path dependency pointing to this workspace root so
     // `cargo check` uses the local (possibly-modified) crate.
     let workspace_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
@@ -558,7 +558,7 @@ fn scaffold_generated_code_compiles() {
         if f.path == "Cargo.toml" {
             // Rewrite quack-rs dep to use local path
             let patched = f.content.replace(
-                r#"quack-rs = { version = "0.7" }"#,
+                r#"quack-rs = { version = "0.9" }"#,
                 &format!(
                     "quack-rs = {{ path = \"{}\" }}",
                     workspace_root.display().to_string().replace('\\', "/")
@@ -713,6 +713,53 @@ fn mock_vector_pattern_extract_and_test_logic() {
     assert_eq!(writer.try_get_i64(1), Some(3));
     assert!(writer.is_null(2));
     assert_eq!(writer.try_get_i64(3), Some(10));
+}
+
+#[test]
+fn mock_vector_writer_u32_round_trip() {
+    use quack_rs::testing::MockVectorWriter;
+
+    let mut w = MockVectorWriter::new(1);
+    w.write_u32(0, 123_456);
+    assert!(matches!(
+        w.get(0),
+        Some(quack_rs::testing::MockDuckValue::U32(123_456))
+    ));
+}
+
+#[test]
+fn mock_vector_writer_u64_round_trip() {
+    use quack_rs::testing::MockVectorWriter;
+
+    let mut w = MockVectorWriter::new(1);
+    w.write_u64(0, 9_876_543_210);
+    assert!(matches!(
+        w.get(0),
+        Some(quack_rs::testing::MockDuckValue::U64(9_876_543_210))
+    ));
+}
+
+#[test]
+fn mock_vector_writer_f32_round_trip() {
+    use quack_rs::testing::MockVectorWriter;
+
+    let mut w = MockVectorWriter::new(1);
+    w.write_f32(0, 2.5);
+    match w.get(0) {
+        Some(quack_rs::testing::MockDuckValue::F32(v)) => {
+            assert!((v - 2.5_f32).abs() < f32::EPSILON);
+        }
+        other => panic!("expected F32, got {other:?}"),
+    }
+}
+
+#[test]
+fn mock_vector_writer_write_str_alias() {
+    use quack_rs::testing::MockVectorWriter;
+
+    let mut w = MockVectorWriter::new(1);
+    w.write_str(0, "via_alias");
+    assert_eq!(w.try_get_str(0), Some("via_alias"));
 }
 
 // ---------------------------------------------------------------------------

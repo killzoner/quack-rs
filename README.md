@@ -117,7 +117,7 @@ See [`LESSONS.md`](./LESSONS.md) for full analysis of each pitfall.
 
 ```toml
 [dependencies]
-quack-rs = "0.7"
+quack-rs = "0.9"
 libduckdb-sys = { version = ">=1.4.4, <2", features = ["loadable-extension"] }
 ```
 
@@ -291,7 +291,9 @@ append_metadata target/release/libmy_extension.so \
 | [`table`] | Table function registration (bind/init/scan) | `TableFunctionBuilder`, `BindInfo`, `FfiBindData`, `FfiInitData` |
 | [`replacement_scan`] | `SELECT * FROM 'file.xyz'` replacement scans | `ReplacementScanBuilder` |
 | [`sql_macro`] | SQL macro registration (no FFI callbacks) | `SqlMacro`, `MacroBody` |
-| [`vector`] | Safe reading/writing of DuckDB vectors | `VectorReader`, `VectorWriter`, `vector_size()` |
+| [`data_chunk`] | Ergonomic wrapper for DuckDB data chunks | `DataChunk` |
+| [`value`] | RAII wrapper for DuckDB values with typed extraction | `Value` |
+| [`vector`] | Safe reading/writing of DuckDB vectors | `VectorReader`, `VectorWriter`, `ValidityBitmap`, `vector_size()` |
 | [`vector::complex`] | STRUCT / LIST / MAP / ARRAY child vector access | `StructVector`, `ListVector`, `MapVector`, `ArrayVector` |
 | [`vector::string`] | 16-byte DuckDB string format | `DuckStringView`, `read_duck_string` |
 | [`types`] | DuckDB type system wrappers | `TypeId`, `LogicalType`, `NullHandling` |
@@ -317,6 +319,8 @@ append_metadata target/release/libmy_extension.so \
 
 > ¹ Requires the `duckdb-1-5` feature flag (DuckDB 1.5.0+).
 
+[`data_chunk`]: https://docs.rs/quack-rs/latest/quack_rs/data_chunk/index.html
+[`value`]: https://docs.rs/quack-rs/latest/quack_rs/value/index.html
 [`entry_point`]: https://docs.rs/quack-rs/latest/quack_rs/entry_point/index.html
 [`connection`]: https://docs.rs/quack-rs/latest/quack_rs/connection/index.html
 [`aggregate`]: https://docs.rs/quack-rs/latest/quack_rs/aggregate/index.html

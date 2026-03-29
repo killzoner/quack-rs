@@ -87,7 +87,8 @@ unsafe { writer.write_u64(row, value) };
 unsafe { writer.write_f32(row, value) };
 unsafe { writer.write_f64(row, value) };
 unsafe { writer.write_bool(row, value) };
-unsafe { writer.write_varchar(row, s) };   // &str
+unsafe { writer.write_varchar(row, s) };   // &str (also available as write_str)
+unsafe { writer.write_str(row, s) };       // alias for write_varchar
 unsafe { writer.write_interval(row, interval) };  // DuckInterval
 ```
 
@@ -101,6 +102,54 @@ unsafe { writer.set_null(row) };
 > before accessing the validity bitmap. Calling `duckdb_vector_get_validity` without this
 > prerequisite returns an uninitialized pointer → SEGFAULT. `VectorWriter::set_null` handles
 > this correctly. See [Pitfall L4](../reference/pitfalls.md#l4-ensure_validity_writable-is-required-before-null-output).
+
+---
+
+## `DataChunk`
+
+`DataChunk` wraps a `duckdb_data_chunk` handle, providing ergonomic access to
+vectors and metadata without raw FFI calls:
+
+```rust
+use quack_rs::data_chunk::DataChunk;
+
+unsafe extern "C" fn my_scan(info: duckdb_function_info, output: duckdb_data_chunk) {
+    let chunk = unsafe { DataChunk::from_raw(output) };
+    let mut writer = unsafe { chunk.writer(0) };    // VectorWriter for column 0
+    unsafe { writer.write_i64(0, 42) };
+    unsafe { chunk.set_size(1) };                   // set output row count
+}
+```
+
+Methods:
+- `size()` — current row count
+- `set_size(n)` — set row count (0 = end of stream)
+- `column_count()` — number of columns
+- `vector(col)` — raw `duckdb_vector` handle
+- `writer(col)` — `VectorWriter` for a column
+- `reader(col)` — `VectorReader` for a column
+
+---
+
+## `ValidityBitmap`
+
+For advanced NULL handling beyond `VectorWriter::set_null`, use `ValidityBitmap`
+directly:
+
+```rust
+use quack_rs::vector::ValidityBitmap;
+
+// Writing NULLs:
+let mut bitmap = unsafe { ValidityBitmap::ensure_writable(some_vector) };
+unsafe { bitmap.set_row_invalid(row as u64) };   // mark as NULL
+unsafe { bitmap.set_row_valid(row as u64) };     // mark as non-NULL
+
+// Reading NULLs:
+let bitmap = unsafe { ValidityBitmap::get_read_only(some_vector) };
+let is_valid = unsafe { bitmap.row_is_valid(row as u64) };
+```
+
+`ValidityBitmap` is available in the prelude: `use quack_rs::prelude::*`.
 
 ---
 

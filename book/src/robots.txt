@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://quack-rs.com/sitemap.xml

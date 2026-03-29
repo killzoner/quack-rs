@@ -79,13 +79,11 @@ integers `0 .. n-1`. See `examples/hello-ext/src/lib.rs` for the full source.
 ```rust
 // Bind: extract `n`, register one output column
 unsafe extern "C" fn gs_bind(info: duckdb_bind_info) {
-    let param = unsafe { duckdb_bind_get_parameter(info, 0) };
-    let n = unsafe { duckdb_get_int64(param) };
-    unsafe { duckdb_destroy_value(&mut { param }) };
+    let bind_info = unsafe { BindInfo::new(info) };
+    // Value is RAII — automatically destroyed when dropped
+    let n = unsafe { bind_info.get_parameter_value(0) }.as_i64();
 
-    let out_type = LogicalType::new(TypeId::BigInt);
-    unsafe { duckdb_bind_add_result_column(info, c"value".as_ptr(), out_type.as_raw()) };
-
+    bind_info.add_result_column("value", TypeId::BigInt);
     unsafe { FfiBindData::<GsBindData>::set(info, GsBindData { total: n }) };
 }
 
@@ -94,7 +92,7 @@ unsafe extern "C" fn gs_init(info: duckdb_init_info) {
     unsafe { FfiInitData::<GsScanState>::set(info, GsScanState { pos: 0 }) };
 }
 
-// Scan: emit a batch of rows
+// Scan: emit a batch of rows using DataChunk wrapper
 unsafe extern "C" fn gs_scan(info: duckdb_function_info, output: duckdb_data_chunk) {
     let bind = unsafe { FfiBindData::<GsBindData>::get_from_function(info) }.unwrap();
     let state = unsafe { FfiInitData::<GsScanState>::get_mut(info) }.unwrap();
@@ -102,11 +100,12 @@ unsafe extern "C" fn gs_scan(info: duckdb_function_info, output: duckdb_data_chu
     let remaining = bind.total - state.pos;
     let batch = remaining.min(2048).max(0) as usize;
 
-    let mut writer = unsafe { VectorWriter::new(duckdb_data_chunk_get_vector(output, 0)) };
+    let chunk = unsafe { DataChunk::from_raw(output) };
+    let mut writer = unsafe { chunk.writer(0) };
     for i in 0..batch {
         unsafe { writer.write_i64(i, state.pos + i as i64) };
     }
-    unsafe { duckdb_data_chunk_set_size(output, batch as idx_t) };
+    unsafe { chunk.set_size(batch) };
     state.pos += batch as i64;
 }
 ```

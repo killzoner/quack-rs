@@ -277,6 +277,21 @@ impl VectorWriter {
         }
     }
 
+    /// Writes a VARCHAR string value at row `idx`.
+    ///
+    /// This is an alias for [`write_varchar`][VectorWriter::write_varchar] provided
+    /// for discoverability — extension authors often look for `write_str` first.
+    ///
+    /// # Safety
+    ///
+    /// - `idx` must be within the vector's capacity.
+    /// - The vector must have `VARCHAR` type.
+    #[inline]
+    pub unsafe fn write_str(&mut self, idx: usize, value: &str) {
+        // SAFETY: Delegates to write_varchar; same contract.
+        unsafe { self.write_varchar(idx, value) };
+    }
+
     /// Marks row `idx` as NULL in the output vector.
     ///
     /// # Pitfall L4: `ensure_validity_writable`

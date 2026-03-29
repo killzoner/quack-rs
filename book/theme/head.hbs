@@ -1,0 +1,30 @@
+<!-- SEO: canonical URL -->
+<link rel="canonical" href="https://quack-rs.com/{{ path_to_root }}{{ path }}" />
+
+<!-- SEO: meta description -->
+<meta name="description" content="quack-rs is a production-grade Rust SDK for building DuckDB loadable extensions. No C, no C++, no glue code. Covers scalar, aggregate, table, cast, copy, replacement scan, and SQL macro functions." />
+<meta name="keywords" content="DuckDB, Rust, extension, SDK, FFI, loadable extension, community extension, quack-rs, database, analytics" />
+<meta name="author" content="Tom F." />
+
+<!-- Open Graph (Facebook, LinkedIn, Discord, Slack) -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="quack-rs" />
+<meta property="og:title" content="{{ title }} - quack-rs" />
+<meta property="og:description" content="Production-grade Rust SDK for building DuckDB loadable extensions. No C, no C++, no glue code." />
+<meta property="og:url" content="https://quack-rs.com/{{ path_to_root }}{{ path }}" />
+<meta property="og:image" content="https://quack-rs.com/assets/og-image.png" />
+
+<!-- Structured Data (JSON-LD) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareSourceCode",
+  "name": "quack-rs",
+  "description": "Production-grade Rust SDK for building DuckDB loadable extensions",
+  "url": "https://quack-rs.com/",
+  "codeRepository": "https://github.com/tomtom215/quack-rs",
+  "programmingLanguage": "Rust",
+  "license": "https://opensource.org/licenses/MIT",
+  "runtimePlatform": "DuckDB"
+}
+</script>

@@ -44,6 +44,8 @@ quack_rs
 ├── config_option    ConfigOptionBuilder — extension-defined configuration options (requires `duckdb-1-5`)
 ├── copy_function    CopyFunctionBuilder, CopyBindInfo, CopySinkInfo — custom COPY TO handlers (requires `duckdb-1-5`)
 ├── replacement_scan ReplacementScanBuilder — SELECT * FROM 'file.xyz' patterns
+├── data_chunk       DataChunk — ergonomic wrapper for duckdb_data_chunk
+├── value            Value — RAII wrapper for duckdb_value with typed extraction
 ├── vector
 │   ├── reader       VectorReader — typed reads from duckdb_data_chunk
 │   ├── writer       VectorWriter — typed writes to duckdb_vector

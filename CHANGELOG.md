@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-03-29
+
+### Added
+
+- **`Value` RAII wrapper** (`value` module) — owned wrapper around `duckdb_value`
+  with automatic cleanup via `Drop`. Typed extraction methods: `as_str()`,
+  `as_i64()`, `as_i32()`, `as_f64()`, `as_f32()`, `as_bool()`. Eliminates
+  manual `duckdb_destroy_value` calls and prevents memory leaks in bind
+  parameter extraction.
+
+- **`DataChunk` wrapper** (`data_chunk` module) — ergonomic non-owning wrapper
+  around `duckdb_data_chunk` with `reader(col)`, `writer(col)`, `size()`,
+  `set_size(n)`, `column_count()`, and `vector(col)` methods. Eliminates raw
+  `duckdb_data_chunk_get_vector` / `duckdb_data_chunk_set_size` calls in scan
+  callbacks.
+
+- **`VectorWriter::write_str(idx, value)`** — alias for `write_varchar` for
+  discoverability. Extension authors searching for `write_str` now find it
+  immediately.
+
+- **`BindInfo::get_parameter_value(index)`** — returns an owned `Value` instead
+  of a raw `duckdb_value`, preventing memory leaks.
+
+- **`BindInfo::get_named_parameter_value(name)`** — same for named parameters.
+
+- **`MapVector::key_writer(vector)`** / **`value_writer(vector)`** — create
+  `VectorWriter` instances for MAP key and value child vectors directly.
+
+- **`MapVector::key_reader(vector, count)`** / **`value_reader(vector, count)`**
+  — create `VectorReader` instances for MAP key and value child vectors.
+
+- **`MockVectorWriter::write_str(idx, value)`** — alias for `write_varchar`
+  matching the `VectorWriter` API addition.
+
+- **Prelude additions** — `Value`, `DataChunk`, and `ValidityBitmap` are now
+  re-exported from `quack_rs::prelude`.
+
+### Changed
+
+- **Version references updated** — all documentation, examples, scaffold
+  templates, and book pages now reference `quack-rs = "0.9"` (was `"0.7"`).
+
 ## [0.8.0] - 2026-03-28
 
 ### Added
@@ -595,7 +637,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI pipeline: check, test, clippy, fmt, doc, MSRV, bench-compile
 - `SECURITY.md` vulnerability disclosure policy
 
-[Unreleased]: https://github.com/tomtom215/quack-rs/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/tomtom215/quack-rs/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/tomtom215/quack-rs/compare/v0.8.0...v0.9.0
+[0.8.0]: https://github.com/tomtom215/quack-rs/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/tomtom215/quack-rs/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/tomtom215/quack-rs/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/tomtom215/quack-rs/compare/v0.5.1...v0.6.0
