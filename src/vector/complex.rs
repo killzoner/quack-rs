@@ -353,6 +353,52 @@ impl MapVector {
     pub unsafe fn get_entry(vector: duckdb_vector, row_idx: usize) -> duckdb_list_entry {
         unsafe { ListVector::get_entry(vector, row_idx) }
     }
+
+    /// Creates a [`VectorWriter`] for the keys vector (STRUCT field 0).
+    ///
+    /// # Safety
+    ///
+    /// `vector` must be a valid `DuckDB` MAP vector.
+    pub unsafe fn key_writer(vector: duckdb_vector) -> VectorWriter {
+        let keys = unsafe { Self::keys(vector) };
+        // SAFETY: keys is a valid writable child vector.
+        unsafe { VectorWriter::from_vector(keys) }
+    }
+
+    /// Creates a [`VectorWriter`] for the values vector (STRUCT field 1).
+    ///
+    /// # Safety
+    ///
+    /// `vector` must be a valid `DuckDB` MAP vector.
+    pub unsafe fn value_writer(vector: duckdb_vector) -> VectorWriter {
+        let vals = unsafe { Self::values(vector) };
+        // SAFETY: vals is a valid writable child vector.
+        unsafe { VectorWriter::from_vector(vals) }
+    }
+
+    /// Creates a [`VectorReader`] for the keys vector.
+    ///
+    /// # Safety
+    ///
+    /// - `vector` must be a valid `DuckDB` MAP vector.
+    /// - `element_count` must equal the total number of key-value entries.
+    pub unsafe fn key_reader(vector: duckdb_vector, element_count: usize) -> VectorReader {
+        let keys = unsafe { Self::keys(vector) };
+        // SAFETY: keys is a valid vector with element_count elements.
+        unsafe { VectorReader::from_vector(keys, element_count) }
+    }
+
+    /// Creates a [`VectorReader`] for the values vector.
+    ///
+    /// # Safety
+    ///
+    /// - `vector` must be a valid `DuckDB` MAP vector.
+    /// - `element_count` must equal the total number of key-value entries.
+    pub unsafe fn value_reader(vector: duckdb_vector, element_count: usize) -> VectorReader {
+        let vals = unsafe { Self::values(vector) };
+        // SAFETY: vals is a valid vector with element_count elements.
+        unsafe { VectorReader::from_vector(vals, element_count) }
+    }
 }
 
 // ─── ARRAY ──────────────────────────────────────────────────────────────────
