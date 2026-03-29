@@ -317,7 +317,7 @@ impl TableFunctionBuilder {
             .ok_or_else(|| ExtensionError::new("scan callback not set"))?;
 
         // SAFETY: creates a new table function handle.
-        let func = unsafe { duckdb_create_table_function() };
+        let mut func = unsafe { duckdb_create_table_function() };
 
         // SAFETY: func is a valid newly created handle.
         unsafe {
@@ -407,7 +407,7 @@ impl TableFunctionBuilder {
         // Always destroy the function handle; ownership transferred to DuckDB on success.
         // SAFETY: func was created above.
         unsafe {
-            duckdb_destroy_table_function(&mut { func });
+            duckdb_destroy_table_function(&raw mut func);
         }
 
         if result == DuckDBSuccess {

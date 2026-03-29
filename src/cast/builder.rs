@@ -310,7 +310,7 @@ impl CastFunctionBuilder {
             .ok_or_else(|| ExtensionError::new("cast function callback not set"))?;
 
         // SAFETY: allocates a new cast function handle.
-        let cast = unsafe { duckdb_create_cast_function() };
+        let mut cast = unsafe { duckdb_create_cast_function() };
 
         // Resolve source type: prefer explicit LogicalType over TypeId.
         let src_lt = if let Some(lt) = self.source_logical {
@@ -367,7 +367,7 @@ impl CastFunctionBuilder {
 
         // SAFETY: cast was created above and must be destroyed after use.
         unsafe {
-            duckdb_destroy_cast_function(&mut { cast });
+            duckdb_destroy_cast_function(&raw mut cast);
         }
 
         if result == DuckDBSuccess {

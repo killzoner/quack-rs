@@ -319,7 +319,7 @@ impl AggregateFunctionBuilder {
             .ok_or_else(|| ExtensionError::new("finalize callback not set"))?;
 
         // SAFETY: duckdb_create_aggregate_function allocates a new function handle.
-        let func = unsafe { duckdb_create_aggregate_function() };
+        let mut func = unsafe { duckdb_create_aggregate_function() };
 
         // SAFETY: func is a valid newly created function handle.
         unsafe {
@@ -403,7 +403,7 @@ impl AggregateFunctionBuilder {
 
         // SAFETY: func was created above and must be destroyed after use.
         unsafe {
-            duckdb_destroy_aggregate_function(&mut { func });
+            duckdb_destroy_aggregate_function(&raw mut func);
         }
 
         if result == DuckDBSuccess {

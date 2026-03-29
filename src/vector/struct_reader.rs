@@ -267,6 +267,26 @@ impl StructReader {
     pub unsafe fn read_time(&self, row: usize, field_idx: usize) -> i64 {
         unsafe { self.fields[field_idx].read_time(row) }
     }
+
+    /// Reads a `BLOB` (binary) value from field `field_idx` at row `row`.
+    ///
+    /// # Safety
+    ///
+    /// See [`read_bool`][Self::read_bool].
+    #[inline]
+    pub unsafe fn read_blob(&self, row: usize, field_idx: usize) -> &[u8] {
+        unsafe { self.fields[field_idx].read_blob(row) }
+    }
+
+    /// Reads a `UUID` value (as i128) from field `field_idx` at row `row`.
+    ///
+    /// # Safety
+    ///
+    /// See [`read_bool`][Self::read_bool].
+    #[inline]
+    pub unsafe fn read_uuid(&self, row: usize, field_idx: usize) -> i128 {
+        unsafe { self.fields[field_idx].read_uuid(row) }
+    }
 }
 
 #[cfg(test)]

@@ -286,6 +286,13 @@ impl MockVectorWriter {
         self.write_i64(idx, micros_since_midnight);
     }
 
+    /// Writes a `UUID` value (as i128) at row `idx`.
+    ///
+    /// Semantic alias for [`write_i128`][Self::write_i128].
+    pub fn write_uuid(&mut self, idx: usize, value: i128) {
+        self.write_i128(idx, value);
+    }
+
     // ── Typed getters ───────────────────────────────────────────────────────
 
     /// Returns the `BIGINT` value at row `idx`, or `None` if NULL or wrong type.
@@ -421,6 +428,14 @@ impl MockVectorWriter {
             Some(MockDuckValue::Blob(v)) => Some(v.as_slice()),
             _ => None,
         }
+    }
+
+    /// Returns the `UUID` value (as i128) at row `idx`, or `None` if NULL or wrong type.
+    ///
+    /// Semantic alias for [`try_get_i128`][Self::try_get_i128].
+    #[must_use]
+    pub fn try_get_uuid(&self, idx: usize) -> Option<i128> {
+        self.try_get_i128(idx)
     }
 }
 
@@ -742,6 +757,14 @@ impl MockVectorReader {
             Some(MockDuckValue::Blob(v)) => Some(v.as_slice()),
             _ => None,
         }
+    }
+
+    /// Returns the `UUID` value (as i128) at row `idx`, or `None` if NULL or wrong type.
+    ///
+    /// Semantic alias for [`try_get_i128`][Self::try_get_i128].
+    #[must_use]
+    pub fn try_get_uuid(&self, idx: usize) -> Option<i128> {
+        self.try_get_i128(idx)
     }
 }
 

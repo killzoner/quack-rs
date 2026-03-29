@@ -330,7 +330,7 @@ impl ScalarFunctionBuilder {
             .ok_or_else(|| ExtensionError::new("function callback not set"))?;
 
         // SAFETY: duckdb_create_scalar_function allocates a new function handle.
-        let func = unsafe { duckdb_create_scalar_function() };
+        let mut func = unsafe { duckdb_create_scalar_function() };
 
         // SAFETY: func is a valid newly created function handle.
         unsafe {
@@ -436,7 +436,7 @@ impl ScalarFunctionBuilder {
 
         // SAFETY: func was created above and must be destroyed after use.
         unsafe {
-            duckdb_destroy_scalar_function(&mut { func });
+            duckdb_destroy_scalar_function(&raw mut func);
         }
 
         if result == DuckDBSuccess {

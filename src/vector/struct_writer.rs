@@ -240,6 +240,26 @@ impl StructWriter {
         unsafe { self.fields[field_idx].write_interval(row, value) };
     }
 
+    /// Writes a `BLOB` (binary) value to field `field_idx` at row `row`.
+    ///
+    /// # Safety
+    ///
+    /// See [`write_i8`][Self::write_i8].
+    #[inline]
+    pub unsafe fn write_blob(&mut self, row: usize, field_idx: usize, value: &[u8]) {
+        unsafe { self.fields[field_idx].write_blob(row, value) };
+    }
+
+    /// Writes a `UUID` value (as i128) to field `field_idx` at row `row`.
+    ///
+    /// # Safety
+    ///
+    /// See [`write_i8`][Self::write_i8].
+    #[inline]
+    pub unsafe fn write_uuid(&mut self, row: usize, field_idx: usize, value: i128) {
+        unsafe { self.fields[field_idx].write_uuid(row, value) };
+    }
+
     /// Writes a VARCHAR string value to field `field_idx` at row `row`.
     ///
     /// Alias for [`write_varchar`][Self::write_varchar].

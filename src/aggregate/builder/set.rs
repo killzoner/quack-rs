@@ -239,7 +239,7 @@ impl AggregateFunctionSetBuilder {
         }
 
         // SAFETY: Creates a new aggregate function set handle.
-        let set = unsafe { duckdb_create_aggregate_function_set(self.name.as_ptr()) };
+        let mut set = unsafe { duckdb_create_aggregate_function_set(self.name.as_ptr()) };
 
         let mut register_error: Option<ExtensionError> = None;
 
@@ -266,7 +266,7 @@ impl AggregateFunctionSetBuilder {
             };
 
             // SAFETY: Creates a new aggregate function handle for this overload.
-            let func = unsafe { duckdb_create_aggregate_function() };
+            let mut func = unsafe { duckdb_create_aggregate_function() };
 
             // PITFALL L6: CRITICAL — must call this on EACH function, not just the set.
             // Without this, duckdb_register_aggregate_function_set silently returns DuckDBError.
@@ -347,7 +347,7 @@ impl AggregateFunctionSetBuilder {
 
             // SAFETY: func was created above and ownership transferred to the set.
             unsafe {
-                duckdb_destroy_aggregate_function(&mut { func });
+                duckdb_destroy_aggregate_function(&raw mut func);
             }
         }
 
@@ -364,7 +364,7 @@ impl AggregateFunctionSetBuilder {
 
         // SAFETY: set was created above and must be destroyed.
         unsafe {
-            duckdb_destroy_aggregate_function_set(&mut { set });
+            duckdb_destroy_aggregate_function_set(&raw mut set);
         }
 
         register_error.map_or(Ok(()), Err)
