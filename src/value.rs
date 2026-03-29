@@ -163,6 +163,79 @@ impl Value {
         unsafe { duckdb_get_bool(self.raw) }
     }
 
+    /// Extracts the value as a `String`, returning `default` on failure.
+    ///
+    /// Convenience for `val.as_str().unwrap_or_else(|_| default.to_owned())`.
+    #[inline]
+    #[must_use]
+    pub fn as_str_or(&self, default: &str) -> String {
+        self.as_str().unwrap_or_else(|_| default.to_owned())
+    }
+
+    /// Extracts the value as a `String`, returning an empty string on failure.
+    ///
+    /// Convenience for `val.as_str().unwrap_or_default()`.
+    #[inline]
+    #[must_use]
+    pub fn as_str_or_default(&self) -> String {
+        self.as_str().unwrap_or_default()
+    }
+
+    /// Extracts the value as an `i32`, returning `default` if the handle is null.
+    #[inline]
+    #[must_use]
+    pub fn as_i32_or(&self, default: i32) -> i32 {
+        if self.is_null() {
+            default
+        } else {
+            self.as_i32()
+        }
+    }
+
+    /// Extracts the value as an `i64`, returning `default` if the handle is null.
+    #[inline]
+    #[must_use]
+    pub fn as_i64_or(&self, default: i64) -> i64 {
+        if self.is_null() {
+            default
+        } else {
+            self.as_i64()
+        }
+    }
+
+    /// Extracts the value as an `f32`, returning `default` if the handle is null.
+    #[inline]
+    #[must_use]
+    pub fn as_f32_or(&self, default: f32) -> f32 {
+        if self.is_null() {
+            default
+        } else {
+            self.as_f32()
+        }
+    }
+
+    /// Extracts the value as an `f64`, returning `default` if the handle is null.
+    #[inline]
+    #[must_use]
+    pub fn as_f64_or(&self, default: f64) -> f64 {
+        if self.is_null() {
+            default
+        } else {
+            self.as_f64()
+        }
+    }
+
+    /// Extracts the value as a `bool`, returning `default` if the handle is null.
+    #[inline]
+    #[must_use]
+    pub fn as_bool_or(&self, default: bool) -> bool {
+        if self.is_null() {
+            default
+        } else {
+            self.as_bool()
+        }
+    }
+
     /// Returns `true` if the underlying handle is null.
     #[inline]
     #[must_use]
@@ -228,5 +301,48 @@ mod tests {
     #[test]
     fn size_of_value() {
         assert_eq!(std::mem::size_of::<Value>(), std::mem::size_of::<usize>());
+    }
+
+    #[test]
+    fn as_str_or_returns_default_for_null() {
+        let val = unsafe { Value::from_raw(std::ptr::null_mut()) };
+        assert_eq!(val.as_str_or("fallback"), "fallback");
+    }
+
+    #[test]
+    fn as_str_or_default_returns_empty_for_null() {
+        let val = unsafe { Value::from_raw(std::ptr::null_mut()) };
+        assert_eq!(val.as_str_or_default(), "");
+    }
+
+    #[test]
+    fn as_i64_or_returns_default_for_null() {
+        let val = unsafe { Value::from_raw(std::ptr::null_mut()) };
+        assert_eq!(val.as_i64_or(99), 99);
+    }
+
+    #[test]
+    fn as_i32_or_returns_default_for_null() {
+        let val = unsafe { Value::from_raw(std::ptr::null_mut()) };
+        assert_eq!(val.as_i32_or(42), 42);
+    }
+
+    #[test]
+    fn as_bool_or_returns_default_for_null() {
+        let val = unsafe { Value::from_raw(std::ptr::null_mut()) };
+        assert!(val.as_bool_or(true));
+        assert!(!val.as_bool_or(false));
+    }
+
+    #[test]
+    fn as_f64_or_returns_default_for_null() {
+        let val = unsafe { Value::from_raw(std::ptr::null_mut()) };
+        assert!((val.as_f64_or(3.14) - 3.14).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn as_f32_or_returns_default_for_null() {
+        let val = unsafe { Value::from_raw(std::ptr::null_mut()) };
+        assert!((val.as_f32_or(2.5) - 2.5).abs() < f32::EPSILON);
     }
 }

@@ -44,6 +44,8 @@
 //!
 //! | Module | Purpose |
 //! |--------|---------|
+//! | [`callback`] | Safe `extern "C"` callback wrapper macros (`scalar_callback!`, `table_scan_callback!`) |
+//! | [`chunk_writer`] | Auto-sizing chunk writer for table scan callbacks (auto `set_size` on drop) |
 //! | [`data_chunk`] | Ergonomic wrapper for `DuckDB` data chunks |
 //! | [`entry_point`](mod@entry_point) | Helper for the correct `{name}_init_c_api` C entry point |
 //! | [`connection`] | `Connection` facade + `Registrar` trait for version-agnostic registration |
@@ -55,6 +57,7 @@
 //! | [`sql_macro`] | SQL macro registration (`CREATE MACRO`) — no FFI callbacks |
 //! | [`vector`] | Safe helpers for reading/writing `DuckDB` data vectors |
 //! | [`vector::complex`] | STRUCT / LIST / MAP / ARRAY vector access (child vectors, offsets) |
+//! | [`vector::struct_writer`] | Batched [`StructWriter`][vector::StructWriter] for STRUCT output vectors |
 //! | [`types`] | `DuckDB` type system wrappers (`TypeId`, `LogicalType`) |
 //! | [`interval`] | `INTERVAL` → microseconds conversion with overflow checking |
 //! | [`error`] | `ExtensionError` for FFI error propagation |
@@ -112,7 +115,9 @@
 compile_error!("quack-rs requires a 64-bit target (DuckDB does not support 32-bit platforms).");
 
 pub mod aggregate;
+pub mod callback;
 pub mod cast;
+pub mod chunk_writer;
 pub mod config;
 pub mod connection;
 pub mod data_chunk;
