@@ -496,7 +496,7 @@ mod tests {
     #[test]
     fn as_f64_or_returns_default_for_null() {
         let val = unsafe { Value::from_raw(std::ptr::null_mut()) };
-        assert!((val.as_f64_or(3.14) - 3.14).abs() < f64::EPSILON);
+        assert!((val.as_f64_or(2.72) - 2.72).abs() < f64::EPSILON);
     }
 
     #[test]
