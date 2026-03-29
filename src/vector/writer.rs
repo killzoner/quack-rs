@@ -253,6 +253,51 @@ impl VectorWriter {
         }
     }
 
+    /// Writes a `DATE` value at row `idx` as days since the Unix epoch.
+    ///
+    /// `DuckDB` stores DATE as a 4-byte `i32`. This is a semantic alias for
+    /// [`write_i32`][Self::write_i32].
+    ///
+    /// # Safety
+    ///
+    /// - `idx` must be within the vector's capacity.
+    /// - The vector must have `DATE` type.
+    #[inline]
+    pub const unsafe fn write_date(&mut self, idx: usize, days_since_epoch: i32) {
+        // SAFETY: DATE is stored as i32.
+        unsafe { self.write_i32(idx, days_since_epoch) };
+    }
+
+    /// Writes a `TIMESTAMP` value at row `idx` as microseconds since the Unix epoch.
+    ///
+    /// `DuckDB` stores TIMESTAMP as an 8-byte `i64`. This is a semantic alias for
+    /// [`write_i64`][Self::write_i64].
+    ///
+    /// # Safety
+    ///
+    /// - `idx` must be within the vector's capacity.
+    /// - The vector must have `TIMESTAMP` type.
+    #[inline]
+    pub const unsafe fn write_timestamp(&mut self, idx: usize, micros_since_epoch: i64) {
+        // SAFETY: TIMESTAMP is stored as i64.
+        unsafe { self.write_i64(idx, micros_since_epoch) };
+    }
+
+    /// Writes a `TIME` value at row `idx` as microseconds since midnight.
+    ///
+    /// `DuckDB` stores TIME as an 8-byte `i64`. This is a semantic alias for
+    /// [`write_i64`][Self::write_i64].
+    ///
+    /// # Safety
+    ///
+    /// - `idx` must be within the vector's capacity.
+    /// - The vector must have `TIME` type.
+    #[inline]
+    pub const unsafe fn write_time(&mut self, idx: usize, micros_since_midnight: i64) {
+        // SAFETY: TIME is stored as i64.
+        unsafe { self.write_i64(idx, micros_since_midnight) };
+    }
+
     /// Writes an INTERVAL value at row `idx`.
     ///
     /// `DuckDB` stores INTERVAL as `{ months: i32, days: i32, micros: i64 }` in a
