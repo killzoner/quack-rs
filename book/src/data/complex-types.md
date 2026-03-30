@@ -92,6 +92,32 @@ for row in 0..batch_size {
 }
 ```
 
+### Nested complex types inside STRUCT (v0.11.0+)
+
+When a STRUCT field is itself a LIST, MAP, or ARRAY, use `child_vector()` on
+`StructWriter` or `StructReader` to get the raw vector handle for complex operations:
+
+```rust
+use quack_rs::vector::{StructWriter, complex::ListVector};
+
+// STRUCT(name VARCHAR, services LIST<VARCHAR>, message VARCHAR)
+let mut sw = unsafe { StructWriter::new(struct_vec, 3) };
+
+// Write scalar fields normally
+unsafe { sw.write_varchar(row, 0, "hello") };
+unsafe { sw.write_varchar(row, 2, "ok") };
+
+// For the LIST field at index 1, get the raw vector
+let list_vec = sw.child_vector(1);
+unsafe { ListVector::reserve(list_vec, 10) };
+unsafe { ListVector::set_entry(list_vec, row, 0, 3) };
+let mut elem_writer = unsafe { ListVector::child_writer(list_vec) };
+unsafe { elem_writer.write_varchar(0, "a") };
+unsafe { elem_writer.write_varchar(1, "b") };
+unsafe { elem_writer.write_varchar(2, "c") };
+unsafe { ListVector::set_size(list_vec, 3) };
+```
+
 ### LIST
 
 ```rust
@@ -163,6 +189,13 @@ All helpers are in `quack_rs::vector::complex` (re-exported from `quack_rs::prel
 | `get_child(vec, field_idx)` | Returns the raw child vector for field `field_idx` |
 | `field_reader(vec, field_idx, row_count)` | Creates a `VectorReader` for a STRUCT field |
 | `field_writer(vec, field_idx)` | Creates a `VectorWriter` for a STRUCT field |
+
+### `StructWriter` / `StructReader` complex field access (v0.11.0+)
+
+| Method | Description |
+|--------|-------------|
+| `StructWriter::child_vector(field_idx)` | Returns the raw `duckdb_vector` for a complex child field (LIST, MAP, ARRAY) |
+| `StructReader::child_vector(field_idx)` | Same for reading nested complex fields |
 
 ### `ListVector`
 

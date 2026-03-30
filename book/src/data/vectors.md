@@ -117,6 +117,16 @@ unsafe { writer.set_null(row) };
 > prerequisite returns an uninitialized pointer → SEGFAULT. `VectorWriter::set_null` handles
 > this correctly. See [Pitfall L4](../reference/pitfalls.md#l4-ensure_validity_writable-is-required-before-null-output).
 
+### Clearing NULL (v0.11.0+)
+
+To undo a previous `set_null` call and mark a row as valid again:
+
+```rust
+unsafe { writer.set_valid(row) };
+```
+
+`set_valid` also calls `ensure_validity_writable` automatically.
+
 ---
 
 ## `DataChunk`

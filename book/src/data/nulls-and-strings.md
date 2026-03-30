@@ -36,6 +36,14 @@ unsafe { writer.set_null(row) };
 > prerequisite returns an uninitialized pointer → SEGFAULT. Never write NULL manually;
 > always use `set_null`. See [Pitfall L4](../reference/pitfalls.md#l4-ensure_validity_writable-is-required-before-null-output).
 
+### Clearing NULL (v0.11.0+)
+
+To mark a row as valid after a previous `set_null`:
+
+```rust
+unsafe { writer.set_valid(row) };
+```
+
 ---
 
 ## VARCHAR reading

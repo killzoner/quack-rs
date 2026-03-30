@@ -10,6 +10,21 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.11.0] — 2026-03-30
+
+### Added
+
+- **`StructWriter::child_vector()`** / **`StructReader::child_vector()`** — raw child vector access for nested complex types (LIST, MAP, ARRAY) inside STRUCT fields
+- **`ChunkWriter::vector()`** — raw vector access for complex column types
+- **`ChunkWriter::column_count()`** — column count without needing `DataChunk`
+- **`VectorWriter::set_valid()`** / **`StructWriter::set_valid()`** — undo `set_null()`, mark row as non-NULL
+- **`ReplacementScanInfo::add_parameter_raw()`** — non-VARCHAR replacement scan parameters
+- **`ReplacementScanInfo::add_i64_parameter()`** / **`add_bool_parameter()`** — typed convenience methods
+
+### Changed
+
+- **`table_scan_callback!`** now reports panic messages to DuckDB via `duckdb_function_set_error` (previously silent)
+
 ## [0.10.0] — 2026-03-29
 
 ### Added

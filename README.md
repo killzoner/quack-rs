@@ -117,7 +117,7 @@ See [`LESSONS.md`](./LESSONS.md) for full analysis of each pitfall.
 
 ```toml
 [dependencies]
-quack-rs = "0.10"
+quack-rs = "0.11"
 libduckdb-sys = { version = ">=1.4.4, <2", features = ["loadable-extension"] }
 ```
 
