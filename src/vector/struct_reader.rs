@@ -35,6 +35,7 @@ use crate::vector::VectorReader;
 /// Pre-creates a [`VectorReader`] for every field at construction, allowing
 /// direct typed reads without repeated `duckdb_struct_vector_get_child` calls.
 pub struct StructReader {
+    vector: duckdb_vector,
     fields: Vec<VectorReader>,
 }
 
@@ -53,7 +54,7 @@ impl StructReader {
             // SAFETY: caller guarantees vector is valid STRUCT with field_count fields.
             fields.push(unsafe { StructVector::field_reader(vector, idx, row_count) });
         }
-        Self { fields }
+        Self { vector, fields }
     }
 
     /// Returns the number of fields in this struct reader.
@@ -73,6 +74,24 @@ impl StructReader {
     #[inline]
     pub fn field(&self, field_idx: usize) -> &VectorReader {
         &self.fields[field_idx]
+    }
+
+    /// Returns the raw `duckdb_vector` handle for the given field.
+    ///
+    /// Use this when a struct field has a complex type (LIST, MAP, ARRAY) that
+    /// requires operations beyond simple scalar reads — for example, calling
+    /// [`ListVector::get_entry`][crate::vector::complex::ListVector::get_entry] or
+    /// [`ListVector::child_reader`][crate::vector::complex::ListVector::child_reader].
+    ///
+    /// # Safety
+    ///
+    /// - `field_idx` must be a valid field index (0 ≤ `field_idx` < `field_count`).
+    /// - The returned vector is borrowed from the parent STRUCT vector and must
+    ///   not outlive it.
+    #[must_use]
+    #[inline]
+    pub unsafe fn child_vector(&self, field_idx: usize) -> duckdb_vector {
+        unsafe { StructVector::get_child(self.vector, field_idx) }
     }
 
     /// Returns `true` if the value at `row` in field `field_idx` is not NULL.
@@ -296,7 +315,10 @@ mod tests {
 
     #[test]
     fn struct_reader_field_count() {
-        let sr = StructReader { fields: Vec::new() };
+        let sr = StructReader {
+            vector: std::ptr::null_mut(),
+            fields: Vec::new(),
+        };
         assert_eq!(sr.field_count(), 0);
     }
 
@@ -304,7 +326,7 @@ mod tests {
     fn size_of_struct_reader() {
         assert_eq!(
             std::mem::size_of::<StructReader>(),
-            3 * std::mem::size_of::<usize>() // Vec = ptr + len + cap
+            4 * std::mem::size_of::<usize>() // vector ptr + Vec (ptr + len + cap)
         );
     }
 }

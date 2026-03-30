@@ -73,6 +73,39 @@ impl StructWriter {
         self.fields.len()
     }
 
+    /// Returns the raw `duckdb_vector` handle for the given field.
+    ///
+    /// Use this when a struct field has a complex type (LIST, MAP, ARRAY) that
+    /// requires operations beyond simple scalar writes — for example, calling
+    /// [`ListVector::set_entry`][crate::vector::complex::ListVector::set_entry] or
+    /// [`ListVector::reserve`][crate::vector::complex::ListVector::reserve].
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use quack_rs::vector::{StructWriter, VectorWriter, complex::ListVector};
+    /// use libduckdb_sys::duckdb_vector;
+    ///
+    /// // Given a STRUCT output vector where field 1 is LIST<VARCHAR>:
+    /// // let mut sw = unsafe { StructWriter::new(struct_vec, 3) };
+    /// // sw.write_varchar(0, 0, "name");               // scalar field
+    /// // let list_vec = sw.child_vector(1);             // LIST field
+    /// // unsafe { ListVector::reserve(list_vec, 10) };  // complex ops
+    /// // unsafe { ListVector::set_entry(list_vec, 0, 0, 3) };
+    /// // let mut elem = unsafe { ListVector::child_writer(list_vec) };
+    /// // unsafe { elem.write_varchar(0, "a") };
+    /// // unsafe { ListVector::set_size(list_vec, 3) };
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if `field_idx >= field_count`.
+    #[must_use]
+    #[inline]
+    pub fn child_vector(&self, field_idx: usize) -> duckdb_vector {
+        self.fields[field_idx].as_raw()
+    }
+
     /// Returns a mutable reference to the [`VectorWriter`] for the given field.
     ///
     /// # Panics

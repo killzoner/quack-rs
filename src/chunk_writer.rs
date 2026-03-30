@@ -117,6 +117,20 @@ impl ChunkWriter {
         self.capacity
     }
 
+    /// Returns the raw `duckdb_vector` handle for the given column index.
+    ///
+    /// Use this when a column has a complex type (LIST, MAP, ARRAY) that requires
+    /// operations beyond simple scalar writes — for example, calling
+    /// [`ListVector::set_entry`][crate::vector::complex::ListVector::set_entry].
+    ///
+    /// # Safety
+    ///
+    /// `col_idx` must be less than the chunk's column count.
+    #[must_use]
+    pub unsafe fn vector(&self, col_idx: usize) -> libduckdb_sys::duckdb_vector {
+        unsafe { libduckdb_sys::duckdb_data_chunk_get_vector(self.raw, col_idx as idx_t) }
+    }
+
     /// Creates a [`VectorWriter`] for the given column index.
     ///
     /// # Safety
