@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <radialGradient id="dg" cx="62%" cy="24%" r="68%">
+      <stop offset="0%"   stop-color="#FFF2A8"/>
+      <stop offset="38%"  stop-color="#F5C420"/>
+      <stop offset="100%" stop-color="#A87200"/>
+    </radialGradient>
+    <filter id="ds" x="-28%" y="-28%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12"
+                    flood-color="#7A5500" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" rx="0" fill="#FFFFFF"/>
+
+  <!-- Subtle bottom border accent -->
+  <rect y="618" width="1200" height="12" fill="#CE422B" opacity="0.85"/>
+
+  <!-- Duck mascot (scaled up from logo) -->
+  <g transform="translate(80, 140) scale(2.8)" filter="url(#ds)">
+    <path d="M 44,110 C 32,92 16,64 20,46 C 24,32 36,30 44,40 C 50,48 52,70 50,92 Z" fill="url(#dg)" stroke="none"/>
+    <ellipse cx="100.00" cy="108.00" rx="59.84" ry="40.48"
+             transform="rotate(-4,100.00,108.00)"
+             fill="url(#dg)" stroke="none"/>
+    <path d="M 92.96,106.24 Q 115.84,83.36 144.00,106.24 Q 115.84,99.20 92.96,106.24 Z" fill="#A87200" opacity="0.28" stroke="none"/>
+    <path d="M 68,88 Q 104,74 144,86" fill="none" stroke="#C8A000" stroke-width="2" stroke-linecap="round" opacity="0.40"/>
+    <path d="M 164,57 Q 202,54 206,68 Q 202,82 164,79 Z" fill="#E06818" stroke="none"/>
+    <circle cx="145.76" cy="71.04" r="28.16"
+            fill="url(#dg)" stroke="none"/>
+    <circle cx="150.16" cy="62.24" r="5.72"
+            fill="#1A1A1A" stroke="none"/>
+    <circle cx="152.36" cy="59.78" r="2.20"
+            fill="white" stroke="none"/>
+    <ellipse cx="136.96" cy="58.72"
+             rx="7.92" ry="5.28"
+             transform="rotate(-30,136.96,58.72)"
+             fill="white" opacity="0.18" stroke="none"/>
+    <ellipse cx="107.04" cy="85.12"
+             rx="14.08" ry="7.92"
+             transform="rotate(-20,107.04,85.12)"
+             fill="white" opacity="0.10" stroke="none"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="620" y="290"
+        font-family="'Liberation Sans', 'Helvetica Neue', Arial, sans-serif"
+        font-size="120" font-weight="700" letter-spacing="-3">
+    <tspan fill="#0D1117">quack</tspan><tspan fill="#CE422B">-rs</tspan>
+  </text>
+
+  <!-- Tagline -->
+  <text x="624" y="350"
+        font-family="'Liberation Sans', 'Helvetica Neue', Arial, sans-serif"
+        font-size="32" font-weight="400" letter-spacing="0.5" fill="#6B7280">
+    Production-grade Rust SDK for DuckDB extensions
+  </text>
+
+  <!-- Feature pills -->
+  <g font-family="'Liberation Sans', 'Helvetica Neue', Arial, sans-serif" font-size="20" font-weight="500">
+    <rect x="620" y="390" width="120" height="36" rx="18" fill="#F3F4F6"/>
+    <text x="680" y="414" text-anchor="middle" fill="#374151">Scalar</text>
+
+    <rect x="756" y="390" width="150" height="36" rx="18" fill="#F3F4F6"/>
+    <text x="831" y="414" text-anchor="middle" fill="#374151">Aggregate</text>
+
+    <rect x="922" y="390" width="110" height="36" rx="18" fill="#F3F4F6"/>
+    <text x="977" y="414" text-anchor="middle" fill="#374151">Table</text>
+
+    <rect x="620" y="440" width="100" height="36" rx="18" fill="#F3F4F6"/>
+    <text x="670" y="464" text-anchor="middle" fill="#374151">Cast</text>
+
+    <rect x="736" y="440" width="100" height="36" rx="18" fill="#F3F4F6"/>
+    <text x="786" y="464" text-anchor="middle" fill="#374151">Copy</text>
+
+    <rect x="852" y="440" width="180" height="36" rx="18" fill="#F3F4F6"/>
+    <text x="942" y="464" text-anchor="middle" fill="#374151">SQL Macros</text>
+  </g>
+
+  <!-- URL -->
+  <text x="624" y="540"
+        font-family="'Liberation Mono', 'Courier New', monospace"
+        font-size="22" fill="#9CA3AF">
+    quack-rs.com
+  </text>
+</svg>
