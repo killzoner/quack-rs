@@ -76,6 +76,9 @@ unsafe extern "C" fn my_scan_callback(
 |--------|-------------|
 | `set_function(name)` | Redirect to the named table function |
 | `add_varchar_parameter(value)` | Add a VARCHAR parameter to the redirected call |
+| `add_i64_parameter(value)` | Add a BIGINT (i64) parameter (v0.11.0+) |
+| `add_bool_parameter(value)` | Add a BOOLEAN parameter (v0.11.0+) |
+| `add_parameter_raw(duckdb_value)` | Add any typed `duckdb_value` parameter (v0.11.0+) |
 | `set_error(message)` | Report an error (aborts this replacement scan) |
 
 ## When to use replacement scans vs table functions

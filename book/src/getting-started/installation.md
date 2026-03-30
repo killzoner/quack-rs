@@ -6,7 +6,7 @@ Add the following to your extension's `Cargo.toml`:
 
 ```toml
 [dependencies]
-quack-rs = "0.10"
+quack-rs = "0.11"
 libduckdb-sys = { version = ">=1.4.4, <2", features = ["loadable-extension"] }
 ```
 

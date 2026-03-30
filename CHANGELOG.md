@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-03-30
+
+### Added
+
+- **`StructWriter::child_vector(field_idx)`** — returns the raw `duckdb_vector`
+  handle for a struct field, enabling `ListVector`/`MapVector`/`ArrayVector`
+  operations on nested complex types without raw FFI calls.
+
+- **`StructReader::child_vector(field_idx)`** — read-side counterpart for
+  accessing nested complex type fields within STRUCT input vectors.
+
+- **`ChunkWriter::vector(col_idx)`** — raw `duckdb_vector` access for complex
+  column types (LIST, MAP, ARRAY) from within a `ChunkWriter`.
+
+- **`ChunkWriter::column_count()`** — returns the number of columns in the
+  chunk without needing a separate `DataChunk`.
+
+- **`VectorWriter::set_valid(row)`** — marks a row as non-NULL, undoing a
+  previous `set_null()` call. Calls `ensure_validity_writable` automatically.
+
+- **`StructWriter::set_valid(row, field_idx)`** — batched version of
+  `VectorWriter::set_valid()` for STRUCT fields.
+
+- **`ReplacementScanInfo::add_parameter_raw(value)`** — adds any `duckdb_value`
+  as a parameter to a replacement scan redirect, enabling non-VARCHAR parameter
+  types (INTEGER, BIGINT, BOOLEAN, etc.).
+
+- **`ReplacementScanInfo::add_i64_parameter(value)`** — convenience method for
+  adding BIGINT parameters to replacement scan redirects.
+
+- **`ReplacementScanInfo::add_bool_parameter(value)`** — convenience method for
+  adding BOOLEAN parameters to replacement scan redirects.
+
+### Changed
+
+- **`table_scan_callback!` error reporting** — the macro now extracts the panic
+  message and reports it to DuckDB via `duckdb_function_set_error` before setting
+  chunk size to 0. Previously, panics silently ended the stream with no error
+  message visible to the user.
+
 ## [0.10.0] - 2026-03-29
 
 ### Added

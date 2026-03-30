@@ -161,8 +161,22 @@ macro_rules! table_scan_callback {
             $output: ::libduckdb_sys::duckdb_data_chunk,
         ) {
             let result = ::std::panic::catch_unwind(::std::panic::AssertUnwindSafe(|| $body));
-            if result.is_err() {
-                // On panic, signal end-of-stream by setting size to 0.
+            if let Err(panic) = result {
+                // Extract a message from the panic payload.
+                let msg = if let Some(s) = panic.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = panic.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "table scan callback panicked".to_string()
+                };
+                // Report the error to DuckDB so users see a meaningful message.
+                if let Ok(c_msg) = ::std::ffi::CString::new(msg) {
+                    unsafe {
+                        ::libduckdb_sys::duckdb_function_set_error($info, c_msg.as_ptr());
+                    }
+                }
+                // Signal end-of-stream by setting size to 0.
                 // SAFETY: output is a valid data chunk provided by DuckDB.
                 unsafe {
                     ::libduckdb_sys::duckdb_data_chunk_set_size($output, 0);
