@@ -17,9 +17,9 @@
 //! [`VectorWriter::set_null`] calls `ensure_validity_writable` automatically.
 
 use libduckdb_sys::{
-    duckdb_validity_set_row_invalid, duckdb_vector, duckdb_vector_assign_string_element_len,
-    duckdb_vector_ensure_validity_writable, duckdb_vector_get_data, duckdb_vector_get_validity,
-    idx_t,
+    duckdb_validity_set_row_invalid, duckdb_validity_set_row_valid, duckdb_vector,
+    duckdb_vector_assign_string_element_len, duckdb_vector_ensure_validity_writable,
+    duckdb_vector_get_data, duckdb_vector_get_validity, idx_t,
 };
 
 /// A typed writer for a `DuckDB` output vector in a `finalize` callback.
@@ -395,6 +395,29 @@ impl VectorWriter {
         // SAFETY: validity is now initialized and idx is in bounds per caller's contract.
         unsafe {
             duckdb_validity_set_row_invalid(validity, idx as idx_t);
+        }
+    }
+
+    /// Marks row `idx` as valid (non-NULL) in the output vector.
+    ///
+    /// Use this to undo a previous [`set_null`][Self::set_null] call for a row,
+    /// or to explicitly mark a row as valid after writing its value.
+    ///
+    /// Like [`set_null`][Self::set_null], this calls `ensure_validity_writable`
+    /// before modifying the validity bitmap.
+    ///
+    /// # Safety
+    ///
+    /// - `idx` must be within the vector's capacity.
+    pub unsafe fn set_valid(&mut self, idx: usize) {
+        // SAFETY: self.vector is valid per constructor's contract.
+        unsafe {
+            duckdb_vector_ensure_validity_writable(self.vector);
+        }
+        let validity = unsafe { duckdb_vector_get_validity(self.vector) };
+        // SAFETY: validity is now initialized and idx is in bounds per caller's contract.
+        unsafe {
+            duckdb_validity_set_row_valid(validity, idx as idx_t);
         }
     }
 

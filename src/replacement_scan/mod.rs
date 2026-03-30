@@ -65,7 +65,7 @@ use libduckdb_sys::{
     duckdb_add_replacement_scan, duckdb_create_varchar_length, duckdb_database,
     duckdb_delete_callback_t, duckdb_destroy_value, duckdb_replacement_scan_add_parameter,
     duckdb_replacement_scan_info, duckdb_replacement_scan_set_error,
-    duckdb_replacement_scan_set_function_name,
+    duckdb_replacement_scan_set_function_name, duckdb_value,
 };
 
 /// Converts a `&str` to `CString` without panicking.
@@ -140,6 +140,59 @@ impl ReplacementScanInfo {
             duckdb_replacement_scan_add_parameter(self.info, duckdb_val);
         }
         // SAFETY: duckdb_val was just created; must be destroyed after passing.
+        let mut val = duckdb_val;
+        unsafe {
+            duckdb_destroy_value(&raw mut val);
+        }
+        self
+    }
+
+    /// Adds a raw `duckdb_value` parameter to the redirected function call.
+    ///
+    /// Use this when you need to pass non-VARCHAR parameters (INTEGER, BIGINT,
+    /// BOOLEAN, etc.) that aren't covered by [`add_varchar_parameter`][Self::add_varchar_parameter].
+    ///
+    /// The value is consumed by `DuckDB`; the caller must destroy it after this call
+    /// (`DuckDB` copies the value internally).
+    ///
+    /// # Safety
+    ///
+    /// `value` must be a valid `duckdb_value` created via a `duckdb_create_*` function.
+    pub unsafe fn add_parameter_raw(&self, value: duckdb_value) -> &Self {
+        // SAFETY: self.info is valid; value is a valid duckdb_value per caller's contract.
+        unsafe {
+            duckdb_replacement_scan_add_parameter(self.info, value);
+        }
+        self
+    }
+
+    /// Adds a BIGINT (i64) parameter to the redirected function call.
+    ///
+    /// Convenience method that creates a `DuckDB` BIGINT value, adds it as a
+    /// parameter, and destroys the temporary value.
+    pub fn add_i64_parameter(&self, value: i64) -> &Self {
+        // SAFETY: duckdb_create_int64 always returns a valid value.
+        let duckdb_val = unsafe { libduckdb_sys::duckdb_create_int64(value) };
+        unsafe {
+            duckdb_replacement_scan_add_parameter(self.info, duckdb_val);
+        }
+        let mut val = duckdb_val;
+        unsafe {
+            duckdb_destroy_value(&raw mut val);
+        }
+        self
+    }
+
+    /// Adds a BOOLEAN parameter to the redirected function call.
+    ///
+    /// Convenience method that creates a `DuckDB` BOOLEAN value, adds it as a
+    /// parameter, and destroys the temporary value.
+    pub fn add_bool_parameter(&self, value: bool) -> &Self {
+        // SAFETY: duckdb_create_bool always returns a valid value.
+        let duckdb_val = unsafe { libduckdb_sys::duckdb_create_bool(value) };
+        unsafe {
+            duckdb_replacement_scan_add_parameter(self.info, duckdb_val);
+        }
         let mut val = duckdb_val;
         unsafe {
             duckdb_destroy_value(&raw mut val);

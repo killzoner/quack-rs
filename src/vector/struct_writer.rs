@@ -361,6 +361,23 @@ impl StructWriter {
         // SAFETY: caller guarantees row is in bounds.
         unsafe { self.fields[field_idx].set_null(row) };
     }
+
+    /// Marks field `field_idx` at row `row` as valid (non-NULL).
+    ///
+    /// Use this to undo a previous [`set_null`][Self::set_null] call.
+    ///
+    /// # Safety
+    ///
+    /// - `row` must be within the vector's capacity.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `field_idx >= field_count`.
+    #[inline]
+    pub unsafe fn set_valid(&mut self, row: usize, field_idx: usize) {
+        // SAFETY: caller guarantees row is in bounds.
+        unsafe { self.fields[field_idx].set_valid(row) };
+    }
 }
 
 #[cfg(test)]
