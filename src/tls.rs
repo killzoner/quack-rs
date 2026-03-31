@@ -126,7 +126,7 @@ impl std::fmt::Display for TlsVersion {
 /// The returned `Arc<dyn Any + Send + Sync>` should be downcast by the
 /// consumer to the concrete config type. Use [`config_type_name`][Self::config_type_name]
 /// to verify the expected type before downcasting, and handle `None` from
-/// [`downcast_ref`][Any::downcast_ref] gracefully (never use `.expect()` or
+/// `downcast_ref` gracefully (never use `.expect()` or
 /// `.unwrap()` in FFI callback contexts — see Pitfall L3).
 ///
 /// ```rust,no_run
