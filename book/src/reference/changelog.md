@@ -10,6 +10,17 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.12.0] — 2026-03-31
+
+### Added
+
+- **`ExtensionError` ergonomics** — `From<std::io::Error>`, `From<std::ffi::NulError>`, `From<std::fmt::Error>` for direct `?` operator usage in `register_all()`
+- **`tls` module** — `TlsConfigProvider` trait for type-erased TLS client configuration injection (no external deps)
+- **`warning` module** — `ExtensionWarning`, `WarningSeverity`, `WarningCollector` for structured security warnings with CWE codes
+- **`secrets` module** — `SecretsManager` trait and `SecretEntry` for bridging DuckDB's native `CREATE SECRET` storage
+- **`StructWriter::child_list_vector()`** — semantic alias for LIST-typed struct fields
+- **Prelude additions** — `TlsConfigProvider`, `ExtensionWarning`, `WarningSeverity`, `WarningCollector`, `SecretEntry`, `SecretsManager`
+
 ## [0.11.0] — 2026-03-30
 
 ### Added

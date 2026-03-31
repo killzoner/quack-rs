@@ -23,6 +23,19 @@ let e = ExtensionError::from_error(some_std_error);
 - `std::error::Error`
 - `Display`, `Debug`, `Clone`, `PartialEq`, `Eq`
 - `From<&str>`, `From<String>`, `From<Box<dyn Error>>`
+- `From<std::io::Error>`, `From<std::ffi::NulError>`, `From<std::fmt::Error>`
+
+The `From<std::io::Error>` impl is especially useful for extensions that
+allocate runtime resources (e.g., tokio) during initialization — the `?`
+operator works directly without `.map_err()`:
+
+```rust
+fn register_all(con: &Connection) -> Result<(), ExtensionError> {
+    let _rt = tokio::runtime::Runtime::new()?; // ← io::Error → ExtensionError
+    // ... register functions ...
+    Ok(())
+}
+```
 
 ---
 

@@ -64,6 +64,12 @@
 //! | [`interval_to_micros`] | `interval` module |
 //! | [`ExtensionError`] | `error` module |
 //! | [`ExtResult`] | `error` module |
+//! | [`SecretEntry`] | `secrets` module |
+//! | [`SecretsManager`] | `secrets` module |
+//! | [`TlsConfigProvider`] | `tls` module |
+//! | [`ExtensionWarning`] | `warning` module |
+//! | [`WarningCollector`] | `warning` module |
+//! | [`WarningSeverity`] | `warning` module |
 //! | [`DUCKDB_API_VERSION`] | crate root |
 //!
 //! # What is NOT included
@@ -164,6 +170,15 @@ pub use crate::interval::{interval_to_micros, DuckInterval};
 
 // Error
 pub use crate::error::{ExtResult, ExtensionError};
+
+// Secrets manager
+pub use crate::secrets::{SecretEntry, SecretsManager};
+
+// TLS config provider
+pub use crate::tls::TlsConfigProvider;
+
+// Warnings
+pub use crate::warning::{ExtensionWarning, WarningCollector, WarningSeverity};
 
 // API version constant
 pub use crate::DUCKDB_API_VERSION;

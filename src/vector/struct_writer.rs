@@ -117,6 +117,42 @@ impl StructWriter {
         &mut self.fields[field_idx]
     }
 
+    /// Returns the raw `duckdb_vector` handle for a LIST-typed field.
+    ///
+    /// This is a semantic alias for [`child_vector`][Self::child_vector] that
+    /// makes the intent clear when a struct field has `LIST` type. Use the
+    /// returned handle with [`ListVector`][crate::vector::complex::ListVector]
+    /// methods (`reserve`, `set_entry`, `set_size`, `child_writer`, etc.).
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use quack_rs::vector::{StructWriter, VectorWriter, complex::ListVector};
+    /// use libduckdb_sys::duckdb_vector;
+    ///
+    /// // Given a STRUCT output vector where field 2 is LIST<VARCHAR>:
+    /// // let mut sw = unsafe { StructWriter::new(struct_vec, 4) };
+    /// // let list_vec = sw.child_list_vector(2);
+    /// // unsafe { ListVector::reserve(list_vec, 10) };
+    /// // unsafe { ListVector::set_entry(list_vec, 0, 0, 3) };
+    /// // let mut elem_writer = unsafe { ListVector::child_writer(list_vec) };
+    /// // unsafe {
+    /// //     elem_writer.write_varchar(0, "a");
+    /// //     elem_writer.write_varchar(1, "b");
+    /// //     elem_writer.write_varchar(2, "c");
+    /// // }
+    /// // unsafe { ListVector::set_size(list_vec, 3) };
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if `field_idx >= field_count`.
+    #[must_use]
+    #[inline]
+    pub fn child_list_vector(&self, field_idx: usize) -> duckdb_vector {
+        self.child_vector(field_idx)
+    }
+
     /// Writes a `bool` value to field `field_idx` at row `row`.
     ///
     /// # Safety
