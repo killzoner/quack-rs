@@ -35,6 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `SecretsManager` to provide `get_secret()`, `list_secrets()`, and
   `remove_secret()` through a safe Rust interface. `SecretEntry` uses a builder
   pattern with `with_provider()`, `with_scope()`, and `with_field()`.
+  Security hardened: `Debug` redacts field values, `Drop` zeroizes sensitive
+  data via `write_volatile`, `PartialEq` intentionally omitted to prevent
+  timing side-channels, and fields are private with accessor methods.
 
 - **`StructWriter::child_list_vector(field_idx)`** — semantic alias for
   `child_vector()` that makes the intent clear when a struct field has LIST
