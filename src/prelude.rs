@@ -67,6 +67,8 @@
 //! | [`SecretEntry`] | `secrets` module |
 //! | [`SecretsManager`] | `secrets` module |
 //! | [`TlsConfigProvider`] | `tls` module |
+//! | [`TlsVersion`] | `tls` module |
+//! | [`audit_tls_provider`] | `tls` module |
 //! | [`ExtensionWarning`] | `warning` module |
 //! | [`WarningCollector`] | `warning` module |
 //! | [`WarningSeverity`] | `warning` module |
@@ -175,7 +177,7 @@ pub use crate::error::{ExtResult, ExtensionError};
 pub use crate::secrets::{SecretEntry, SecretsManager};
 
 // TLS config provider
-pub use crate::tls::TlsConfigProvider;
+pub use crate::tls::{audit_tls_provider, TlsConfigProvider, TlsVersion};
 
 // Warnings
 pub use crate::warning::{ExtensionWarning, WarningCollector, WarningSeverity};

@@ -21,7 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   configuration injection. HTTP-capable extensions (e.g., `duck_net`) implement
   this trait to supply custom CA bundles, client certificates for mTLS, or
   restricted cipher suites through a uniform interface. Uses `std::any::Any`
-  so `quack-rs` has no dependency on any specific TLS library.
+  so `quack-rs` has no dependency on any specific TLS library. Security
+  hardened: `client_config()` returns `Result` for fallible config creation,
+  `accepts_invalid_certs()` and `min_tls_version()` enable security auditing,
+  `config_type_name()` allows safe pre-downcast verification, and
+  `audit_tls_provider()` integrates with the `warning` module to automatically
+  flag CWE-295 (cert validation bypass) and CWE-327 (deprecated TLS versions).
+  Includes `TlsVersion` enum with `is_deprecated()` and `Ord` ordering.
 
 - **`warning` module** — structured security warning API with
   `ExtensionWarning`, `WarningSeverity` (Info/Low/Medium/High/Critical), and
