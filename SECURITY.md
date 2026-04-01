@@ -7,8 +7,9 @@
 
 | Version | Supported          |
 |---------|--------------------|
+| 0.12.x  | Yes                |
 | 0.11.x  | Yes                |
-| 0.10.x  | Yes                |
+| 0.10.x  | No (end-of-life)   |
 | 0.9.x   | No (end-of-life)   |
 | 0.8.x   | No (end-of-life)   |
 | 0.7.x   | No (end-of-life)   |
@@ -67,3 +68,6 @@ quack-rs is designed with safety as a primary concern:
 3. **Double-free prevention**: `FfiState<T>::destroy_callback` nulls pointers after freeing.
 4. **Boolean UB prevention**: `VectorReader::read_bool` reads as `u8 != 0`, never transmutes to `bool`.
 5. **RAII for DuckDB handles**: `LogicalType` ensures `duckdb_destroy_logical_type` is always called.
+6. **Credential protection**: `SecretEntry` redacts field values in `Debug`/`Display` output and zeroizes all sensitive data on `Drop` using `write_volatile`.
+7. **TLS hardening**: `TlsConfigProvider` enforces TLS 1.2+ by default and `audit_tls_provider()` detects certificate validation bypass (CWE-295) and deprecated protocols (CWE-327).
+8. **Structured warnings**: `WarningCollector` provides thread-safe, CWE-annotated security warning collection for extensions.

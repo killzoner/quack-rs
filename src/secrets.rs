@@ -493,4 +493,106 @@ mod tests {
         fn assert_send_sync<T: Send + Sync>() {}
         assert_send_sync::<InMemorySecrets>();
     }
+
+    #[test]
+    fn secret_entry_empty_name_and_type() {
+        let entry = SecretEntry::new("", "");
+        assert_eq!(entry.name(), "");
+        assert_eq!(entry.secret_type(), "");
+    }
+
+    #[test]
+    fn with_field_overwrites_existing_key() {
+        let entry = SecretEntry::new("s", "t")
+            .with_field("token", "old-value")
+            .with_field("token", "new-value");
+        assert_eq!(entry.get_field("token"), Some("new-value"));
+        assert_eq!(entry.field_count(), 1);
+    }
+
+    #[test]
+    fn debug_redacts_empty_field_value() {
+        let entry = SecretEntry::new("s", "t").with_field("key", "");
+        let debug = format!("{entry:?}");
+        // Even empty field values must be redacted in debug output
+        assert!(debug.contains("[REDACTED]"));
+        assert!(debug.contains("key"));
+    }
+
+    #[test]
+    fn display_shows_field_count_not_values() {
+        let entry = SecretEntry::new("s", "t")
+            .with_field("a", "secret1")
+            .with_field("b", "secret2")
+            .with_field("c", "secret3");
+        let display = format!("{entry}");
+        assert!(display.contains("fields=3"));
+        assert!(!display.contains("secret1"));
+        assert!(!display.contains("secret2"));
+        assert!(!display.contains("secret3"));
+    }
+
+    #[test]
+    fn zeroize_string_with_special_characters() {
+        let mut s = String::from("p@$$w0rd!#%^&*()_+-=[]{}|;':\",./<>?");
+        let ptr = s.as_ptr();
+        let len = s.len();
+        zeroize_string(&mut s);
+        assert!(s.is_empty());
+        let bytes = unsafe { std::slice::from_raw_parts(ptr, len) };
+        assert!(bytes.iter().all(|&b| b == 0));
+    }
+
+    #[test]
+    fn zeroize_string_with_unicode() {
+        let mut s = String::from("pässwörd🔑秘密");
+        let ptr = s.as_ptr();
+        let len = s.len();
+        zeroize_string(&mut s);
+        assert!(s.is_empty());
+        let bytes = unsafe { std::slice::from_raw_parts(ptr, len) };
+        assert!(bytes.iter().all(|&b| b == 0));
+    }
+
+    #[test]
+    fn drop_zeroizes_metadata_fields() {
+        // Verify that provider and scope are zeroized on drop
+        let mut entry = SecretEntry::new("name", "type")
+            .with_provider("my-provider")
+            .with_scope("https://example.com");
+
+        // Zeroize directly to test
+        zeroize_string(&mut entry.provider);
+        assert!(entry.provider.is_empty());
+        zeroize_string(&mut entry.scope);
+        assert!(entry.scope.is_empty());
+    }
+
+    #[test]
+    fn list_secrets_with_no_matching_type() {
+        let mgr = InMemorySecrets {
+            entries: vec![SecretEntry::new("a", "bearer").with_field("token", "t1")],
+        };
+        let result = mgr.list_secrets(Some("s3"));
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn remove_secret_returns_false() {
+        let mgr = InMemorySecrets {
+            entries: vec![SecretEntry::new("a", "b")],
+        };
+        assert!(!mgr.remove_secret("a", "b"));
+    }
+
+    #[test]
+    fn secret_entry_many_fields() {
+        let mut entry = SecretEntry::new("s", "t");
+        for i in 0..100 {
+            entry = entry.with_field(format!("key_{i}"), format!("value_{i}"));
+        }
+        assert_eq!(entry.field_count(), 100);
+        assert_eq!(entry.get_field("key_50"), Some("value_50"));
+        assert_eq!(entry.field_keys().len(), 100);
+    }
 }

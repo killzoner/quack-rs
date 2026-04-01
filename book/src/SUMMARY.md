@@ -39,6 +39,12 @@
 - [NULL Handling & Strings](data/nulls-and-strings.md)
 - [INTERVAL Type](data/intervals.md)
 
+# Security
+
+- [TLS Configuration](security/tls.md)
+- [Structured Warnings](security/warnings.md)
+- [Secrets Management](security/secrets.md)
+
 # Testing
 
 - [Testing Guide](testing.md)

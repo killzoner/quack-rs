@@ -450,4 +450,115 @@ mod tests {
         fn assert_send_sync<T: Send + Sync + ?Sized>() {}
         assert_send_sync::<dyn TlsConfigProvider>();
     }
+
+    #[test]
+    fn tls11_is_deprecated() {
+        // TLS 1.1 must also be flagged as deprecated (not just TLS 1.0)
+        struct Tls11Provider;
+
+        #[allow(clippy::unnecessary_literal_bound)]
+        impl TlsConfigProvider for Tls11Provider {
+            fn client_config(&self) -> Result<Arc<dyn Any + Send + Sync>, ExtensionError> {
+                Ok(Arc::new(()))
+            }
+            fn provider_name(&self) -> &str {
+                "tls11-test"
+            }
+            fn config_type_name(&self) -> &str {
+                "()"
+            }
+            fn min_tls_version(&self) -> TlsVersion {
+                TlsVersion::Tls11
+            }
+            fn supports_mtls(&self) -> bool {
+                false
+            }
+            fn accepts_invalid_certs(&self) -> bool {
+                false
+            }
+        }
+
+        let warnings = audit_tls_provider(&Tls11Provider);
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(warnings[0].code, "TLS_DEPRECATED_VERSION");
+        assert!(warnings[0].message.contains("TLS 1.1"));
+    }
+
+    #[test]
+    fn tls13_no_warnings() {
+        struct Tls13Provider;
+
+        #[allow(clippy::unnecessary_literal_bound)]
+        impl TlsConfigProvider for Tls13Provider {
+            fn client_config(&self) -> Result<Arc<dyn Any + Send + Sync>, ExtensionError> {
+                Ok(Arc::new(()))
+            }
+            fn provider_name(&self) -> &str {
+                "tls13-test"
+            }
+            fn config_type_name(&self) -> &str {
+                "()"
+            }
+            fn min_tls_version(&self) -> TlsVersion {
+                TlsVersion::Tls13
+            }
+            fn supports_mtls(&self) -> bool {
+                true
+            }
+            fn accepts_invalid_certs(&self) -> bool {
+                false
+            }
+        }
+
+        let warnings = audit_tls_provider(&Tls13Provider);
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn audit_only_invalid_certs_not_deprecated_version() {
+        // Provider with valid TLS version but invalid certs accepted
+        struct CertOnlyInsecure;
+
+        #[allow(clippy::unnecessary_literal_bound)]
+        impl TlsConfigProvider for CertOnlyInsecure {
+            fn client_config(&self) -> Result<Arc<dyn Any + Send + Sync>, ExtensionError> {
+                Ok(Arc::new(()))
+            }
+            fn provider_name(&self) -> &str {
+                "cert-insecure"
+            }
+            fn config_type_name(&self) -> &str {
+                "()"
+            }
+            fn min_tls_version(&self) -> TlsVersion {
+                TlsVersion::Tls13
+            }
+            fn supports_mtls(&self) -> bool {
+                false
+            }
+            fn accepts_invalid_certs(&self) -> bool {
+                true
+            }
+        }
+
+        let warnings = audit_tls_provider(&CertOnlyInsecure);
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(warnings[0].code, "TLS_NO_VERIFY");
+        assert_eq!(warnings[0].cwe, Some(295));
+    }
+
+    #[test]
+    fn tls_version_is_not_deprecated() {
+        assert!(!TlsVersion::Tls12.is_deprecated());
+        assert!(!TlsVersion::Tls13.is_deprecated());
+    }
+
+    #[test]
+    fn failing_provider_metadata() {
+        let provider = FailingProvider;
+        assert_eq!(provider.provider_name(), "test-failing");
+        assert_eq!(provider.config_type_name(), "never");
+        assert_eq!(provider.min_tls_version(), TlsVersion::Tls13);
+        assert!(!provider.accepts_invalid_certs());
+    }
 }
