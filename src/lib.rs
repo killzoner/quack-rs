@@ -64,6 +64,9 @@
 //! | [`error`] | `ExtensionError` for FFI error propagation |
 //! | [`config`] | RAII wrapper for `DuckDB` database configuration |
 //! | [`value`] | RAII wrapper for `DuckDB` values with typed extraction |
+//! | [`tls`] | Type-erased TLS configuration provider for HTTP-capable extensions |
+//! | [`warning`] | Structured security warning API (`ExtensionWarning`, `WarningCollector`) |
+//! | [`secrets`] | Secrets manager bridge trait (`SecretsManager`, `SecretEntry`) |
 //! | [`validate`] | Community extension compliance validators |
 //! | [`validate::description_yml`] | Parse and validate `description.yml` metadata |
 //! | [`scaffold`] | Project generator for new extensions (no C++ glue needed) |
@@ -129,13 +132,16 @@ pub mod prelude;
 pub mod replacement_scan;
 pub mod scaffold;
 pub mod scalar;
+pub mod secrets;
 pub mod sql_macro;
 pub mod table;
 pub mod testing;
+pub mod tls;
 pub mod types;
 pub mod validate;
 pub mod value;
 pub mod vector;
+pub mod warning;
 
 // DuckDB 1.5.0+ modules — gated behind the `duckdb-1-5` feature flag.
 #[cfg(feature = "duckdb-1-5")]

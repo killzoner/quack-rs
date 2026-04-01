@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-03-31
+
+### Added
+
+- **`ExtensionError`: additional `From` impls** — `From<std::io::Error>`,
+  `From<std::ffi::NulError>`, and `From<std::fmt::Error>` allow the `?` operator
+  to propagate common error types directly in `register_all()` without
+  `.map_err()`. This eliminates the need for `panic!()` when operations like
+  tokio runtime allocation fail during extension initialization.
+
+- **`tls` module** — `TlsConfigProvider` trait for type-erased TLS client
+  configuration injection. HTTP-capable extensions (e.g., `duck_net`) implement
+  this trait to supply custom CA bundles, client certificates for mTLS, or
+  restricted cipher suites through a uniform interface. Uses `std::any::Any`
+  so `quack-rs` has no dependency on any specific TLS library. Security
+  hardened: `client_config()` returns `Result` for fallible config creation,
+  `accepts_invalid_certs()` and `min_tls_version()` enable security auditing,
+  `config_type_name()` allows safe pre-downcast verification, and
+  `audit_tls_provider()` integrates with the `warning` module to automatically
+  flag CWE-295 (cert validation bypass) and CWE-327 (deprecated TLS versions).
+  Includes `TlsVersion` enum with `is_deprecated()` and `Ord` ordering.
+
+- **`warning` module** — structured security warning API with
+  `ExtensionWarning`, `WarningSeverity` (Info/Low/Medium/High/Critical), and
+  `WarningCollector`. Extensions that touch external resources emit warnings
+  with machine-readable codes and optional CWE identifiers. `WarningCollector`
+  is thread-safe (`Mutex`-backed) and supports `emit()`, `snapshot()`,
+  `drain()`, and `clear()`.
+
+- **`secrets` module** — `SecretsManager` trait and `SecretEntry` type for
+  bridging into DuckDB's native `CREATE SECRET` storage. Extensions implement
+  `SecretsManager` to provide `get_secret()`, `list_secrets()`, and
+  `remove_secret()` through a safe Rust interface. `SecretEntry` uses a builder
+  pattern with `with_provider()`, `with_scope()`, and `with_field()`.
+  Security hardened: `Debug` redacts field values, `Drop` zeroizes sensitive
+  data via `write_volatile`, `PartialEq` intentionally omitted to prevent
+  timing side-channels, and fields are private with accessor methods.
+
+- **`StructWriter::child_list_vector(field_idx)`** — semantic alias for
+  `child_vector()` that makes the intent clear when a struct field has LIST
+  type. Returns the raw `duckdb_vector` handle for use with `ListVector`
+  methods (`reserve`, `set_entry`, `set_size`, `child_writer`, etc.).
+
+- **Prelude additions** — `TlsConfigProvider`, `ExtensionWarning`,
+  `WarningSeverity`, `WarningCollector`, `SecretEntry`, `SecretsManager`
+  re-exported from `quack_rs::prelude`.
+
 ## [0.11.0] - 2026-03-30
 
 ### Added

@@ -173,6 +173,33 @@ impl From<Box<dyn std::error::Error + Send + Sync>> for ExtensionError {
     }
 }
 
+impl From<std::io::Error> for ExtensionError {
+    #[inline]
+    fn from(e: std::io::Error) -> Self {
+        Self {
+            message: e.to_string(),
+        }
+    }
+}
+
+impl From<std::ffi::NulError> for ExtensionError {
+    #[inline]
+    fn from(e: std::ffi::NulError) -> Self {
+        Self {
+            message: e.to_string(),
+        }
+    }
+}
+
+impl From<std::fmt::Error> for ExtensionError {
+    #[inline]
+    fn from(e: std::fmt::Error) -> Self {
+        Self {
+            message: e.to_string(),
+        }
+    }
+}
+
 /// Convenience type alias for `Result<T, ExtensionError>`.
 pub type ExtResult<T> = Result<T, ExtensionError>;
 
@@ -264,5 +291,35 @@ mod tests {
             Ok(())
         }
         assert_eq!(fails().unwrap_err().as_str(), "explicit error");
+    }
+
+    #[test]
+    fn from_io_error() {
+        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file not found");
+        let err = ExtensionError::from(io_err);
+        assert_eq!(err.as_str(), "file not found");
+    }
+
+    #[test]
+    fn question_mark_with_io_error() {
+        fn fails() -> Result<(), ExtensionError> {
+            Err(std::io::Error::other("runtime init failed"))?;
+            Ok(())
+        }
+        assert_eq!(fails().unwrap_err().as_str(), "runtime init failed");
+    }
+
+    #[test]
+    fn from_nul_error() {
+        let nul_err = std::ffi::CString::new("hello\0world").unwrap_err();
+        let err = ExtensionError::from(nul_err);
+        assert!(!err.as_str().is_empty());
+    }
+
+    #[test]
+    fn from_fmt_error() {
+        let fmt_err = std::fmt::Error;
+        let err = ExtensionError::from(fmt_err);
+        assert!(!err.as_str().is_empty());
     }
 }

@@ -74,6 +74,10 @@ and eliminates every rough edge, so you write **zero lines of C or C++**.
 | Replacement scans | Undocumented vtable + manual string allocation | `ReplacementScanBuilder` 4-method chain |
 | Complex types (STRUCT/LIST/MAP/ARRAY) | Manual offset arithmetic over child vectors | `StructVector`, `ListVector`, `MapVector`, `ArrayVector` helpers |
 | Complex param/return types | Raw `duckdb_create_logical_type` + manual lifecycle | `param_logical(LogicalType)` / `returns_logical(LogicalType)` on all builders |
+| Init error propagation | Forced to `panic!()` when runtime allocation fails | `ExtensionError` has `From<io::Error>` — use `?` directly |
+| TLS configuration | No standard way to inject custom TLS configs | `TlsConfigProvider` trait (type-erased, zero deps) |
+| Security warnings | Every extension re-invents warning infrastructure | `ExtensionWarning` + `WarningCollector` with CWE codes |
+| Secrets management | Custom in-memory secrets + DuckDB bridge per extension | `SecretsManager` trait + `SecretEntry` builder |
 | Extension naming | Rejected by DuckDB CI with no explanation | `validate_extension_name` catches issues before submission |
 | description.yml | No tooling to validate before submission | `validate_description_yml_str` validates the whole file |
 | New project setup | Hours of boilerplate + reading DuckDB internals | `generate_scaffold` produces all 11 required files |
@@ -117,7 +121,7 @@ See [`LESSONS.md`](./LESSONS.md) for full analysis of each pitfall.
 
 ```toml
 [dependencies]
-quack-rs = "0.11"
+quack-rs = "0.12"
 libduckdb-sys = { version = ">=1.4.4, <2", features = ["loadable-extension"] }
 ```
 
@@ -303,6 +307,9 @@ append_metadata target/release/libmy_extension.so \
 | [`types`] | DuckDB type system wrappers | `TypeId`, `LogicalType`, `NullHandling` |
 | [`interval`] | INTERVAL ↔ microseconds conversion | `DuckInterval`, `interval_to_micros` |
 | [`error`] | FFI-safe error type | `ExtensionError`, `ExtResult<T>` |
+| [`tls`] | Type-erased TLS config provider for HTTP-capable extensions | `TlsConfigProvider` |
+| [`warning`] | Structured security warning API | `ExtensionWarning`, `WarningSeverity`, `WarningCollector` |
+| [`secrets`] | Secrets manager bridge trait | `SecretsManager`, `SecretEntry` |
 | [`config`] | RAII wrapper for DuckDB database configuration | `DbConfig` |
 | [`validate`] | Community extension compliance | All validators below |
 | [`validate::description_yml`] | description.yml parsing and validation | `parse_description_yml`, `DescriptionYml` |
@@ -345,6 +352,9 @@ append_metadata target/release/libmy_extension.so \
 [`types`]: https://docs.rs/quack-rs/latest/quack_rs/types/index.html
 [`interval`]: https://docs.rs/quack-rs/latest/quack_rs/interval/index.html
 [`error`]: https://docs.rs/quack-rs/latest/quack_rs/error/index.html
+[`tls`]: https://docs.rs/quack-rs/latest/quack_rs/tls/index.html
+[`warning`]: https://docs.rs/quack-rs/latest/quack_rs/warning/index.html
+[`secrets`]: https://docs.rs/quack-rs/latest/quack_rs/secrets/index.html
 [`config`]: https://docs.rs/quack-rs/latest/quack_rs/config/index.html
 [`validate`]: https://docs.rs/quack-rs/latest/quack_rs/validate/index.html
 [`validate::description_yml`]: https://docs.rs/quack-rs/latest/quack_rs/validate/description_yml/index.html
@@ -605,6 +615,13 @@ flowchart TB
     SYS["**libduckdb-sys** >=1.4.4, &lt;2<br/>DuckDB C Extension API<br/>headers only · no linked library"]:::ffi
 
     RT[("**DuckDB**<br/>Runtime")]:::duckdb
+
+    subgraph EXT ["Extension infrastructure"]
+        direction LR
+        TLS["**tls**<br/>TlsConfigProvider"]
+        WRN["**warning**<br/>ExtensionWarning · WarningCollector"]
+        SEC["**secrets**<br/>SecretsManager · SecretEntry"]
+    end
 
     subgraph DEV ["Dev-time utilities"]
         direction LR
