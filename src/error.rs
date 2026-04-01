@@ -322,4 +322,37 @@ mod tests {
         let err = ExtensionError::from(fmt_err);
         assert!(!err.as_str().is_empty());
     }
+
+    #[test]
+    fn to_c_string_leading_null_byte() {
+        // A message starting with null should truncate to empty string
+        let err = ExtensionError::new("\0trailing");
+        let cstr = err.to_c_string();
+        assert_eq!(cstr.to_str().unwrap(), "");
+    }
+
+    #[test]
+    fn to_c_string_multiple_null_bytes() {
+        let err = ExtensionError::new("first\0second\0third");
+        let cstr = err.to_c_string();
+        assert_eq!(cstr.to_str().unwrap(), "first");
+    }
+
+    #[test]
+    fn from_box_dyn_error_send_sync() {
+        let boxed: Box<dyn std::error::Error + Send + Sync> =
+            "abc".parse::<i32>().unwrap_err().into();
+        let err = ExtensionError::from(boxed);
+        assert!(!err.message.is_empty());
+    }
+
+    #[test]
+    fn ext_result_alias() {
+        // Verify ExtResult<T> alias works as expected
+        let ok_val: ExtResult<i32> = Ok(42);
+        assert!(ok_val.is_ok());
+
+        let err_val: ExtResult<i32> = Err(ExtensionError::new("fail"));
+        assert!(err_val.is_err());
+    }
 }

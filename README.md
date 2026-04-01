@@ -804,33 +804,50 @@ C API exposes it.
 
 See [`CHANGELOG.md`](./CHANGELOG.md) for the full version history.
 
-**v0.7.1** (2026-03-27) — Upgraded to DuckDB 1.5.1 (`libduckdb-sys` 1.10501.0). Added
-`TypeId::Any`, `TypeId::Varint`, `TypeId::SqlNull` (behind `duckdb-1-5`). Fixed ARM64/aarch64
-builds. Added 28 new tests (DbConfig, MockVector, TypeId variants). Comprehensive v1.5.1
-compatibility evaluation. Users should upgrade DuckDB runtime for WAL and ART index fixes.
+**v0.12.0** (2026-03-31) — Added `tls` module (`TlsConfigProvider` trait for type-erased TLS
+client configuration injection with CWE-coded audit), `warning` module (`ExtensionWarning`,
+`WarningSeverity`, `WarningCollector` for structured security warnings), `secrets` module
+(`SecretsManager` trait, `SecretEntry` with redacted `Debug`, volatile zeroize on `Drop`).
+Added `From<io::Error>`, `From<NulError>`, `From<fmt::Error>` on `ExtensionError`.
+Added `StructWriter::child_list_vector()` convenience alias.
 
-**v0.7.0** (2026-03-22) — Upgraded to DuckDB 1.5.0 (`libduckdb-sys` 1.10500.0). Populated the
-`duckdb-1-5` feature flag with five new modules: `catalog`, `client_context`, `config_option`,
-`copy_function`, `table_description`. Added `TypeId::TimeNs` and `ScalarFunctionBuilder` methods
-`varargs()`, `volatile()`, `bind()`, `init()`. COPY format handlers are now supported.
+**v0.11.0** (2026-03-30) — Added `StructWriter::child_vector()`, `StructReader::child_vector()`
+for nested complex types inside STRUCT fields. Added `ChunkWriter::vector()`,
+`ChunkWriter::column_count()`, `VectorWriter::set_valid()`, `StructWriter::set_valid()`.
+Added `ReplacementScanInfo::add_parameter_raw()`, `add_i64_parameter()`, `add_bool_parameter()`.
+`table_scan_callback!` now reports panic messages to DuckDB via `duckdb_function_set_error`.
 
-**v0.5.0** (2026-03-10) — Added `param_logical(LogicalType)` and `returns_logical(LogicalType)` on
-all function builders (scalar, aggregate, and their set variants), enabling complex
-parameterized types like `LIST(BOOLEAN)` or `MAP(VARCHAR, INTEGER)` without raw FFI.
-Added per-overload `null_handling(NullHandling)` on set overload builders.
+**v0.10.0** (2026-03-29) — Added `StructWriter`, `StructReader`, `ChunkWriter` for batched
+typed vector I/O. Added `scalar_callback!` / `table_scan_callback!` panic-safe callback
+wrapper macros. Added `Value` integer extraction methods. Added temporal/binary vector
+methods (date, timestamp, time, blob, uuid). Added `DataChunk` bridge methods.
 
-**v0.4.0** (2026-03-09) — Added `Connection` and `Registrar` trait (version-agnostic
-registration facade), `init_extension_v2`, `entry_point_v2!` macro, and `duckdb-1-5` feature
-flag. Broadened `libduckdb-sys` support from an exact `=1.4.4` pin to `>=1.4.4, <2`, covering
-DuckDB 1.4.x and 1.5.x.
+**v0.9.0** (2026-03-29) — Added `Value` RAII wrapper, `DataChunk` wrapper, `MapVector`
+reader/writer helpers, `VectorWriter::write_str()`, `BindInfo::get_parameter_value()`.
+
+**v0.8.0** (2026-03-28) — Added `LogicalType` introspection (20 methods), complex type
+constructors (decimal, array, union, enum), `TypeId::from_duckdb_type()`, callback info
+wrappers (`ScalarFunctionInfo`, `AggregateFunctionInfo`, etc.), `ArrayVector` helper.
+
+**v0.7.0** (2026-03-22) — Upgraded to DuckDB 1.5.0. Populated `duckdb-1-5` feature with
+five new modules: `catalog`, `client_context`, `config_option`, `copy_function`,
+`table_description`. Added `TypeId::TimeNs`, scalar function `varargs()`, `volatile()`,
+`bind()`, `init()`. COPY format handlers now supported.
+
+**v0.6.0** (2026-03-12) — Fixed `InMemoryDb::open()` dispatch table initialization
+(`bundled-test` feature). Added `bundled_api_init.cpp` shim and `build.rs` compilation.
+
+**v0.5.0** (2026-03-10) — Added `param_logical(LogicalType)` and `returns_logical(LogicalType)`
+on all builders for complex parameterized types. Added per-overload `null_handling()`.
+
+**v0.4.0** (2026-03-09) — Added `Connection` / `Registrar` trait, `init_extension_v2`,
+`entry_point_v2!`, `duckdb-1-5` feature flag. Broadened `libduckdb-sys` to `>=1.4.4, <2`.
 
 **v0.3.0** (2026-03-08) — Added `TableFunctionBuilder`, `ReplacementScanBuilder`,
-`CastFunctionBuilder`, complex vector types (`StructVector`, `ListVector`, `MapVector`),
-`write_interval`, `DbConfig`, `append_metadata` binary, cross-platform CI (Linux/macOS/Windows).
+`CastFunctionBuilder`, complex vector types, `DbConfig`, `append_metadata` binary.
 
-**v0.2.0** (2026-03-07) — Added `validate::description_yml` module, `prelude` module,
-scaffold improvements (`extension_config.cmake`, SQLLogicTest, GitHub Actions CI),
-`ScalarFunctionBuilder`, `entry_point!` macro, vector writer improvements, Windows CI.
+**v0.2.0** (2026-03-07) — Added `validate::description_yml`, `prelude`, scaffold improvements,
+`ScalarFunctionBuilder`, `entry_point!` macro.
 
 **v0.1.0** (2025-05-01) — Initial release with all core modules.
 

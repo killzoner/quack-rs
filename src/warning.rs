@@ -293,4 +293,102 @@ mod tests {
         set.insert(WarningSeverity::High);
         assert_eq!(set.len(), 2);
     }
+
+    #[test]
+    fn collector_drain_returns_in_order() {
+        let c = WarningCollector::new();
+        for i in 0..10 {
+            c.emit(ExtensionWarning {
+                code: "SEQ",
+                severity: WarningSeverity::Info,
+                message: format!("msg-{i}"),
+                cwe: None,
+            });
+        }
+        let warnings = c.drain();
+        assert_eq!(warnings.len(), 10);
+        for (i, w) in warnings.iter().enumerate() {
+            assert_eq!(w.message, format!("msg-{i}"));
+        }
+    }
+
+    #[test]
+    fn collector_clear_then_emit() {
+        let c = WarningCollector::new();
+        c.emit(ExtensionWarning {
+            code: "A",
+            severity: WarningSeverity::Low,
+            message: "first".into(),
+            cwe: None,
+        });
+        c.clear();
+        c.emit(ExtensionWarning {
+            code: "B",
+            severity: WarningSeverity::High,
+            message: "second".into(),
+            cwe: None,
+        });
+        let warnings = c.drain();
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(warnings[0].code, "B");
+    }
+
+    #[test]
+    fn warning_clone() {
+        let w = ExtensionWarning {
+            code: "TEST",
+            severity: WarningSeverity::Critical,
+            message: "important".into(),
+            cwe: Some(798),
+        };
+        let w2 = w.clone();
+        assert_eq!(w.code, w2.code);
+        assert_eq!(w.severity, w2.severity);
+        assert_eq!(w.message, w2.message);
+        assert_eq!(w.cwe, w2.cwe);
+    }
+
+    #[test]
+    fn warning_debug_contains_fields() {
+        let w = ExtensionWarning {
+            code: "DBG",
+            severity: WarningSeverity::Medium,
+            message: "test debug".into(),
+            cwe: Some(100),
+        };
+        let debug = format!("{w:?}");
+        assert!(debug.contains("DBG"));
+        assert!(debug.contains("Medium"));
+        assert!(debug.contains("test debug"));
+        assert!(debug.contains("100"));
+    }
+
+    #[test]
+    fn snapshot_after_drain_is_empty() {
+        let c = WarningCollector::new();
+        c.emit(ExtensionWarning {
+            code: "X",
+            severity: WarningSeverity::Info,
+            message: "test".into(),
+            cwe: None,
+        });
+        let _ = c.drain();
+        let snap = c.snapshot();
+        assert!(snap.is_empty());
+    }
+
+    #[test]
+    fn multiple_drains_second_is_empty() {
+        let c = WarningCollector::new();
+        c.emit(ExtensionWarning {
+            code: "X",
+            severity: WarningSeverity::Info,
+            message: "test".into(),
+            cwe: None,
+        });
+        let first = c.drain();
+        assert_eq!(first.len(), 1);
+        let second = c.drain();
+        assert!(second.is_empty());
+    }
 }
