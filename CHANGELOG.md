@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`TypedTableFunctionBuilder<S>` with closure-based `bind`/`scan`** —
+  new high-level layer on top of `TableFunctionBuilder` that lets extensions
+  register table functions via two safe Rust closures instead of hand-rolled
+  `unsafe extern "C" fn` trampolines. Entry point is
+  `TableFunctionBuilder::with_state::<S, _>(|bind| Ok(S { ... }))`, followed by
+  `.scan(|state, chunk| { ... Ok(()) })` and `.build()?` to recover a fully
+  configured `TableFunctionBuilder` usable with any `Registrar`. Highlights:
+    - The `bind` closure receives `&BindInfo`, declares the output schema,
+      reads parameters, and returns the typed scan state `S: Send + 'static`.
+    - The `scan` closure receives `&mut S` and a `DataChunk` for the output
+      chunk. Returning with chunk size zero signals end-of-stream.
+    - Panics in user closures are caught via `std::panic::catch_unwind` and
+      surfaced through `duckdb_bind/init/function_set_error`; the scan
+      forces chunk size to zero on panic so the query terminates safely.
+    - Scan state is carried from `bind` through `init` into `init_data` so
+      the scan callback can hold `&mut S` without extra ceremony.
+    - Because `S` is only required to be `Send`, scans are serialised by
+      calling `set_max_threads(1)`. Extensions that need true multi-worker
+      parallelism should continue to use the raw `TableFunctionBuilder` with
+      `local_init`.
+    - Re-exported from the prelude as `TypedTableFunctionBuilder`.
+
+  This is proposal A from the duck_net "quack-rs enhancements" list and
+  eliminates the raw bind/init/scan trampolines that every FFI-heavy
+  extension would otherwise write by hand.
+
 ## [0.12.0] - 2026-03-31
 
 ### Added

@@ -10,6 +10,17 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`TypedTableFunctionBuilder<S>` — closure-based table functions with typed scan state**
+    - Entry point: `TableFunctionBuilder::with_state::<S, _>(|bind| Ok(S { ... })).scan(|state, chunk| { ... Ok(()) }).build()?`
+    - `bind` closure: `&BindInfo -> Result<S, ExtensionError>` — declares output schema, reads parameters, returns the initial scan state
+    - `scan` closure: `&mut S, &DataChunk -> Result<(), ExtensionError>` — writes rows; set chunk size to zero to signal end-of-stream
+    - Eliminates hand-rolled `unsafe extern "C" fn` bind/init/scan trampolines in FFI-heavy extensions
+    - Panics in user closures are caught via `catch_unwind` and reported through `duckdb_*_set_error`
+    - `S: Send + 'static`; scans are serialised (`set_max_threads(1)`) — use the raw builder + `local_init` for parallel scans
+    - Re-exported from `quack_rs::prelude`
+
 ## [0.12.0] — 2026-03-31
 
 ### Added

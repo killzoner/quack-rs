@@ -23,13 +23,25 @@
 //!
 //! | Type | Purpose |
 //! |------|---------|
-//! | [`TableFunctionBuilder`] | Registers the table function with `DuckDB` |
+//! | [`TableFunctionBuilder`] | Registers the table function with `DuckDB` (raw callback mode) |
+//! | [`TypedTableFunctionBuilder`] | Closure-based builder with typed, mutable scan state |
 //! | [`BindInfo`] | Ergonomic wrapper for `duckdb_bind_info` in bind callbacks |
 //! | [`InitInfo`] | Ergonomic wrapper for `duckdb_init_info` in init callbacks |
 //! | [`FunctionInfo`] | Ergonomic wrapper for `duckdb_function_info` in scan callbacks |
 //! | [`FfiBindData<T>`] | Type-safe bind-phase data storage |
 //! | [`FfiInitData<T>`] | Type-safe global init-phase data storage |
 //! | [`FfiLocalInitData<T>`] | Type-safe per-thread init-phase data storage |
+//!
+//! # Two layers: raw vs. typed
+//!
+//! - Reach for [`TypedTableFunctionBuilder`] first.
+//!   It hides the bind/init/scan trampolines behind two safe Rust closures, carries a
+//!   typed scan state from `bind` into `scan`, and catches panics via `catch_unwind`.
+//!   See the [`typed`] module for the full API and an end-to-end example.
+//! - Drop down to [`TableFunctionBuilder`] when you need raw control:
+//!   projection pushdown with column filtering, `local_init`-driven parallel scans,
+//!   or any callback shape that doesn't fit the "produce state in bind, mutate it in
+//!   scan" model.
 //!
 //! # Example: Simple table function
 //!

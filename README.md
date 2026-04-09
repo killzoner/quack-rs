@@ -70,7 +70,7 @@ and eliminates every rough edge, so you write **zero lines of C or C++**.
 | LogicalType memory | Leak if not freed | `LogicalType` implements `Drop` |
 | Aggregate combine | Config fields lost on segment-tree merges | Testable with `AggregateTestHarness` |
 | FFI panics | Process abort or undefined behavior | `init_extension` never panics; `scalar_callback!` / `table_scan_callback!` catch panics |
-| Table functions | ~100 lines of raw bind/init/scan callbacks | `TableFunctionBuilder` 5-method chain |
+| Table functions | ~100 lines of raw bind/init/scan callbacks | `TableFunctionBuilder` 5-method chain, or `TypedTableFunctionBuilder<S>` with two safe Rust closures |
 | Replacement scans | Undocumented vtable + manual string allocation | `ReplacementScanBuilder` 4-method chain |
 | Complex types (STRUCT/LIST/MAP/ARRAY) | Manual offset arithmetic over child vectors | `StructVector`, `ListVector`, `MapVector`, `ArrayVector` helpers |
 | Complex param/return types | Raw `duckdb_create_logical_type` + manual lifecycle | `param_logical(LogicalType)` / `returns_logical(LogicalType)` on all builders |
@@ -293,7 +293,7 @@ append_metadata target/release/libmy_extension.so \
 | [`aggregate::callbacks`] | Callback type aliases | `UpdateFn`, `CombineFn`, `FinalizeFn`, … |
 | [`scalar`] | Scalar function registration | `ScalarFunctionBuilder`, `ScalarFunctionSetBuilder`, `ScalarOverloadBuilder`, `ScalarFunctionInfo`, `ScalarBindInfo`¹, `ScalarInitInfo`¹ |
 | [`cast`] | Custom type cast functions | `CastFunctionBuilder`, `CastFunctionInfo`, `CastMode` |
-| [`table`] | Table function registration (bind/init/scan) | `TableFunctionBuilder`, `BindInfo`, `FfiBindData`, `FfiInitData` |
+| [`table`] | Table function registration (bind/init/scan) | `TableFunctionBuilder`, `TypedTableFunctionBuilder`, `BindInfo`, `FfiBindData`, `FfiInitData` |
 | [`replacement_scan`] | `SELECT * FROM 'file.xyz'` replacement scans | `ReplacementScanBuilder` |
 | [`sql_macro`] | SQL macro registration (no FFI callbacks) | `SqlMacro`, `MacroBody` |
 | [`data_chunk`] | Ergonomic wrapper for DuckDB data chunks | `DataChunk` |
@@ -593,7 +593,7 @@ flowchart TB
         EP["**entry_point**<br/>entry_point! · init_extension"]
         AGG["**aggregate**<br/>AggregateFunctionBuilder<br/>AggregateFunctionSetBuilder · FfiState&lt;T&gt;"]
         SCL["**scalar**<br/>ScalarFunctionBuilder<br/>ScalarFunctionSetBuilder"]
-        TBL["**table**<br/>TableFunctionBuilder<br/>BindInfo · FfiBindData · FfiInitData"]
+        TBL["**table**<br/>TableFunctionBuilder · TypedTableFunctionBuilder<br/>BindInfo · FfiBindData · FfiInitData"]
         RSC["**replacement_scan**<br/>ReplacementScanBuilder"]
         SM["**sql_macro**<br/>SqlMacro · MacroBody"]
         CST["**cast**<br/>CastFunctionBuilder"]

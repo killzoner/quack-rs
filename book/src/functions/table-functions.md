@@ -4,9 +4,18 @@ Table functions implement the `SELECT * FROM my_function(args)` pattern — they
 return a result set rather than a scalar value. DuckDB table functions have three
 lifecycle callbacks: **bind**, **init**, and **scan**.
 
-`quack-rs` provides `TableFunctionBuilder` plus the helper types `BindInfo`,
-`InitInfo`, `FunctionInfo`, `FfiBindData<T>`, `FfiInitData<T>`, and
-`FfiLocalInitData<T>` to eliminate the raw FFI boilerplate.
+`quack-rs` provides two layers for registering table functions:
+
+1. **`TypedTableFunctionBuilder<S>`** (recommended for new extensions) — closure-based
+   API that hides bind/init/scan trampolines behind two safe Rust closures and carries
+   a typed scan state from `bind` into `scan` for you.
+2. **`TableFunctionBuilder`** — the underlying raw builder used by `TypedTableFunctionBuilder`
+   internally. Reach for it when you need fine-grained control: `local_init`-driven
+   parallel scans, projection pushdown with column filtering, or callback shapes that
+   don't fit the "produce state in bind, mutate it in scan" model.
+
+Both builders are backed by the helper types `BindInfo`, `InitInfo`, `FunctionInfo`,
+`FfiBindData<T>`, `FfiInitData<T>`, and `FfiLocalInitData<T>`.
 
 ## Lifecycle
 
@@ -18,6 +27,70 @@ lifecycle callbacks: **bind**, **init**, and **scan**.
 
 The scan callback is called repeatedly until it writes 0 rows in a batch, signalling
 end-of-results.
+
+## Closure-based typed state (`with_state`)
+
+For the common "take parameters at bind, stream rows until exhausted" pattern,
+`TypedTableFunctionBuilder<S>` replaces all three callback trampolines with two
+closures:
+
+```rust,no_run
+use quack_rs::prelude::*;
+
+struct State {
+    remaining: u64,
+}
+
+fn register(reg: &impl Registrar) -> ExtResult<()> {
+    let builder = TableFunctionBuilder::new("count_down")
+        .param(TypeId::BigInt)
+        // 1. bind closure: declare the output schema, read parameters,
+        //    return the initial scan state.
+        .with_state::<State, _>(|bind| {
+            bind.add_result_column("n", TypeId::BigInt);
+            let raw = unsafe { bind.get_parameter_value(0) };
+            Ok(State { remaining: raw.as_i64_or(0).max(0) as u64 })
+        })
+        // 2. scan closure: mutate state, write rows, set chunk size.
+        .scan(|state, chunk| {
+            if state.remaining == 0 {
+                unsafe { chunk.set_size(0) };
+                return Ok(());
+            }
+            let mut writer = unsafe { chunk.writer(0) };
+            unsafe { writer.write_i64(0, state.remaining as i64) };
+            state.remaining -= 1;
+            unsafe { chunk.set_size(1) };
+            Ok(())
+        })
+        .build()?;
+    unsafe { reg.register_table(builder) }
+}
+```
+
+### What you get for free
+
+- **No hand-written `unsafe extern "C" fn` trampolines.** `TypedTableFunctionBuilder`
+  generates them internally.
+- **Typed scan state.** The `bind` closure returns `S`; the `scan` closure receives
+  `&mut S`. State is moved from the bind phase into init data for you — no manual
+  `FfiBindData` / `FfiInitData` shuffling.
+- **Panic safety.** User closures run inside `catch_unwind`. Panics surface as
+  `duckdb_bind/init/function_set_error`, and the scan forces chunk size to zero so
+  the query terminates cleanly instead of unwinding across the FFI boundary.
+- **Error propagation.** Return `Err(ExtensionError::new("..."))` from either closure
+  to report a SQL error to DuckDB.
+
+### Trade-offs and threading
+
+- `S` must be `Send + 'static`. `Sync` is **not** required, so
+  `TypedTableFunctionBuilder` forces scans to run on a single worker by calling
+  `InitInfo::set_max_threads(1)` internally.
+- Extensions that need multi-worker parallelism (`local_init` + thread-local buffers)
+  should use the raw [`TableFunctionBuilder`](#builder-api) directly.
+- `TypedTableFunctionBuilder::build()` returns a fully configured
+  `TableFunctionBuilder`, so you can still pass it through any `Registrar`
+  — including `MockRegistrar` for unit tests.
 
 ## Builder API
 
