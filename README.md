@@ -70,7 +70,7 @@ and eliminates every rough edge, so you write **zero lines of C or C++**.
 | LogicalType memory | Leak if not freed | `LogicalType` implements `Drop` |
 | Aggregate combine | Config fields lost on segment-tree merges | Testable with `AggregateTestHarness` |
 | FFI panics | Process abort or undefined behavior | `init_extension` never panics; `scalar_callback!` / `table_scan_callback!` catch panics |
-| Table functions | ~100 lines of raw bind/init/scan callbacks | `TableFunctionBuilder` 5-method chain |
+| Table functions | ~100 lines of raw bind/init/scan callbacks | `TableFunctionBuilder` 5-method chain, or `TypedTableFunctionBuilder<S>` with two safe Rust closures |
 | Replacement scans | Undocumented vtable + manual string allocation | `ReplacementScanBuilder` 4-method chain |
 | Complex types (STRUCT/LIST/MAP/ARRAY) | Manual offset arithmetic over child vectors | `StructVector`, `ListVector`, `MapVector`, `ArrayVector` helpers |
 | Complex param/return types | Raw `duckdb_create_logical_type` + manual lifecycle | `param_logical(LogicalType)` / `returns_logical(LogicalType)` on all builders |
@@ -121,9 +121,14 @@ See [`LESSONS.md`](./LESSONS.md) for full analysis of each pitfall.
 
 ```toml
 [dependencies]
-quack-rs = "0.12"
+quack-rs = "0.11"
 libduckdb-sys = { version = ">=1.4.4, <2", features = ["loadable-extension"] }
 ```
+
+> The latest crate published to [crates.io](https://crates.io/crates/quack-rs)
+> is **v0.11.0**. Versions v0.12.0 and v0.13.0 are prepared in this repository
+> but have not yet been published. Until the v0.13.0 release workflow runs,
+> `cargo add quack-rs` resolves to `0.11.0`.
 
 > **DuckDB compatibility**: `quack-rs` supports DuckDB **1.4.x and 1.5.x**.
 > Both releases expose the same C API version (`v1.2.0`), confirmed by E2E tests
@@ -293,7 +298,7 @@ append_metadata target/release/libmy_extension.so \
 | [`aggregate::callbacks`] | Callback type aliases | `UpdateFn`, `CombineFn`, `FinalizeFn`, … |
 | [`scalar`] | Scalar function registration | `ScalarFunctionBuilder`, `ScalarFunctionSetBuilder`, `ScalarOverloadBuilder`, `ScalarFunctionInfo`, `ScalarBindInfo`¹, `ScalarInitInfo`¹ |
 | [`cast`] | Custom type cast functions | `CastFunctionBuilder`, `CastFunctionInfo`, `CastMode` |
-| [`table`] | Table function registration (bind/init/scan) | `TableFunctionBuilder`, `BindInfo`, `FfiBindData`, `FfiInitData` |
+| [`table`] | Table function registration (bind/init/scan) | `TableFunctionBuilder`, `TypedTableFunctionBuilder`, `BindInfo`, `FfiBindData`, `FfiInitData` |
 | [`replacement_scan`] | `SELECT * FROM 'file.xyz'` replacement scans | `ReplacementScanBuilder` |
 | [`sql_macro`] | SQL macro registration (no FFI callbacks) | `SqlMacro`, `MacroBody` |
 | [`data_chunk`] | Ergonomic wrapper for DuckDB data chunks | `DataChunk` |
@@ -593,7 +598,7 @@ flowchart TB
         EP["**entry_point**<br/>entry_point! · init_extension"]
         AGG["**aggregate**<br/>AggregateFunctionBuilder<br/>AggregateFunctionSetBuilder · FfiState&lt;T&gt;"]
         SCL["**scalar**<br/>ScalarFunctionBuilder<br/>ScalarFunctionSetBuilder"]
-        TBL["**table**<br/>TableFunctionBuilder<br/>BindInfo · FfiBindData · FfiInitData"]
+        TBL["**table**<br/>TableFunctionBuilder · TypedTableFunctionBuilder<br/>BindInfo · FfiBindData · FfiInitData"]
         RSC["**replacement_scan**<br/>ReplacementScanBuilder"]
         SM["**sql_macro**<br/>SqlMacro · MacroBody"]
         CST["**cast**<br/>CastFunctionBuilder"]
@@ -804,12 +809,20 @@ C API exposes it.
 
 See [`CHANGELOG.md`](./CHANGELOG.md) for the full version history.
 
-**v0.12.0** (2026-03-31) — Added `tls` module (`TlsConfigProvider` trait for type-erased TLS
-client configuration injection with CWE-coded audit), `warning` module (`ExtensionWarning`,
-`WarningSeverity`, `WarningCollector` for structured security warnings), `secrets` module
-(`SecretsManager` trait, `SecretEntry` with redacted `Debug`, volatile zeroize on `Drop`).
-Added `From<io::Error>`, `From<NulError>`, `From<fmt::Error>` on `ExtensionError`.
-Added `StructWriter::child_list_vector()` convenience alias.
+**v0.12.0** (2026-04-09) — Added `TypedTableFunctionBuilder<S>`, a closure-based
+layer on top of `TableFunctionBuilder` that replaces hand-rolled
+`unsafe extern "C" fn` bind/init/scan trampolines with two safe Rust closures
+(`TableFunctionBuilder::with_state::<S, _>(...).scan(...).build()?`); panics in
+user closures are caught via `catch_unwind`; state is carried from `bind`
+through `init` into `init_data` so the scan closure receives `&mut S`; scans
+run serialised (`set_max_threads(1)`) since `S: Send` is not `Sync`.
+Added `tls` module (`TlsConfigProvider` trait for type-erased TLS client
+configuration injection with CWE-coded audit), `warning` module
+(`ExtensionWarning`, `WarningSeverity`, `WarningCollector` for structured
+security warnings), `secrets` module (`SecretsManager` trait, `SecretEntry`
+with redacted `Debug`, volatile zeroize on `Drop`). Added `From<io::Error>`,
+`From<NulError>`, `From<fmt::Error>` on `ExtensionError`. Added
+`StructWriter::child_list_vector()` convenience alias.
 
 **v0.11.0** (2026-03-30) — Added `StructWriter::child_vector()`, `StructReader::child_vector()`
 for nested complex types inside STRUCT fields. Added `ChunkWriter::vector()`,

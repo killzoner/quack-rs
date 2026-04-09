@@ -40,7 +40,7 @@ DuckDB's own documentation acknowledges the gap:
 | Overloaded scalars | ✅ `ScalarFunctionSetBuilder` |
 | Aggregate functions | ✅ `AggregateFunctionBuilder` |
 | Overloaded aggregates | ✅ `AggregateFunctionSetBuilder` |
-| Table functions | ✅ `TableFunctionBuilder` |
+| Table functions | ✅ `TableFunctionBuilder` (raw) + `TypedTableFunctionBuilder<S>` (closure-based, typed scan state) |
 | Cast / TRY\_CAST functions | ✅ `CastFunctionBuilder` |
 | Replacement scans | ✅ `ReplacementScanBuilder` |
 | SQL macros (scalar) | ✅ `SqlMacro::scalar` |

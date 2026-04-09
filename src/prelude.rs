@@ -142,7 +142,7 @@ pub use crate::copy_function::{
 // Table functions
 pub use crate::table::{
     BindInfo, FfiBindData, FfiInitData, FfiLocalInitData, FunctionInfo, InitInfo,
-    TableFunctionBuilder,
+    TableFunctionBuilder, TypedTableFunctionBuilder,
 };
 
 // Replacement scans

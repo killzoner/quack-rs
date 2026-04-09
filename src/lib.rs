@@ -52,7 +52,7 @@
 //! | [`aggregate`] | Builders for aggregate function registration |
 //! | [`scalar`] | Builder for scalar function registration |
 //! | [`cast`] | Builder for custom type cast functions |
-//! | [`table`] | Builder for table function registration |
+//! | [`table`] | Builders for table function registration (raw `TableFunctionBuilder` + closure-based `TypedTableFunctionBuilder<S>`) |
 //! | [`replacement_scan`] | `SELECT * FROM 'file.xyz'` replacement scan registration |
 //! | [`sql_macro`] | SQL macro registration (`CREATE MACRO`) — no FFI callbacks |
 //! | [`vector`] | Safe helpers for reading/writing `DuckDB` data vectors |

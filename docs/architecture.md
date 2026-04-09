@@ -38,7 +38,8 @@ quack_rs
 │   ├── builder      TableFunctionBuilder, BindFn/InitFn/ScanFn type aliases
 │   ├── info         BindInfo, InitInfo, FunctionInfo — callback info wrappers
 │   ├── bind_data    FfiBindData<T> — type-safe bind-phase data storage
-│   └── init_data    FfiInitData<T>, FfiLocalInitData<T> — scan state storage
+│   ├── init_data    FfiInitData<T>, FfiLocalInitData<T> — scan state storage
+│   └── typed        TypedTableFunctionBuilder<S> — closure-based bind/scan with typed state
 ├── catalog          Catalog, CatalogEntry, CatalogEntryType — catalog entry lookup (requires `duckdb-1-5`)
 ├── client_context   ClientContext — client context access (requires `duckdb-1-5`)
 ├── config_option    ConfigOptionBuilder — extension-defined configuration options (requires `duckdb-1-5`)
@@ -90,6 +91,7 @@ quack_rs
 | `table::info` | `BindInfo`, `InitInfo`, `FunctionInfo` — callback wrappers | Yes |
 | `table::bind_data` | `FfiBindData<T>` — type-safe bind-phase data storage | Yes |
 | `table::init_data` | `FfiInitData<T>`, `FfiLocalInitData<T>` — scan state storage | Yes |
+| `table::typed` | `TypedTableFunctionBuilder<S>` — closure-based bind/scan with typed state (panic-safe trampolines, serial scans) | Yes |
 | `catalog` | `Catalog`, `CatalogEntry`, `CatalogEntryType` — catalog entry lookup (requires `duckdb-1-5`) | Yes |
 | `client_context` | `ClientContext` — access to connection catalog, config options, and connection ID (requires `duckdb-1-5`) | Yes |
 | `config_option` | `ConfigOptionBuilder` — register extension-defined `SET`/`RESET` configuration options (requires `duckdb-1-5`) | Yes |
