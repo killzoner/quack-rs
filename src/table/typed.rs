@@ -426,9 +426,8 @@ mod tests {
 
     #[test]
     fn with_state_produces_typed_builder() {
-        let typed = TableFunctionBuilder::new("demo").with_state::<DummyState, _>(|_bind| {
-            Ok(DummyState { _rows: 10 })
-        });
+        let typed = TableFunctionBuilder::new("demo")
+            .with_state::<DummyState, _>(|_bind| Ok(DummyState { _rows: 10 }));
         assert_eq!(typed.name(), "demo");
         assert!(typed.bind.is_some());
         assert!(typed.scan.is_none());

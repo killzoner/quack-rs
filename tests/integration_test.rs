@@ -942,8 +942,7 @@ fn typed_table_function_requires_scan_closure() {
     use quack_rs::table::TableFunctionBuilder;
 
     struct State;
-    let typed = TableFunctionBuilder::new("needs_scan")
-        .with_state::<State, _>(|_bind| Ok(State));
+    let typed = TableFunctionBuilder::new("needs_scan").with_state::<State, _>(|_bind| Ok(State));
 
     match typed.build() {
         Err(e) => assert!(e.as_str().contains("scan closure not set")),
