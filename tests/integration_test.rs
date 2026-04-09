@@ -914,6 +914,44 @@ fn table_builder_name_accessor() {
 }
 
 #[test]
+fn typed_table_function_builds_through_mock_registrar() {
+    use quack_rs::connection::Registrar;
+    use quack_rs::table::TableFunctionBuilder;
+    use quack_rs::testing::MockRegistrar;
+
+    struct State {
+        #[allow(dead_code)]
+        remaining: u64,
+    }
+
+    let typed = TableFunctionBuilder::new("count_down")
+        .param(TypeId::BigInt)
+        .with_state::<State, _>(|_bind| Ok(State { remaining: 3 }))
+        .scan(|_state, _chunk| Ok(()));
+
+    assert_eq!(typed.name(), "count_down");
+
+    let builder = typed.build().expect("build succeeds");
+    let mock = MockRegistrar::new();
+    unsafe { mock.register_table(builder).unwrap() };
+    assert!(mock.has_table("count_down"));
+}
+
+#[test]
+fn typed_table_function_requires_scan_closure() {
+    use quack_rs::table::TableFunctionBuilder;
+
+    struct State;
+    let typed = TableFunctionBuilder::new("needs_scan")
+        .with_state::<State, _>(|_bind| Ok(State));
+
+    match typed.build() {
+        Err(e) => assert!(e.as_str().contains("scan closure not set")),
+        Ok(_) => panic!("expected an error when scan is missing"),
+    }
+}
+
+#[test]
 fn cast_builder_source_target_accessors() {
     use quack_rs::cast::CastFunctionBuilder;
     use quack_rs::types::TypeId;
