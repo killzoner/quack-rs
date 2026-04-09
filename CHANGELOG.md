@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.13.0] - 2026-04-09
+## [0.12.0] - 2026-04-09
 
 ### Added
 
@@ -36,10 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   This is proposal A from the duck_net "quack-rs enhancements" list and
   eliminates the raw bind/init/scan trampolines that every FFI-heavy
   extension would otherwise write by hand.
-
-## [0.12.0] - 2026-03-31
-
-### Added
 
 - **`ExtensionError`: additional `From` impls** — `From<std::io::Error>`,
   `From<std::ffi::NulError>`, and `From<std::fmt::Error>` allow the `?` operator
@@ -834,8 +830,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI pipeline: check, test, clippy, fmt, doc, MSRV, bench-compile
 - `SECURITY.md` vulnerability disclosure policy
 
-[Unreleased]: https://github.com/tomtom215/quack-rs/compare/v0.13.0...HEAD
-[0.13.0]: https://github.com/tomtom215/quack-rs/compare/v0.12.0...v0.13.0
+[Unreleased]: https://github.com/tomtom215/quack-rs/compare/v0.12.0...HEAD
 [0.12.0]: https://github.com/tomtom215/quack-rs/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/tomtom215/quack-rs/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/tomtom215/quack-rs/compare/v0.9.0...v0.10.0

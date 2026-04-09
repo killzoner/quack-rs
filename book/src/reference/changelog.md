@@ -10,7 +10,7 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [0.13.0] — 2026-04-09
+## [0.12.0] — 2026-04-09
 
 ### Added
 
@@ -22,11 +22,6 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     - Panics in user closures are caught via `catch_unwind` and reported through `duckdb_*_set_error`
     - `S: Send + 'static`; scans are serialised (`set_max_threads(1)`) — use the raw builder + `local_init` for parallel scans
     - Re-exported from `quack_rs::prelude`
-
-## [0.12.0] — 2026-03-31
-
-### Added
-
 - **`ExtensionError` ergonomics** — `From<std::io::Error>`, `From<std::ffi::NulError>`, `From<std::fmt::Error>` for direct `?` operator usage in `register_all()`
 - **`tls` module** — `TlsConfigProvider` trait for type-erased TLS client configuration injection (no external deps)
 - **`warning` module** — `ExtensionWarning`, `WarningSeverity`, `WarningCollector` for structured security warnings with CWE codes
@@ -503,8 +498,7 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-[Unreleased]: https://github.com/tomtom215/quack-rs/compare/v0.13.0...HEAD
-[0.13.0]: https://github.com/tomtom215/quack-rs/compare/v0.12.0...v0.13.0
+[Unreleased]: https://github.com/tomtom215/quack-rs/compare/v0.12.0...HEAD
 [0.12.0]: https://github.com/tomtom215/quack-rs/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/tomtom215/quack-rs/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/tomtom215/quack-rs/compare/v0.9.0...v0.10.0
