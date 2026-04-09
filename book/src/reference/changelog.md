@@ -10,6 +10,8 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.13.0] — 2026-04-09
+
 ### Added
 
 - **`TypedTableFunctionBuilder<S>` — closure-based table functions with typed scan state**
@@ -501,7 +503,8 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-[Unreleased]: https://github.com/tomtom215/quack-rs/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/tomtom215/quack-rs/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/tomtom215/quack-rs/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/tomtom215/quack-rs/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/tomtom215/quack-rs/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/tomtom215/quack-rs/compare/v0.9.0...v0.10.0

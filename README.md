@@ -121,9 +121,14 @@ See [`LESSONS.md`](./LESSONS.md) for full analysis of each pitfall.
 
 ```toml
 [dependencies]
-quack-rs = "0.12"
+quack-rs = "0.11"
 libduckdb-sys = { version = ">=1.4.4, <2", features = ["loadable-extension"] }
 ```
+
+> The latest crate published to [crates.io](https://crates.io/crates/quack-rs)
+> is **v0.11.0**. Versions v0.12.0 and v0.13.0 are prepared in this repository
+> but have not yet been published. Until the v0.13.0 release workflow runs,
+> `cargo add quack-rs` resolves to `0.11.0`.
 
 > **DuckDB compatibility**: `quack-rs` supports DuckDB **1.4.x and 1.5.x**.
 > Both releases expose the same C API version (`v1.2.0`), confirmed by E2E tests
@@ -803,6 +808,17 @@ C API exposes it.
 ## Changelog
 
 See [`CHANGELOG.md`](./CHANGELOG.md) for the full version history.
+
+**v0.13.0** (2026-04-09) — Added `TypedTableFunctionBuilder<S>`, a closure-based
+layer on top of `TableFunctionBuilder` that replaces hand-rolled
+`unsafe extern "C" fn` bind/init/scan trampolines with two safe Rust closures.
+Entry point is `TableFunctionBuilder::with_state::<S, _>(|bind| Ok(S { ... }))`,
+followed by `.scan(|state, chunk| { ... Ok(()) })` and `.build()?`. Panics in
+user closures are caught via `catch_unwind`; state is carried from `bind`
+through `init` into `init_data` so the scan closure receives `&mut S`. Scans
+run serialised (`set_max_threads(1)`) since `S: Send` is not `Sync` —
+extensions needing parallel workers should continue to use the raw
+`TableFunctionBuilder` with `local_init`. Re-exported from `quack_rs::prelude`.
 
 **v0.12.0** (2026-03-31) — Added `tls` module (`TlsConfigProvider` trait for type-erased TLS
 client configuration injection with CWE-coded audit), `warning` module (`ExtensionWarning`,
