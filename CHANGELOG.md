@@ -11,33 +11,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- **`rustls-webpki` 0.103.10 → 0.103.13** — picks up the fix for two
+Closes nine GitHub Dependabot alerts (two High, seven Low) split across
+the workspace `Cargo.lock` and `examples/hello-ext/Cargo.lock`.
+
+- **`rustls-webpki` 0.103.10 → 0.103.13** — picks up the fix for three
   RustSec advisories reachable via the `bundled` DuckDB build's transitive
   `reqwest` → `rustls` chain:
-    - **[RUSTSEC-2026-0103]** ([GHSA-xgp8-3hg3-c2mh]) — out-of-bounds read
-      in name-constraint enforcement during certificate path building.
-      Reachable only after signature verification, but still warrants a
-      patch bump.
+    - **[RUSTSEC-2026-0098]** ([GHSA-965h-392x-2mh5]) — `nameConstraints`
+      with URI name restrictions were silently ignored instead of enforced.
+      Patched in 0.103.12+; the URI-name path is not on the public Web PKI,
+      so impact is limited to private-PKI consumers.
+    - **[RUSTSEC-2026-0103]** ([GHSA-xgp8-3hg3-c2mh]) — name-constraint
+      enforcement accepted certificates asserting a wildcard subject name.
+      Reachable only after signature verification and requires misissuance.
+      Patched in 0.103.12+.
     - **[RUSTSEC-2026-0104]** — reachable panic when parsing certificate
       revocation lists with a syntactically valid empty `BIT STRING` in
       the `onlySomeReasons` element of an `IssuingDistributionPoint` CRL
-      extension. Affects only applications that use CRLs.
+      extension. Affects only applications that use CRLs. Patched in
+      0.103.13+.
 
   Neither path is exercised by `quack-rs` itself, but the advisories trip
   `cargo deny` for any downstream consumer that has not yet bumped, so
   shipping a release that resolves them is the path of least friction.
 
+- **`rand` 0.9.2 → 0.9.4 / 0.8.5 → 0.8.6** — picks up the fix for
+  **[RUSTSEC-2026-0097]** ([GHSA-cq8v-f236-94qc]) — `ThreadRng` could
+  produce an aliased `&mut BlockRng<ReseedingCore>` (Stacked-Borrows UB)
+  when a custom logger reentered `rand::rng()` from inside a reseed at
+  trace-level logging. Triggering the unsoundness requires a custom
+  global logger that pulls from `rand::rng()` while reseeding, which is
+  not a pattern `quack-rs` uses, but the advisory matches by version
+  range so resolving it removes the alert noise. Patched on every
+  affected line: 0.8.6+, 0.9.3+, 0.10.1+.
+
 ### Changed
 
-- **Dependency bumps (lockfile only)** —
+- **Workspace `Cargo.lock` bumps** —
     - `cc` 1.2.59 → 1.2.61 (build-dep; no API impact)
     - `duckdb` / `libduckdb-sys` 1.10501.0 → 1.10502.0 (latest patch
       release; no API impact for `quack-rs`)
-    - `rand` 0.8.5 → 0.8.6 (transitive via `rust_decimal`)
-- **`examples/hello-ext` lockfile** —
+    - `rand` 0.8.5 → 0.8.6 (transitive via `rust_decimal`; security)
+    - `rand` 0.9.2 → 0.9.4 (transitive via `proptest` dev-dep; security)
+- **`examples/hello-ext` `Cargo.lock` bumps** —
     - `libduckdb-sys` 1.10501.0 → 1.10502.0
-    - `rand` 0.9.2 → 0.9.4 (transitive via `getrandom`)
-    - `rustls-webpki` 0.103.10 → 0.103.13 (matches the workspace fix)
+    - `rand` 0.9.2 → 0.9.4 (security)
+    - `rustls-webpki` 0.103.10 → 0.103.13 (security; matches workspace)
 
 ### CI
 
@@ -69,8 +88,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   alongside the above; otherwise would have surfaced the next time
   the lint promotion round-trips through `pedantic` or `nursery`.
 
+[RUSTSEC-2026-0097]: https://rustsec.org/advisories/RUSTSEC-2026-0097
+[RUSTSEC-2026-0098]: https://rustsec.org/advisories/RUSTSEC-2026-0098
 [RUSTSEC-2026-0103]: https://rustsec.org/advisories/RUSTSEC-2026-0103
 [RUSTSEC-2026-0104]: https://rustsec.org/advisories/RUSTSEC-2026-0104
+[GHSA-965h-392x-2mh5]: https://github.com/advisories/GHSA-965h-392x-2mh5
+[GHSA-cq8v-f236-94qc]: https://github.com/advisories/GHSA-cq8v-f236-94qc
 [GHSA-xgp8-3hg3-c2mh]: https://github.com/rustls/webpki/security/advisories/GHSA-xgp8-3hg3-c2mh
 
 ## [0.12.0] - 2026-04-09

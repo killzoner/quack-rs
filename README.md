@@ -809,16 +809,18 @@ C API exposes it.
 
 See [`CHANGELOG.md`](./CHANGELOG.md) for the full version history.
 
-**v0.12.1** (2026-05-01) — Security/maintenance patch. Bumps `rustls-webpki`
-0.103.10 → 0.103.13 to clear two RustSec advisories
-([RUSTSEC-2026-0103](https://rustsec.org/advisories/RUSTSEC-2026-0103),
+**v0.12.1** (2026-05-01) — Security/maintenance patch. Closes nine
+GitHub Dependabot alerts (two High, seven Low) across both lockfiles by
+bumping `rustls-webpki` 0.103.10 → 0.103.13 (clears
+[RUSTSEC-2026-0098](https://rustsec.org/advisories/RUSTSEC-2026-0098),
+[RUSTSEC-2026-0103](https://rustsec.org/advisories/RUSTSEC-2026-0103),
 [RUSTSEC-2026-0104](https://rustsec.org/advisories/RUSTSEC-2026-0104))
-reachable via the `bundled` DuckDB build's transitive `reqwest` chain;
-neither path is exercised by `quack-rs` itself but downstream `cargo deny`
-runs would flag them. Bumps `duckdb` / `libduckdb-sys` 1.10501.0 → 1.10502.0,
-`cc` 1.2.59 → 1.2.61, `rand` 0.8.5 → 0.8.6 in the workspace lockfile, and
-`libduckdb-sys`, `rand` 0.9.x, `rustls-webpki` in `examples/hello-ext`.
-GitHub Actions pins refreshed (`actions/cache`, `actions/upload-artifact`,
+and `rand` 0.8.5 → 0.8.6 / 0.9.2 → 0.9.4 (clears
+[RUSTSEC-2026-0097](https://rustsec.org/advisories/RUSTSEC-2026-0097)).
+None of those paths are exercised by `quack-rs` itself but downstream
+`cargo deny` runs would flag them. Also bumps `duckdb` / `libduckdb-sys`
+1.10501.0 → 1.10502.0 and `cc` 1.2.59 → 1.2.61. GitHub Actions pins
+refreshed (`actions/cache`, `actions/upload-artifact`,
 `actions/upload-pages-artifact`). Fixes two `clippy::map_unwrap_or` /
 `map_unwrap_or_default` sites in `src/warning.rs` (graduated to stable
 clippy in Rust 1.95.0). Adds an informational `Clippy (beta)` CI job so

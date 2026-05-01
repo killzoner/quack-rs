@@ -14,17 +14,27 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Security
 
-- **`rustls-webpki` 0.103.10 → 0.103.13** picks up fixes for two RustSec
-  advisories ([RUSTSEC-2026-0103], [RUSTSEC-2026-0104]) reachable via the
-  `bundled` DuckDB build's transitive `reqwest` → `rustls` chain.
-  Neither path is exercised by `quack-rs` itself, but the advisories trip
-  `cargo deny` for downstream consumers, so the patch bump removes
-  friction.
+Closes nine GitHub Dependabot alerts (two High, seven Low) split across
+the workspace `Cargo.lock` and `examples/hello-ext/Cargo.lock`.
+
+- **`rustls-webpki` 0.103.10 → 0.103.13** picks up fixes for three
+  RustSec advisories reachable via the `bundled` DuckDB build's transitive
+  `reqwest` → `rustls` chain: [RUSTSEC-2026-0098] (URI name constraints
+  silently ignored), [RUSTSEC-2026-0103] (wildcard name constraints
+  accepted), [RUSTSEC-2026-0104] (DoS panic on malformed CRL `BIT STRING`).
+  None of these paths are exercised by `quack-rs` itself, but the
+  advisories trip `cargo deny` for downstream consumers, so the patch
+  bump removes friction.
+- **`rand` 0.9.2 → 0.9.4 / 0.8.5 → 0.8.6** picks up the fix for
+  [RUSTSEC-2026-0097] (`ThreadRng` Stacked-Borrows UB when a custom
+  global logger reentered `rand::rng()` during reseed). Patched on
+  every line: 0.8.6+, 0.9.3+, 0.10.1+.
 
 ### Changed
 
-- Lockfile bumps: `cc` 1.2.59 → 1.2.61 (build-dep), `duckdb` /
-  `libduckdb-sys` 1.10501.0 → 1.10502.0, `rand` 0.8.5 → 0.8.6.
+- Workspace lockfile: `cc` 1.2.59 → 1.2.61 (build-dep), `duckdb` /
+  `libduckdb-sys` 1.10501.0 → 1.10502.0, `rand` 0.8.5 → 0.8.6,
+  `rand` 0.9.2 → 0.9.4.
 - `examples/hello-ext` lockfile: `libduckdb-sys` 1.10501.0 → 1.10502.0,
   `rand` 0.9.2 → 0.9.4, `rustls-webpki` 0.103.10 → 0.103.13.
 
@@ -45,6 +55,8 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `WarningCollector::snapshot`: same defensive rewrite for the sibling
   `map(|w| w.clone()).unwrap_or_default()` call site.
 
+[RUSTSEC-2026-0097]: https://rustsec.org/advisories/RUSTSEC-2026-0097
+[RUSTSEC-2026-0098]: https://rustsec.org/advisories/RUSTSEC-2026-0098
 [RUSTSEC-2026-0103]: https://rustsec.org/advisories/RUSTSEC-2026-0103
 [RUSTSEC-2026-0104]: https://rustsec.org/advisories/RUSTSEC-2026-0104
 
