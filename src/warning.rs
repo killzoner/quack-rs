@@ -128,7 +128,7 @@ impl WarningCollector {
     /// Returns the number of warnings currently collected.
     #[must_use]
     pub fn len(&self) -> usize {
-        self.warnings.lock().map(|w| w.len()).unwrap_or(0)
+        self.warnings.lock().map_or(0, |w| w.len())
     }
 
     /// Returns `true` if no warnings have been collected.
