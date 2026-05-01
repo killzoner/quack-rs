@@ -140,7 +140,9 @@ impl WarningCollector {
     /// Returns a snapshot of all collected warnings without clearing them.
     #[must_use]
     pub fn snapshot(&self) -> Vec<ExtensionWarning> {
-        self.warnings.lock().map(|w| w.clone()).unwrap_or_default()
+        self.warnings
+            .lock()
+            .map_or_else(|_| Vec::new(), |w| w.clone())
     }
 
     /// Drains all collected warnings, returning them and leaving the collector empty.

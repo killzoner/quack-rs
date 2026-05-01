@@ -7,6 +7,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-05-01
+
+### Security
+
+- **`rustls-webpki` 0.103.10 → 0.103.13** — picks up the fix for two
+  RustSec advisories reachable via the `bundled` DuckDB build's transitive
+  `reqwest` → `rustls` chain:
+    - **[RUSTSEC-2026-0103]** ([GHSA-xgp8-3hg3-c2mh]) — out-of-bounds read
+      in name-constraint enforcement during certificate path building.
+      Reachable only after signature verification, but still warrants a
+      patch bump.
+    - **[RUSTSEC-2026-0104]** — reachable panic when parsing certificate
+      revocation lists with a syntactically valid empty `BIT STRING` in
+      the `onlySomeReasons` element of an `IssuingDistributionPoint` CRL
+      extension. Affects only applications that use CRLs.
+
+  Neither path is exercised by `quack-rs` itself, but the advisories trip
+  `cargo deny` for any downstream consumer that has not yet bumped, so
+  shipping a release that resolves them is the path of least friction.
+
+### Changed
+
+- **Dependency bumps (lockfile only)** —
+    - `cc` 1.2.59 → 1.2.61 (build-dep; no API impact)
+    - `duckdb` / `libduckdb-sys` 1.10501.0 → 1.10502.0 (latest patch
+      release; no API impact for `quack-rs`)
+    - `rand` 0.8.5 → 0.8.6 (transitive via `rust_decimal`)
+- **`examples/hello-ext` lockfile** —
+    - `libduckdb-sys` 1.10501.0 → 1.10502.0
+    - `rand` 0.9.2 → 0.9.4 (transitive via `getrandom`)
+    - `rustls-webpki` 0.103.10 → 0.103.13 (matches the workspace fix)
+
+### CI
+
+- **GitHub Actions pin updates** —
+    - `actions/cache` `v5.0.4` → `v5.0.5`
+    - `actions/upload-artifact` `v7.0.0` → `v7.0.1`
+    - `actions/upload-pages-artifact` `v4.0.0` → `v5.0.0`
+
+  All updates retain SHA-pinned references for supply-chain integrity.
+
+- **New informational `Clippy (beta)` job** — runs the same
+  `cargo clippy --all-targets --features duckdb-1-5 -- -D warnings`
+  invocation on the `beta` Rust toolchain. Marked `continue-on-error`
+  so a beta-only lint regression does not block the merge queue, but
+  surfaces six weeks before the lint reaches `stable`. Originally added
+  in response to `clippy::map_unwrap_or` graduating to `stable` in
+  Rust 1.95.0 and biting `src/warning.rs` after the toolchain rolled
+  forward.
+
+### Fixed
+
+- **`clippy::map_unwrap_or` on `WarningCollector::len`** —
+  `self.warnings.lock().map(|w| w.len()).unwrap_or(0)` rewritten as
+  `self.warnings.lock().map_or(0, |w| w.len())`. Behaviour-preserving;
+  fixes `Clippy` and `Test duckdb-1-5 feature` jobs under Rust 1.95.0.
+- **`clippy::map_unwrap_or_default` on `WarningCollector::snapshot`**
+  (defensive) — same rewrite for the sibling
+  `map(|w| w.clone()).unwrap_or_default()` call. Caught proactively
+  alongside the above; otherwise would have surfaced the next time
+  the lint promotion round-trips through `pedantic` or `nursery`.
+
+[RUSTSEC-2026-0103]: https://rustsec.org/advisories/RUSTSEC-2026-0103
+[RUSTSEC-2026-0104]: https://rustsec.org/advisories/RUSTSEC-2026-0104
+[GHSA-xgp8-3hg3-c2mh]: https://github.com/rustls/webpki/security/advisories/GHSA-xgp8-3hg3-c2mh
+
 ## [0.12.0] - 2026-04-09
 
 ### Added
@@ -830,7 +896,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI pipeline: check, test, clippy, fmt, doc, MSRV, bench-compile
 - `SECURITY.md` vulnerability disclosure policy
 
-[Unreleased]: https://github.com/tomtom215/quack-rs/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/tomtom215/quack-rs/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/tomtom215/quack-rs/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/tomtom215/quack-rs/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/tomtom215/quack-rs/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/tomtom215/quack-rs/compare/v0.9.0...v0.10.0

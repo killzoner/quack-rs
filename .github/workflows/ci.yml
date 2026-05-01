@@ -3,9 +3,9 @@
 #
 # Continuous integration — enforces all quality gates.
 #
-# Jobs: check, test (default + bundled + duckdb-1-5), clippy, fmt, doc, msrv,
-#       bench-compile, example-check, scaffold-compile, symbol-check,
-#       extension-load, publish-dry-run, security, nightly.
+# Jobs: check, test (default + bundled + duckdb-1-5), clippy, clippy-beta,
+#       fmt, doc, msrv, bench-compile, example-check, scaffold-compile,
+#       symbol-check, extension-load, publish-dry-run, security, nightly.
 
 name: CI
 
@@ -85,6 +85,22 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       - run: cargo clippy --all-targets -- -D warnings
+
+  # Informational early-warning for clippy lints graduating to stable.
+  # `beta` becomes `stable` ~6 weeks later, so a failure here gives a heads-up
+  # before the lint blocks merges. continue-on-error keeps it non-blocking.
+  clippy-beta:
+    name: Clippy (beta, informational)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # beta
+        with:
+          toolchain: beta
+          components: clippy
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+      - run: cargo clippy --all-targets --features duckdb-1-5 -- -D warnings
 
   fmt:
     name: Format
