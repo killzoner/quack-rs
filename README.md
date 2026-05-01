@@ -126,8 +126,8 @@ libduckdb-sys = { version = ">=1.4.4, <2", features = ["loadable-extension"] }
 ```
 
 > The latest crate published to [crates.io](https://crates.io/crates/quack-rs)
-> is **v0.11.0**. Versions v0.12.0 and v0.13.0 are prepared in this repository
-> but have not yet been published. Until the v0.13.0 release workflow runs,
+> is **v0.11.0**. Version v0.12.1 is prepared in this repository but has not
+> yet been published. Until the v0.12.1 release workflow runs,
 > `cargo add quack-rs` resolves to `0.11.0`.
 
 > **DuckDB compatibility**: `quack-rs` supports DuckDB **1.4.x and 1.5.x**.
@@ -808,6 +808,23 @@ C API exposes it.
 ## Changelog
 
 See [`CHANGELOG.md`](./CHANGELOG.md) for the full version history.
+
+**v0.12.1** (2026-05-01) — Security/maintenance patch. Closes nine
+GitHub Dependabot alerts (two High, seven Low) across both lockfiles by
+bumping `rustls-webpki` 0.103.10 → 0.103.13 (clears
+[RUSTSEC-2026-0098](https://rustsec.org/advisories/RUSTSEC-2026-0098),
+[RUSTSEC-2026-0103](https://rustsec.org/advisories/RUSTSEC-2026-0103),
+[RUSTSEC-2026-0104](https://rustsec.org/advisories/RUSTSEC-2026-0104))
+and `rand` 0.8.5 → 0.8.6 / 0.9.2 → 0.9.4 (clears
+[RUSTSEC-2026-0097](https://rustsec.org/advisories/RUSTSEC-2026-0097)).
+None of those paths are exercised by `quack-rs` itself but downstream
+`cargo deny` runs would flag them. Also bumps `duckdb` / `libduckdb-sys`
+1.10501.0 → 1.10502.0 and `cc` 1.2.59 → 1.2.61. GitHub Actions pins
+refreshed (`actions/cache`, `actions/upload-artifact`,
+`actions/upload-pages-artifact`). Fixes two `clippy::map_unwrap_or` /
+`map_unwrap_or_default` sites in `src/warning.rs` (graduated to stable
+clippy in Rust 1.95.0). Adds an informational `Clippy (beta)` CI job so
+future lint promotions surface ~6 weeks before they reach `stable`.
 
 **v0.12.0** (2026-04-09) — Added `TypedTableFunctionBuilder<S>`, a closure-based
 layer on top of `TableFunctionBuilder` that replaces hand-rolled

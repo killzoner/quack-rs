@@ -10,6 +10,56 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.12.1] — 2026-05-01
+
+### Security
+
+Closes nine GitHub Dependabot alerts (two High, seven Low) split across
+the workspace `Cargo.lock` and `examples/hello-ext/Cargo.lock`.
+
+- **`rustls-webpki` 0.103.10 → 0.103.13** picks up fixes for three
+  RustSec advisories reachable via the `bundled` DuckDB build's transitive
+  `reqwest` → `rustls` chain: [RUSTSEC-2026-0098] (URI name constraints
+  silently ignored), [RUSTSEC-2026-0103] (wildcard name constraints
+  accepted), [RUSTSEC-2026-0104] (DoS panic on malformed CRL `BIT STRING`).
+  None of these paths are exercised by `quack-rs` itself, but the
+  advisories trip `cargo deny` for downstream consumers, so the patch
+  bump removes friction.
+- **`rand` 0.9.2 → 0.9.4 / 0.8.5 → 0.8.6** picks up the fix for
+  [RUSTSEC-2026-0097] (`ThreadRng` Stacked-Borrows UB when a custom
+  global logger reentered `rand::rng()` during reseed). Patched on
+  every line: 0.8.6+, 0.9.3+, 0.10.1+.
+
+### Changed
+
+- Workspace lockfile: `cc` 1.2.59 → 1.2.61 (build-dep), `duckdb` /
+  `libduckdb-sys` 1.10501.0 → 1.10502.0, `rand` 0.8.5 → 0.8.6,
+  `rand` 0.9.2 → 0.9.4.
+- `examples/hello-ext` lockfile: `libduckdb-sys` 1.10501.0 → 1.10502.0,
+  `rand` 0.9.2 → 0.9.4, `rustls-webpki` 0.103.10 → 0.103.13.
+
+### CI
+
+- GitHub Actions pin updates: `actions/cache` `v5.0.4` → `v5.0.5`,
+  `actions/upload-artifact` `v7.0.0` → `v7.0.1`,
+  `actions/upload-pages-artifact` `v4.0.0` → `v5.0.0` (all SHA-pinned).
+- New informational `Clippy (beta)` job runs the same clippy invocation
+  on the `beta` toolchain (`continue-on-error`), so lint promotions
+  surface ~6 weeks before they reach `stable`.
+
+### Fixed
+
+- `WarningCollector::len`: rewrite `map(|w| w.len()).unwrap_or(0)` as
+  `map_or(0, |w| w.len())` to satisfy `clippy::map_unwrap_or`, which
+  graduated to `stable` clippy in Rust 1.95.0.
+- `WarningCollector::snapshot`: same defensive rewrite for the sibling
+  `map(|w| w.clone()).unwrap_or_default()` call site.
+
+[RUSTSEC-2026-0097]: https://rustsec.org/advisories/RUSTSEC-2026-0097
+[RUSTSEC-2026-0098]: https://rustsec.org/advisories/RUSTSEC-2026-0098
+[RUSTSEC-2026-0103]: https://rustsec.org/advisories/RUSTSEC-2026-0103
+[RUSTSEC-2026-0104]: https://rustsec.org/advisories/RUSTSEC-2026-0104
+
 ## [0.12.0] — 2026-04-09
 
 ### Added
@@ -498,7 +548,8 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-[Unreleased]: https://github.com/tomtom215/quack-rs/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/tomtom215/quack-rs/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/tomtom215/quack-rs/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/tomtom215/quack-rs/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/tomtom215/quack-rs/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/tomtom215/quack-rs/compare/v0.9.0...v0.10.0
