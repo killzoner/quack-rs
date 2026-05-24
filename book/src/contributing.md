@@ -9,7 +9,7 @@ bug reports, documentation improvements, new pitfall discoveries, and code.
 
 | Tool | Version | Purpose |
 |------|---------|---------|
-| Rust | ≥ 1.84.1 (MSRV) | Compiler |
+| Rust | ≥ 1.87.0 (MSRV) | Compiler |
 | `rustfmt` | stable | Formatting |
 | `clippy` | stable | Linting |
 | `cargo-msrv` | latest | MSRV verification |
@@ -53,8 +53,8 @@ cargo fmt -- --check
 # Documentation — zero broken links or missing docs
 RUSTDOCFLAGS="-D warnings" cargo doc --no-deps
 
-# MSRV — must compile on Rust 1.84.1 (excludes benches; matches CI)
-cargo +1.84.1 check
+# MSRV — must compile on Rust 1.87.0 (excludes benches; matches CI)
+cargo +1.87.0 check
 ```
 
 These same checks run in CI on every push and pull request.
@@ -180,6 +180,12 @@ quack-rs/
 │   ├── copy_function/
 │   │   ├── mod.rs                 # CopyFunctionBuilder (requires `duckdb-1-5`)
 │   │   └── info.rs                # CopyBindInfo, CopySinkInfo, etc.
+│   ├── appender.rs                # Appender — bulk row insertion (requires `duckdb-1-5`)
+│   ├── error_data.rs              # ErrorData, DuckDbErrorType — structured errors (requires `duckdb-1-5`)
+│   ├── expression.rs              # Expression — bound expr inspection/folding (requires `duckdb-1-5`)
+│   ├── file_system.rs             # FileSystem, FileHandle — DuckDB virtual file system (requires `duckdb-1-5`)
+│   ├── instance_cache.rs          # InstanceCache — shared DB instance cache (requires `duckdb-1-5`)
+│   ├── selection_vector.rs        # SelectionVector — zero-copy row-index vectors (requires `duckdb-1-5`)
 │   ├── replacement_scan/
 │   │   └── mod.rs                 # ReplacementScanBuilder — SELECT * FROM 'file.xyz' patterns
 │   ├── types/

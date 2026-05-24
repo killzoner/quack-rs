@@ -24,7 +24,7 @@ Thank you for contributing! Please read this document before opening a PR.
 
 | Tool | Version | Purpose |
 |------|---------|---------|
-| Rust | ≥ 1.84.1 (MSRV) | Compiler |
+| Rust | ≥ 1.87.0 (MSRV) | Compiler |
 | `rustfmt` | stable | Formatting |
 | `clippy` | stable | Linting |
 | `cargo-deny` | latest | License/advisory checks |
@@ -113,8 +113,8 @@ cargo fmt -- --check
 # 5. Documentation — zero broken links or missing docs
 RUSTDOCFLAGS="-D warnings" cargo doc --no-deps
 
-# 6. MSRV — must compile on Rust 1.84.1 (matches CI; excludes benches which use criterion >=1.86)
-cargo +1.84.1 check
+# 6. MSRV — must compile on Rust 1.87.0 (matches CI; excludes benches which use criterion >=1.86)
+cargo +1.87.0 check
 
 # 7. Live extension test — build hello-ext, package it, load in DuckDB 1.4.4 or 1.5.0
 cargo build --release --manifest-path examples/hello-ext/Cargo.toml
@@ -298,7 +298,15 @@ quack-rs/
 │   │   └── builder.rs             # CastFunctionBuilder, CastFunctionInfo, CastMode
 │   ├── client_context.rs          # ClientContext wrapper (requires `duckdb-1-5`)
 │   ├── config_option.rs           # ConfigOption registration (requires `duckdb-1-5`)
-│   ├── copy_function.rs           # Copy function registration (requires `duckdb-1-5`)
+│   ├── copy_function/
+│   │   ├── mod.rs                 # CopyFunctionBuilder (requires `duckdb-1-5`)
+│   │   └── info.rs                # CopyBindInfo, CopySinkInfo, CopyGlobalInitInfo, CopyFinalizeInfo
+│   ├── appender.rs                # Appender — bulk row insertion (requires `duckdb-1-5`)
+│   ├── error_data.rs              # ErrorData, DuckDbErrorType — structured errors (requires `duckdb-1-5`)
+│   ├── expression.rs              # Expression — bound expr inspection/folding (requires `duckdb-1-5`)
+│   ├── file_system.rs             # FileSystem, FileHandle — DuckDB virtual file system (requires `duckdb-1-5`)
+│   ├── instance_cache.rs          # InstanceCache — shared DB instance cache (requires `duckdb-1-5`)
+│   ├── selection_vector.rs        # SelectionVector — zero-copy row-index vectors (requires `duckdb-1-5`)
 │   ├── replacement_scan/
 │   │   └── mod.rs                 # ReplacementScanBuilder — SELECT * FROM 'file.xyz' patterns
 │   ├── types/

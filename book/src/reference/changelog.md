@@ -10,6 +10,80 @@ quack-rs adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+New safe wrappers for the `DuckDB` 1.5.0+ C extension API, all gated behind the
+`duckdb-1-5` feature. DuckDB 1.5.3's C extension *function-pointer* API (version
+`v1.2.0`) is unchanged from 1.5.2; the one new C addition — the
+`DUCKDB_TYPE_VARIANT` (41) type-enum value — is intentionally **not** surfaced
+yet (see Known Limitations for the version-floor reasoning). So the additions
+below mostly expose 1.5.x capabilities the SDK had not previously wrapped rather
+than anything new to 1.5.3 specifically.
+
+- **`error_data` module** — `ErrorData`, an RAII wrapper over
+  `duckdb_error_data` (the structured error type returned by several 1.5 APIs).
+  Carries a `DuckDbErrorType` category and a message, and converts into
+  `ExtensionError`. Adds the free function `check_valid_utf8`, exposing
+  `DuckDB`'s own UTF-8 validator.
+- **`expression` module** — `Expression`, an RAII wrapper over
+  `duckdb_expression`, with `return_type`, `is_foldable`, and `fold`. This
+  closes a real gap: `ScalarBindInfo` already returned a raw, unusable
+  `duckdb_expression` from `get_argument`; the new `ScalarBindInfo::argument`
+  returns a safe `Expression`, so bind callbacks can inspect argument types and
+  pre-fold constant arguments once at bind time.
+- **`file_system` module** — `FileSystem`, `FileHandle`, `FileOpenOptions`, and
+  `FileFlag`: read and write files through `DuckDB`'s virtual file system
+  (honouring `httpfs`, in-memory files, and other registered file systems)
+  instead of reaching for `std::fs`.
+- **`appender` module** — `Appender`: bulk row insertion (create, append a
+  `DataChunk`, flush, close) plus the 1.5 additions `clear` (revert buffered
+  rows), `error_data` (structured errors), and `append_default_to_chunk`.
+- **`selection_vector` module** — `SelectionVector`: allocate and fill
+  zero-copy row-index selection vectors.
+- **`instance_cache` module** — `InstanceCache`: share one underlying database
+  instance across repeated opens of the same path.
+- **`Value`** gains `display_string` (canonical string rendering of any value,
+  via `duckdb_value_to_string`) and `TIME_NS` accessors `Value::time_ns` /
+  `Value::as_time_ns` (pairing with the existing `TypeId::TimeNs`).
+- **`Catalog`** gains `type_name` (the catalog's storage type, e.g. `"duckdb"`
+  or a storage extension's name).
+- All new public types are re-exported from the `prelude` behind the
+  `duckdb-1-5` feature.
+
+### Changed
+
+- **`duckdb` / `libduckdb-sys` 1.10502.0 → 1.10503.1** (DuckDB 1.5.2 → 1.5.3) in
+  both the workspace and `examples/hello-ext` `Cargo.lock`. DuckDB 1.5.3 is a
+  bugfix release ([announcement](https://duckdb.org/2026/05/20/announcing-duckdb-153));
+  since the `>=1.4.4, <2` constraint already permitted it, the bundled fixes are
+  picked up purely by the lock-file update with no source changes required for
+  the bump itself.
+- **`cc` → 1.2.62** in both `Cargo.lock` files — workspace (1.2.61 → 1.2.62,
+  folding in Dependabot PR #89, the `patch-updates` group) and
+  `examples/hello-ext` (1.2.57 → 1.2.62, re-syncing the example lock's older
+  `cc`). Build-dependency; no API impact.
+- **MSRV corrected to 1.87.0.** The crate declared `rust-version = "1.84.1"`,
+  but `libduckdb-sys` (1.5.x line, a non-optional dependency) is
+  `edition = "2024"` / `rust-version = "1.85.1"` — so quack-rs has in fact
+  required Rust ≥ 1.85.1 since before this release (`cargo +1.84.1 check` cannot
+  even parse the manifest). The declared MSRV, the CI `MSRV` job (now explicitly
+  pinned with `toolchain: "1.87.0"` so it genuinely gates instead of silently
+  falling back to the `rust-toolchain.toml` stable channel), the release matrix,
+  and all docs/badges are updated to **1.87.0** — a small headroom margin above
+  the 1.85.1 floor.
+
+### Documentation
+
+- **New book section "DuckDB 1.5+ APIs"** — dedicated guide pages for the
+  `error_data`, `expression`, `appender`, `file_system`, `selection_vector`, and
+  `instance_cache` modules, wired into `SUMMARY.md`.
+- Refreshed the reference docs (`docs/architecture.md`, `docs/ffi-reference.md`,
+  the `TypeId` reference, `CONTRIBUTING.md`/book source trees) to cover the new
+  modules, and corrected the now-resolved VARIANT/GEOMETRY entries in
+  `Known Limitations` (these type-enum values now exist in the C API as of
+  DuckDB 1.5.3 / 1.5.x; `TypeId::Variant`/`Geometry` remain a tracked follow-up
+  pending a version-floor decision).
+
 ## [0.12.1] — 2026-05-01
 
 ### Security
